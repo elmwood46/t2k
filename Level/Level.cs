@@ -20,6 +20,7 @@ public partial class Level : Node3D
 		HandleClick(@event);
 	}
 
+	// sets player target to clicked location if valid
 	private void HandleClick(InputEvent @event){
 	    if (@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed && eventMouseButton.ButtonIndex == MouseButton.Left)
 	    {
