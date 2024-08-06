@@ -1,9 +1,17 @@
-[gd_scene load_steps=3 format=3 uid="uid://f47eg7gy0g5p"]
+[gd_scene load_steps=4 format=3 uid="uid://f47eg7gy0g5p"]
 
 [ext_resource type="Script" path="res://Level/Level.cs" id="1_m3u20"]
 [ext_resource type="PackedScene" uid="uid://cteinxm8opxil" path="res://Level/basicMap.tscn" id="2_8gqyl"]
+[ext_resource type="PackedScene" uid="uid://dbqxs0sqa7knw" path="res://Util/cameraGimbal.tscn" id="3_d4t72"]
 
 [node name="Level" type="Node3D"]
 script = ExtResource("1_m3u20")
 
 [node name="map" parent="." instance=ExtResource("2_8gqyl")]
+
+[node name="CameraGimbal" parent="." instance=ExtResource("3_d4t72")]
+
+[node name="Camera3D" type="Camera3D" parent="CameraGimbal"]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 8, 8, 8)
+projection = 1
+size = 25.0
