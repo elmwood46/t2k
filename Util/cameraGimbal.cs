@@ -1,17 +1,17 @@
 using Godot;
 using System;
 
-public partial class cameraGimbal : Node3D
+public partial class CameraGimbal : Node3D
 {
 
 	// Vector3 cameraPos = new Vector3(8, 8, 8);
 	// const float cameraRotation = 45;
-	Camera3D camera;
+	public Camera3D Camera {get; private set;}
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		camera = GetNode<Camera3D>("Camera3D");
+		Camera = GetNode<Camera3D>("Camera3D");
 		
 
 	}
