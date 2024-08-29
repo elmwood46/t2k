@@ -1,0 +1,94 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\elmwo\\OneDrive\\Documents\\Github\\ShadowWizardMoneyGang\\ShadowWizardMoneyGang\\Shadow Wizard Money Gang.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\elmwo\\OneDrive\\Documents\\Github\\ShadowWizardMoneyGang\\ShadowWizardMoneyGang\\Shadow Wizard Money Gang.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\elmwo\\OneDrive\\Documents\\Github\\ShadowWizardMoneyGang\\ShadowWizardMoneyGang\\Shadow Wizard Money Gang.csproj",
+        "projectName": "Shadow Wizard Money Gang",
+        "projectPath": "C:\\Users\\elmwo\\OneDrive\\Documents\\Github\\ShadowWizardMoneyGang\\ShadowWizardMoneyGang\\Shadow Wizard Money Gang.csproj",
+        "packagesPath": "C:\\Users\\elmwo\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\elmwo\\OneDrive\\Documents\\Github\\ShadowWizardMoneyGang\\ShadowWizardMoneyGang\\.godot\\mono\\temp\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\elmwo\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net6.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net6.0": {
+            "targetAlias": "net6.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net6.0": {
+          "targetAlias": "net6.0",
+          "dependencies": {
+            "Godot.SourceGenerators": {
+              "target": "Package",
+              "version": "[4.3.0, )"
+            },
+            "GodotSharp": {
+              "target": "Package",
+              "version": "[4.3.0, )"
+            },
+            "GodotSharpEditor": {
+              "target": "Package",
+              "version": "[4.3.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[6.0.33, 6.0.33]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[6.0.33, 6.0.33]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[6.0.33, 6.0.33]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.401\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

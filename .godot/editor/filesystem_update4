@@ -1,0 +1,7 @@
+res://Level/level.tscn
+res://Resourses/Tiles.tres
+res://Charater/PlayerCharacter.cs
+res://Level/DynamicMap.cs
+res://Level/Level.cs
+res://Util/CameraGimbal.cs
+res://Level/basicMap.tscn
