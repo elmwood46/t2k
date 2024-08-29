@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://ddf2e0ngrso8l"]
+
+[ext_resource type="Script" path="res://Level/DynamicMap.cs" id="1_w8fpd"]
+[ext_resource type="MeshLibrary" uid="uid://bkccmbsos7ddj" path="res://Resourses/Tiles.tres" id="2_vbnew"]
+
+[node name="GridMap" type="GridMap"]
+mesh_library = ExtResource("2_vbnew")
+cell_size = Vector3(1, 1, 1)
+script = ExtResource("1_w8fpd")
