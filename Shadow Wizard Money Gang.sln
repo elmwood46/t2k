@@ -1,0 +1,19 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shadow Wizard Money Gang", "Shadow Wizard Money Gang.csproj", "{F58CFCEF-3072-43A6-9198-28E0218BEAAB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+	Debug|Any CPU = Debug|Any CPU
+	ExportDebug|Any CPU = ExportDebug|Any CPU
+	ExportRelease|Any CPU = ExportRelease|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F58CFCEF-3072-43A6-9198-28E0218BEAAB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F58CFCEF-3072-43A6-9198-28E0218BEAAB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F58CFCEF-3072-43A6-9198-28E0218BEAAB}.ExportDebug|Any CPU.ActiveCfg = ExportDebug|Any CPU
+		{F58CFCEF-3072-43A6-9198-28E0218BEAAB}.ExportDebug|Any CPU.Build.0 = ExportDebug|Any CPU
+		{F58CFCEF-3072-43A6-9198-28E0218BEAAB}.ExportRelease|Any CPU.ActiveCfg = ExportRelease|Any CPU
+		{F58CFCEF-3072-43A6-9198-28E0218BEAAB}.ExportRelease|Any CPU.Build.0 = ExportRelease|Any CPU
+	EndGlobalSection
+EndGlobal
