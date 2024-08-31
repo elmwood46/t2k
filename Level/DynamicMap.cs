@@ -13,6 +13,9 @@ public partial class DynamicMap : GridMap
 
 	private Dictionary<Vector3I, int> tileHealth;
 
+	[Signal]
+	public delegate void EnvironmentChangedEventHandler();
+
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
 	{
@@ -27,6 +30,7 @@ public partial class DynamicMap : GridMap
 		Clear();
 		tileHealth.Clear();
 		GenerateBasicFloor(); 
+		EmitSignal(nameof(EnvironmentChanged));
 	}
 
 	/* testing method creates 30 * 30 floor */
@@ -56,6 +60,7 @@ public partial class DynamicMap : GridMap
 		if(tileHealth[tileCoord] <= 0){
 			SetCellItem(tileCoord, CLEAR_CELL);
 			tileHealth.Remove(tileCoord);
+			EmitSignal(nameof(EnvironmentChanged));
 		}
 	}
 
