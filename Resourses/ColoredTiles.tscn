@@ -1,0 +1,43 @@
+[gd_scene load_steps=9 format=3 uid="uid://criadaynbxujy"]
+
+[ext_resource type="Texture2D" uid="uid://cnbmlvhclns8y" path="res://Resourses/grid-green64.png" id="1_o8ct7"]
+[ext_resource type="Texture2D" uid="uid://bir6ab6tfopp4" path="res://Resourses/grid-pink64.png" id="2_nrbt8"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qaq32"]
+albedo_texture = ExtResource("1_o8ct7")
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_460uh"]
+material = SubResource("StandardMaterial3D_qaq32")
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_k4cle"]
+points = PackedVector3Array(0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jds7k"]
+albedo_texture = ExtResource("2_nrbt8")
+uv1_triplanar = true
+
+[sub_resource type="PrismMesh" id="PrismMesh_1x5it"]
+material = SubResource("StandardMaterial3D_jds7k")
+left_to_right = 0.0
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_gbn5r"]
+points = PackedVector3Array(-0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5)
+
+[node name="Node3D" type="Node3D"]
+
+[node name="Box" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_460uh")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Box"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Box/StaticBody3D"]
+shape = SubResource("ConvexPolygonShape3D_k4cle")
+
+[node name="Ramp" type="MeshInstance3D" parent="."]
+mesh = SubResource("PrismMesh_1x5it")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Ramp"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ramp/StaticBody3D"]
+shape = SubResource("ConvexPolygonShape3D_gbn5r")

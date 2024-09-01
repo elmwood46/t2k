@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://b3r3rsbc7ummt"]
+
+[ext_resource type="Script" path="res://Charater/BasicPawn.cs" id="1_er8vn"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_i0cmn"]
+
+[node name="BasicPawn" type="CharacterBody3D"]
+script = ExtResource("1_er8vn")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_i0cmn")
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
+offset = Vector2(0, 22)
+billboard = 2
