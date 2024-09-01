@@ -89,7 +89,7 @@ public partial class DynamicMap : GridMap
 	// 		if(node is GridMap c){
 	// 			Vector3 p = (Vector3) res["position"];
 	// 			// GD.Print("init:", p);
-	// 			DamageTile(p, from, 50);
+	// 			DamageTile(p, from, 100);
 	// 			// GD.Print("");
 				
 	// 		}

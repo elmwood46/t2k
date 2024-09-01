@@ -5,13 +5,12 @@
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_gssk8"]
 geometry_parsed_geometry_type = 1
-geometry_collision_mask = 2
+geometry_collision_mask = 16
 
 [node name="DynamicNavigationRegion" type="NavigationRegion3D"]
 navigation_mesh = SubResource("NavigationMesh_gssk8")
 script = ExtResource("1_blku2")
 
 [node name="GridMap" parent="." instance=ExtResource("2_lj32t")]
-collision_layer = 2
-collision_mask = 2
+collision_layer = 17
 bake_navigation = false
