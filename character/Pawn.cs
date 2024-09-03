@@ -6,9 +6,11 @@ using System;
 // A pawn tracks the base stats of a character, their armour and their HP
 public abstract partial class Pawn : CharacterBody3D
 {
+    #region movement
 
 	public const float Speed = 5.0f;
 	public const float JumpVelocity = 4.5f;
+    #endregion
 
     #region util
     public bool IsHighlighted { get; set; }
@@ -33,7 +35,9 @@ public abstract partial class Pawn : CharacterBody3D
 			{
 				sprite.SpriteFrames = _spriteFrames;
 				sprite.Play("default");
-			}
+			} else {
+                throw new Exception("AnimatedSprite3D not found for pawn: " + Name);
+            }
 		}
 	}
 	private SpriteFrames _spriteFrames;
@@ -103,6 +107,21 @@ public abstract partial class Pawn : CharacterBody3D
     public int Gno { get; set; }
     [Export]
     public int Money {get; set;}
+
+    public enum Faction
+    {
+        Wizards,
+        Nerds,
+        Moles,
+        Bones,
+        Italian
+    }
+
+    [Export]
+    public Faction PawnFaction = Faction.Wizards;
+
+    [Export]
+    public bool IsHostile = false;
 
     public void SetAttr(int mus, int bra, int riz, int gno)
     {
@@ -255,6 +274,16 @@ public abstract partial class Pawn : CharacterBody3D
         {
             Mov = 6 + Mus;
         }
+    }
+    #endregion
+
+    #region _ready()
+    public override void _Ready()
+    {
+        UpdateAllStats();
+        GD.Print("_Ready() pawn title: ", Title, " children: ", GetChildren());
+        _ = GetNodeOrNull<CollisionShape3D>("%CollisionShape3D") ?? throw new Exception("%CollisionShape3D not found for pawn: " + Name);
+        _ = GetNodeOrNull<AnimatedSprite3D>("%AnimatedSprite3D") ?? throw new Exception("%AnimatedSprite3D not found for pawn: " + Name);
     }
     #endregion
 }
