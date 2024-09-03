@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cnbmlvhclns8y"
-path.s3tc="res://.godot/imported/grid-green64.png-e3b8324e1077ca3810d6637d1583f083.s3tc.ctex"
+uid="uid://du5gp4cics6ju"
+path.s3tc="res://.godot/imported/crowJam-spritesheet.png-a6ae654aa2f7a34d7885284c57f65b82.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://Resourses/grid-green64.png"
-dest_files=["res://.godot/imported/grid-green64.png-e3b8324e1077ca3810d6637d1583f083.s3tc.ctex"]
+source_file="res://sprites/crowJam-spritesheet.png"
+dest_files=["res://.godot/imported/crowJam-spritesheet.png-a6ae654aa2f7a34d7885284c57f65b82.s3tc.ctex"]
 
 [params]
 

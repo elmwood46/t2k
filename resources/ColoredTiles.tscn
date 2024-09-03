@@ -1,7 +1,7 @@
 [gd_scene load_steps=9 format=3 uid="uid://criadaynbxujy"]
 
-[ext_resource type="Texture2D" uid="uid://cnbmlvhclns8y" path="res://Resourses/grid-green64.png" id="1_o8ct7"]
-[ext_resource type="Texture2D" uid="uid://bir6ab6tfopp4" path="res://Resourses/grid-pink64.png" id="2_nrbt8"]
+[ext_resource type="Texture2D" uid="uid://cnbmlvhclns8y" path="res://resources/grid-green64.png" id="1_o8ct7"]
+[ext_resource type="Texture2D" uid="uid://bir6ab6tfopp4" path="res://resources/grid-pink64.png" id="2_nrbt8"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qaq32"]
 albedo_texture = ExtResource("1_o8ct7")

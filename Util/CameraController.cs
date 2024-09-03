@@ -1,4 +1,5 @@
 using Godot;
+using System;
 
 public partial class CameraController : Node3D
 {
@@ -9,15 +10,14 @@ public partial class CameraController : Node3D
 	[Export]
 	public float rotationOffset = 30f; // starting rotation offset in degrees
 	[Export]
-	public float cameraZoomMin = 10f;
+	public float CameraZoomMin {get; set;} = 10f;
 	[Export]
-	public float cameraZoomMax = 20f;
+	public float CameraZoomMax {get; set;} = 20f;
 	[Export]
-	public float cameraZoomSpeed = 1.0f;
-	private float currentZoom;
+	public float cameraZoomSpeed = 1f;
+	private float _currentZoom = 20.0f;
 	private MouseVelocityTracker _mouseVTracker;
-
-	public Camera3D Camera { get => _camera; private set => _camera = value; }
+	public Camera3D Camera => _camera;
 	private Camera3D _camera;
 	private int currSubdivision = 0;  // track the current fixed _camera angle
 	private bool rotating = false; // flag for animating _camera rotation
@@ -28,18 +28,16 @@ public partial class CameraController : Node3D
 
 	public override void _Ready()
 	{
-		_camera = GetNodeOrNull<Camera3D>("Camera");
-		if (_camera.Equals(null)) {
-			GD.Print("Camera not found");
+		this._camera = GetNodeOrNull<Camera3D>("Camera");
+		if (this._camera.Equals(null)) {
+			GD.Print("Camera not found.");
 			return;
 		}
 
 		_mouseVTracker = new MouseVelocityTracker(GetViewport());
-		this.Rotation = new Vector3(Rotation.X, Mathf.DegToRad(rotationOffset), Rotation.Z);
+		Rotation = new Vector3(Rotation.X, Mathf.DegToRad(rotationOffset), Rotation.Z);
 		rotationAngle = 360f / (float)rotationSubdivisions;
-		currentZoom = cameraZoomMin;
-		
-		_camera.Size = currentZoom;
+		UpdateCameraZoom();
 	}
 
 	// process - rotate and zoom the _camera 
@@ -64,21 +62,21 @@ public partial class CameraController : Node3D
 
 	private void UpdateCameraZoom()
 	{
-		currentZoom += ((Input.IsActionJustPressed("ui_scroll_down") ? 1 : 0) - (Input.IsActionJustPressed("ui_scroll_up") ? 1 : 0)) * cameraZoomSpeed;
+		_currentZoom += ((Input.IsActionJustPressed("ui_scroll_down") ? 1 : 0) - (Input.IsActionJustPressed("ui_scroll_up") ? 1 : 0)) * cameraZoomSpeed;
 		if (Input.IsActionPressed("mb_middle"))
 		{
-			currentZoom += _mouseVTracker.GetMouseVelocity().X / 2000;
+			_currentZoom += _mouseVTracker.GetMouseVelocity().X / 2000;
 		}
-		currentZoom = Mathf.Clamp(currentZoom, cameraZoomMin, cameraZoomMax);
-		this._camera.Size = currentZoom;
+		_currentZoom = Mathf.Clamp(_currentZoom, CameraZoomMin, CameraZoomMax);
+		this._camera.SetSize(_currentZoom);
 	}
 
 	private void StartRotation()
 	{
 		currSubdivision += 1;
 		// Set the target rotation
-		targetRotation = this.Rotation.Y + Mathf.DegToRad(rotationAngle); // Rotate 90 degrees
-		initialRotation = this.Rotation.Y; // Record the current rotation
+		targetRotation = Rotation.Y + Mathf.DegToRad(rotationAngle); // Rotate 90 degrees
+		initialRotation = Rotation.Y; // Record the current rotation
 		rotationStartTime = Time.GetTicksMsec() / 1000f; // Get the current time in seconds
 		rotating = true; // Indicate that rotation is in progress
 	}
@@ -97,18 +95,18 @@ public partial class CameraController : Node3D
 		// Check if rotation is complete
 		if (t >= 1f)
 		{
-			this.Rotation = new Vector3(Rotation.X, targetRotation, Rotation.Z); // Set final rotation
+			Rotation = new Vector3(Rotation.X, targetRotation, Rotation.Z); // Set final rotation
 			rotating = false; // End rotation
 			if (currSubdivision == rotationSubdivisions)
 			{
 				currSubdivision = 0;
-				this.Rotation = new Vector3(Rotation.X, Mathf.DegToRad(rotationOffset), Rotation.Z);
+				Rotation = new Vector3(Rotation.X, Mathf.DegToRad(rotationOffset), Rotation.Z);
 			}
 			return; // Exit function after setting final rotation
 		}
 
 		// Interpolate rotation using the logistic curve
 		float newRotationY = Mathf.Lerp(initialRotation, targetRotation, logisticT);
-		this.Rotation = new Vector3(Rotation.X, newRotationY, Rotation.Z); // Apply rotation
+		Rotation = new Vector3(Rotation.X, newRotationY, Rotation.Z); // Apply rotation
 	}
 }

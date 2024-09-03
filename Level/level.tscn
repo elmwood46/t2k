@@ -1,27 +1,22 @@
 [gd_scene load_steps=6 format=3 uid="uid://f47eg7gy0g5p"]
 
-[ext_resource type="Script" path="res://Level/Level.cs" id="1_m3u20"]
-[ext_resource type="PackedScene" uid="uid://cteinxm8opxil" path="res://Level/basicMap.tscn" id="2_8gqyl"]
-[ext_resource type="PackedScene" uid="uid://scap1sgifnp1" path="res://Charater/PlayerCharacter.tscn" id="2_eq1l1"]
-[ext_resource type="SpriteFrames" uid="uid://1rxu64ru4hc6" path="res://Charater/crowJAM.tres" id="3_04nfc"]
-[ext_resource type="PackedScene" uid="uid://dhv8a67qoxmyl" path="res://Util/GimbalCamera.tscn" id="5_c4gnm"]
+[ext_resource type="Script" path="res://level/Level.cs" id="1_m3u20"]
+[ext_resource type="PackedScene" uid="uid://d286wbblx4ty5" path="res://character/PlayerCharacter.tscn" id="2_eq1l1"]
+[ext_resource type="SpriteFrames" uid="uid://1rxu64ru4hc6" path="res://sprites/crowJAM.tres" id="4_5xplu"]
+[ext_resource type="PackedScene" uid="uid://dhv8a67qoxmyl" path="res://util/GimbalCamera.tscn" id="5_c4gnm"]
+[ext_resource type="PackedScene" uid="uid://cteinxm8opxil" path="res://level/basicMap.tscn" id="5_sfgvk"]
 
 [node name="Level" type="Node3D"]
 script = ExtResource("1_m3u20")
 
-[node name="PlayerCharacter" parent="." instance=ExtResource("2_eq1l1")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.42157, 0)
-
-[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="PlayerCharacter"]
-billboard = 2
-sprite_frames = ExtResource("3_04nfc")
-frame_progress = 0.895966
-
-[node name="map" parent="." instance=ExtResource("2_8gqyl")]
-
-[node name="CameraController" parent="." instance=ExtResource("5_c4gnm")]
-
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.166769, -0.924156, -0.343691, 0, -0.348572, 0.937282, -0.985996, -0.156309, -0.0581309, 0, 0, 0)
 
-[node name="Node3D" type="Node3D" parent="."]
+[node name="CameraController" parent="." instance=ExtResource("5_c4gnm")]
+
+[node name="PlayerCharacter" parent="." instance=ExtResource("2_eq1l1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+SpriteFrames = ExtResource("4_5xplu")
+CollisionRadius = 0.5
+
+[node name="map" parent="." instance=ExtResource("5_sfgvk")]
