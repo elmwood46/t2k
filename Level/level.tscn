@@ -17,6 +17,5 @@ transform = Transform3D(0.166769, -0.924156, -0.343691, 0, -0.348572, 0.937282, 
 [node name="PlayerCharacter" parent="." instance=ExtResource("2_eq1l1")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 SpriteFrames = ExtResource("4_5xplu")
-CollisionRadius = 0.5
 
 [node name="map" parent="." instance=ExtResource("5_sfgvk")]

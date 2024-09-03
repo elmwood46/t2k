@@ -6,13 +6,11 @@ public partial class PlayerCharacter : Pawn
 {
     private NavigationAgent3D nav;
 
-    private Vector3 targetPos = new(0, 1, 0);
-
     public Vector3 MovementTarget
     {
         get
         {
-            if (nav == null) return targetPos;  // Return targetPos if nav is null
+            if (nav == null) return GlobalPosition;
             return nav.TargetPosition;
         }
 
@@ -22,7 +20,6 @@ public partial class PlayerCharacter : Pawn
             else
             {
                 GD.PrintErr("nav is null, cannot set MovementTarget.");
-                targetPos = value;  // Assign to targetPos or handle as needed
             }
         }
     }
@@ -32,13 +29,9 @@ public partial class PlayerCharacter : Pawn
 
     public override void _Ready()
     {
-        UpdateAllStats();
+        base._Ready();
         nav = GetNodeOrNull<NavigationAgent3D>("%NavigationAgent3D");
-        if (nav == null)
-        {
-            throw new Exception("NavigationAgent3D not found.");
-        }
-        GD.Print("pawn title: ", Title, " children: ", GetChildren());
+        if (nav == null) throw new Exception("Ran PlayerCharacter _Ready(): %NavigationAgent3D not found.");
         Callable.From(ActorSetup).CallDeferred();
     }
 
@@ -58,8 +51,6 @@ public partial class PlayerCharacter : Pawn
 
     private async void ActorSetup()
     {
-        if (nav.TargetPosition.Equals(null))
-            nav.TargetPosition = targetPos;
         nav.PathDesiredDistance = 1f;
         nav.TargetDesiredDistance = 0.5f;
 

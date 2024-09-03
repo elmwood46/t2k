@@ -3,11 +3,10 @@
 [ext_resource type="Script" path="res://character/PlayerCharacter.cs" id="1_jtcya"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_vfi4b"]
-radius = 0.8
 
 [node name="PlayerCharacter" type="CharacterBody3D"]
 script = ExtResource("1_jtcya")
-CollisionRadius = 0.8
+CollisionRadius = 0.5
 
 [node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
 unique_name_in_owner = true
