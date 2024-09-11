@@ -1,6 +1,7 @@
 using Godot;
 using System;
 
+[Tool]
 public partial class CameraController : Node3D
 {
 	[Export]
@@ -10,15 +11,16 @@ public partial class CameraController : Node3D
 	[Export]
 	public float rotationOffset = 30f; // starting rotation offset in degrees
 	[Export]
-	public float CameraZoomMin {get; set;} = 10f;
+	public float CameraZoomMin { get; set; } = 10f;
 	[Export]
-	public float CameraZoomMax {get; set;} = 20f;
+	public float CameraZoomMax { get; set; } = 20f;
 	[Export]
 	public float cameraZoomSpeed = 1f;
-	private float _currentZoom = 20.0f;
+	private float _currentZoom = 20f;
 	private MouseVelocityTracker _mouseVTracker;
 	public Camera3D Camera => _camera;
 	private Camera3D _camera;
+	private bool tacticalCamera = false;
 	private int currSubdivision = 0;  // track the current fixed _camera angle
 	private bool rotating = false; // flag for animating _camera rotation
 	private float targetRotation = 0f; // Target rotation in radians
@@ -29,8 +31,9 @@ public partial class CameraController : Node3D
 	public override void _Ready()
 	{
 		this._camera = GetNodeOrNull<Camera3D>("Camera");
-		if (this._camera.Equals(null)) {
-			GD.Print("Camera not found.");
+		if (this._camera.Equals(null))
+		{
+			GD.PrintErr("Camera not found.");
 			return;
 		}
 
@@ -43,8 +46,19 @@ public partial class CameraController : Node3D
 	// process - rotate and zoom the _camera 
 	public override void _Process(double delta)
 	{
+		if (this._camera.Equals(null))
+		{
+			GD.PrintErr("Camera not found.");
+			return;
+		}
+
+		if (Input.IsActionJustPressed("toggleCameraMode") && !rotating)
+		{
+
+		}
 
 		_mouseVTracker.Update(delta);
+		
 		UpdateCameraZoom();
 
 		// Check for input and start rotation
@@ -62,13 +76,37 @@ public partial class CameraController : Node3D
 
 	private void UpdateCameraZoom()
 	{
-		_currentZoom += ((Input.IsActionJustPressed("ui_scroll_down") ? 1 : 0) - (Input.IsActionJustPressed("ui_scroll_up") ? 1 : 0)) * cameraZoomSpeed;
+		// Detect scroll input continuously
+		if (Input.IsActionJustPressed("ui_scroll_down"))
+		{
+			_currentZoom += cameraZoomSpeed;
+			GD.Print("set zoom to: ", _currentZoom);
+		}
+		else if (Input.IsActionJustPressed("ui_scroll_up"))
+		{
+			_currentZoom -= cameraZoomSpeed;
+			GD.Print("set zoom to: ", _currentZoom);
+		}
+
+		// Handle mouse movement while the middle button is pressed
 		if (Input.IsActionPressed("mb_middle"))
 		{
 			_currentZoom += _mouseVTracker.GetMouseVelocity().X / 2000;
+			GD.Print("set zoom to: ", _currentZoom);
 		}
+
+		// Clamp the zoom level to prevent it from going out of bounds
 		_currentZoom = Mathf.Clamp(_currentZoom, CameraZoomMin, CameraZoomMax);
-		this._camera.SetSize(_currentZoom);
+
+		// Set the camera size to the current zoom level
+		this._camera.Size = _currentZoom;
+	}
+
+
+	private void ToggleCameraMode()
+	{
+
+		rotating = true;
 	}
 
 	private void StartRotation()

@@ -2,10 +2,26 @@
 
 [ext_resource type="Script" path="res://util/CameraController.cs" id="1_uqtsg"]
 
-[node name="CameraController" type="Node3D"]
+[node name="CameraController" type="Node3D" node_paths=PackedStringArray("_camera")]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 0, 0, 0)
 script = ExtResource("1_uqtsg")
+rotationDuration = 0.3
+rotationOffset = 45.0
+cameraZoomSpeed = 2.0
+_currentZoom = 20.0
+_mouseVTracker = Object(RefCounted,"script":Resource("res://util/MouseVelocityTracker.cs"),"_lastMousePosition":Vector2(617, 848),"_mouseVelocity":Vector2(0, 0),"_viewport":Object(SubViewport,"_import_path":NodePath(""),"unique_name_in_owner":false,"process_mode":0,"process_priority":0,"process_physics_priority":0,"process_thread_group":0,"physics_interpolation_mode":0,"auto_translate_mode":0,"editor_description":"","disable_3d":true,"use_xr":false,"own_world_3d":false,"world_3d":null,"transparent_bg":false,"handle_input_locally":false,"snap_2d_transforms_to_pixel":false,"snap_2d_vertices_to_pixel":false,"msaa_2d":0,"msaa_3d":0,"screen_space_aa":0,"use_taa":false,"use_debanding":false,"use_occlusion_culling":false,"mesh_lod_threshold":1.0,"debug_draw":0,"use_hdr_2d":false,"scaling_3d_mode":0,"scaling_3d_scale":1.0,"texture_mipmap_bias":0.0,"fsr_sharpness":0.2,"vrs_mode":0,"vrs_update_mode":1,"vrs_texture":null,"canvas_item_default_texture_filter":1,"canvas_item_default_texture_repeat":0,"audio_listener_enable_2d":true,"audio_listener_enable_3d":false,"physics_object_picking":false,"physics_object_picking_sort":false,"physics_object_picking_first_only":false,"gui_disable_input":true,"gui_snap_controls_to_pixels":true,"gui_embed_subwindows":true,"sdf_oversize":1,"sdf_scale":1,"positional_shadow_atlas_size":2048,"positional_shadow_atlas_16_bits":true,"positional_shadow_atlas_quad_0":2,"positional_shadow_atlas_quad_1":2,"positional_shadow_atlas_quad_2":3,"positional_shadow_atlas_quad_3":4,"canvas_cull_mask":4294967295,"size":Vector2i(1839, 1029),"size_2d_override":Vector2i(0, 0),"size_2d_override_stretch":false,"render_target_clear_mode":0,"render_target_update_mode":0,"script":null)
+)
+
+_camera = NodePath("Camera")
+tacticalCamera = false
+currSubdivision = 0
+rotating = false
+targetRotation = 0.0
+initialRotation = 0.0
+rotationStartTime = 0.0
+rotationAngle = 90.0
 
 [node name="Camera" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 20, 20)
+transform = Transform3D(1, 0, 0, 0, 0.866026, 0.5, 0, -0.5, 0.866026, 0, 10, 20)
 projection = 1
 size = 20.0

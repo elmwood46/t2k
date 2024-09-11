@@ -37,6 +37,10 @@ public partial class PlayerCharacter : Pawn
 
     public override void _PhysicsProcess(double delta)
     {
+        // outline this sprite when it is selected
+        UpdateOutline();
+
+        // do navigation
         if (nav == null) return;
 
         if (nav.IsNavigationFinished()) return;
