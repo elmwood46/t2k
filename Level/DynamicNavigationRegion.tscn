@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://cdej0n3isdl02"]
+
+[ext_resource type="Script" path="res://Level/DynamicNavigationRegion.cs" id="1_blku2"]
+[ext_resource type="PackedScene" uid="uid://ddf2e0ngrso8l" path="res://Level/DynamicMap.tscn" id="2_lj32t"]
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_gssk8"]
+sample_partition_type = 1
+geometry_parsed_geometry_type = 1
+geometry_collision_mask = 16
+agent_max_slope = 46.0
+
+[node name="DynamicNavigationRegion" type="NavigationRegion3D"]
+navigation_mesh = SubResource("NavigationMesh_gssk8")
+script = ExtResource("1_blku2")
+
+[node name="GridMap" parent="." instance=ExtResource("2_lj32t")]
+collision_layer = 17
+bake_navigation = false
