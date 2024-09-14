@@ -1,11 +1,12 @@
 [gd_scene load_steps=3 format=3 uid="uid://scap1sgifnp1"]
 
-[ext_resource type="Script" path="res://Charater/PlayerCharacter.cs" id="1_jtcya"]
+[ext_resource type="Script" path="res://Charater/NavCharater.cs" id="1_jtcya"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_v1upd"]
 
-[node name="PlayerCharacter" type="CharacterBody3D"]
+[node name="PlayerCharacter" type="CharacterBody3D" node_paths=PackedStringArray("nav")]
 script = ExtResource("1_jtcya")
+nav = NodePath("NavigationAgent3D")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("CapsuleShape3D_v1upd")
