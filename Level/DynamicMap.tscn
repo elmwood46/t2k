@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://ddf2e0ngrso8l"]
 
-[ext_resource type="Script" path="res://Level/DynamicMap.cs" id="1_w8fpd"]
-[ext_resource type="MeshLibrary" uid="uid://bkccmbsos7ddj" path="res://Resourses/Tiles.tres" id="2_vbnew"]
+[ext_resource type="Script" path="res://level/DynamicMap.cs" id="1_w8fpd"]
+[ext_resource type="MeshLibrary" uid="uid://bkccmbsos7ddj" path="res://resources/Tiles.tres" id="2_vbnew"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_knp5m"]
 

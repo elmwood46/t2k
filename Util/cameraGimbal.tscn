@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://dbqxs0sqa7knw"]
-
-[ext_resource type="Script" path="res://Util/CameraGimbal.cs" id="1_pypcy"]
-
-[node name="CameraGimbal" type="Node3D"]
-script = ExtResource("1_pypcy")

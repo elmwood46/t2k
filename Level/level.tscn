@@ -1,22 +1,29 @@
-[gd_scene load_steps=5 format=3 uid="uid://f47eg7gy0g5p"]
+[gd_scene load_steps=7 format=3 uid="uid://f47eg7gy0g5p"]
 
 [ext_resource type="Script" path="res://Level/Level.cs" id="1_m3u20"]
-[ext_resource type="PackedScene" uid="uid://cteinxm8opxil" path="res://Level/basicMap.tscn" id="2_8gqyl"]
-[ext_resource type="PackedScene" uid="uid://scap1sgifnp1" path="res://Charater/PlayerCharacter.tscn" id="2_eq1l1"]
-[ext_resource type="PackedScene" uid="uid://dbqxs0sqa7knw" path="res://Util/cameraGimbal.tscn" id="3_d4t72"]
+[ext_resource type="PackedScene" uid="uid://d286wbblx4ty5" path="res://character/PlayerCharacter.tscn" id="2_eq1l1"]
+[ext_resource type="Script" path="res://Util/CameraController.cs" id="3_stto4"]
+[ext_resource type="SpriteFrames" uid="uid://1rxu64ru4hc6" path="res://sprites/crowJAM.tres" id="4_5xplu"]
+[ext_resource type="PackedScene" uid="uid://bcbc7hishekv1" path="res://util/GimbalCamera.tscn" id="5_c4gnm"]
+[ext_resource type="PackedScene" uid="uid://cteinxm8opxil" path="res://Level/basicMap.tscn" id="5_sfgvk"]
 
 [node name="Level" type="Node3D"]
 script = ExtResource("1_m3u20")
 
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.166769, -0.924156, -0.343691, 0, -0.348572, 0.937282, -0.985996, -0.156309, -0.0581309, 0, 0, 0)
+
+[node name="CameraController" parent="." instance=ExtResource("5_c4gnm")]
+script = ExtResource("3_stto4")
+rotationDuration = 0.5
+rotationSubdivisions = 4
+rotationOffset = 30.0
+CameraZoomMin = 10.0
+CameraZoomMax = 20.0
+cameraZoomSpeed = 1.0
+
 [node name="PlayerCharacter" parent="." instance=ExtResource("2_eq1l1")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.42157, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+SpriteFrames = ExtResource("4_5xplu")
 
-[node name="map" parent="." instance=ExtResource("2_8gqyl")]
-
-[node name="CameraGimbal" parent="." instance=ExtResource("3_d4t72")]
-unique_name_in_owner = true
-
-[node name="Camera3D" type="Camera3D" parent="CameraGimbal"]
-transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 8, 8, 8)
-projection = 1
-size = 25.0
+[node name="map" parent="." instance=ExtResource("5_sfgvk")]
