@@ -5,7 +5,7 @@ public partial class Level : Node3D
 {
 	private const float RayLength = 1000.0f;
 
-	NavCharater player;
+	PlayerCharacter player;
 	CameraController cameraGimbal;
 
 	// Called when the node enters the scene tree for the first time.
@@ -13,7 +13,7 @@ public partial class Level : Node3D
 	{
 		// player = GetNode<PlayerCharacter>("PlayerCharacter");
 		cameraGimbal = GetNode<CameraController>("CameraController");
-		player = GetNode<NavCharater>("PlayerCharacter");
+		player = GetNode<PlayerCharacter>("PlayerCharacter");
 	}
 
 	public override void _Input(InputEvent @event)

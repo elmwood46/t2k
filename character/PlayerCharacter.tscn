@@ -19,3 +19,4 @@ shape = SubResource("SphereShape3D_vfi4b")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 unique_name_in_owner = true
+target_desired_distance = 0.5
