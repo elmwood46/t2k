@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://i2r7dsf6bv21"]
+
+[node name="EnemyPawn"]
+script = null
+
+[node name="NavigationAgent3D" parent="." index="2"]
+debug_path_custom_color = Color(1, 0.337255, 0.407843, 1)

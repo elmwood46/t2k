@@ -1,0 +1,39 @@
+[gd_resource type="SpriteFrames" load_steps=6 format=3 uid="uid://bnj1tk0x07gwr"]
+
+[ext_resource type="Texture2D" uid="uid://du5gp4cics6ju" path="res://sprites/crowJam-spritesheet.png" id="1_711va"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3dsqk"]
+atlas = ExtResource("1_711va")
+region = Rect2(0, 0, 50, 50)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7fiwq"]
+atlas = ExtResource("1_711va")
+region = Rect2(50, 0, 50, 50)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yd4fp"]
+atlas = ExtResource("1_711va")
+region = Rect2(100, 0, 50, 50)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_77af6"]
+atlas = ExtResource("1_711va")
+region = Rect2(150, 0, 50, 50)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3dsqk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7fiwq")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yd4fp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_77af6")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
