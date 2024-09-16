@@ -5,10 +5,10 @@
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_knp5m"]
 
-[node name="GridMap" type="GridMap"]
+[node name="DynamicMap" type="GridMap"]
 mesh_library = ExtResource("1_d765x")
 physics_material = SubResource("PhysicsMaterial_knp5m")
 cell_size = Vector3(1, 1, 1)
-bake_navigation = true
+collision_layer = 17
 script = ExtResource("1_w8fpd")
 metadata/_editor_floor_ = Vector3(0, 0, 0)
