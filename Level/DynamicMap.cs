@@ -19,7 +19,7 @@ public partial class DynamicMap : GridMap
     // Called when the node enters the scene tree for the first time.
     public override void _Ready()
 	{
-		cubeIndex = MeshLibrary.FindItemByName("Cube");
+		cubeIndex = MeshLibrary.FindItemByName("Box");
 		rampIndex = MeshLibrary.FindItemByName("Ramp");
 		tileHealth = new Dictionary<Vector3I, int>();
 		GenerateMap();
