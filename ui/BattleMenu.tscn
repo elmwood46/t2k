@@ -27,6 +27,7 @@ text = "Attack
 "
 
 [node name="btnMove" type="Button" parent="Panel"]
+layout_mode = 0
 offset_left = 136.0
 offset_top = 25.0
 offset_right = 226.0
@@ -34,6 +35,7 @@ offset_bottom = 56.0
 text = "Move"
 
 [node name="btnItem" type="Button" parent="Panel"]
+layout_mode = 0
 offset_left = 136.0
 offset_top = 74.0
 offset_right = 226.0
@@ -41,6 +43,7 @@ offset_bottom = 105.0
 text = "Item"
 
 [node name="btnSkip" type="Button" parent="Panel"]
+layout_mode = 0
 offset_left = 20.0
 offset_top = 74.0
 offset_right = 110.0

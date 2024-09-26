@@ -1,29 +1,13 @@
-[gd_scene load_steps=5 format=3 uid="uid://d286wbblx4ty5"]
+[gd_scene load_steps=4 format=3 uid="uid://d286wbblx4ty5"]
 
 [ext_resource type="Script" path="res://character/PlayerCharacter.cs" id="1_jtcya"]
 [ext_resource type="SpriteFrames" uid="uid://1rxu64ru4hc6" path="res://sprites/crowJAM.tres" id="2_66jhj"]
-[ext_resource type="Material" uid="uid://dtew60icy46xh" path="res://shaders/edgeHighlightShaderMat.tres" id="2_xnhd8"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_vfi4b"]
 
-[node name="PlayerCharacter" type="CharacterBody3D" node_paths=PackedStringArray("nav")]
+[node name="PlayerCharacter" type="CharacterBody3D"]
 script = ExtResource("1_jtcya")
 CollisionRadius = 0.5
-_hshader_mater = ExtResource("2_xnhd8")
-_spriteFrames = null
-_spriteOffset = Vector2(0, 22)
-_spriteBillboard = true
-_collisionRadius = 0.5
-Atk = 0
-Def = 0
-Sav = 0
-Ward = 5
-Mov = 6
-HP = 10
-MaxHP = 10
-MovementTarget = Vector3(0, 0, 0)
-nav = NodePath("NavigationAgent3D")
-gravity = 9.8
 
 [node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
 unique_name_in_owner = true
