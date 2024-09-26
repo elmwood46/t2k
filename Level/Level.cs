@@ -5,7 +5,7 @@ public partial class Level : Node3D
 {
 	private const float RayLength = 1000.0f;
 
-	PlayerCharacter player;
+	NavCharater player;
 	CameraController cameraGimbal;
 
 	TurnController turnController;
@@ -13,15 +13,9 @@ public partial class Level : Node3D
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		player = GetNode<PlayerCharacter>("PlayerCharacter");
+		// player = GetNode<PlayerCharacter>("PlayerCharacter");
 		cameraGimbal = GetNode<CameraController>("CameraController");
-		turnController = GetNode<TurnController>("TurnController");
-
-		Pawn sampleEnemy = new PlayerCharacter();
-		sampleEnemy.IsHostile = true;
-
-		turnController.AddCombatant(player); // add player to the initiative order
-		turnController.AddCombatant(sampleEnemy);
+		player = GetNode<NavCharater>("PlayerCharacter");
 	}
 
 	public override void _Input(InputEvent @event)
