@@ -1,11 +1,14 @@
-[gd_scene load_steps=7 format=3 uid="uid://f47eg7gy0g5p"]
+[gd_scene load_steps=10 format=3 uid="uid://f47eg7gy0g5p"]
 
 [ext_resource type="Script" path="res://level/Level.cs" id="1_wkkhb"]
 [ext_resource type="PackedScene" uid="uid://d286wbblx4ty5" path="res://character/PlayerCharacter.tscn" id="2_eq1l1"]
 [ext_resource type="SpriteFrames" uid="uid://1rxu64ru4hc6" path="res://sprites/crowJAM.tres" id="4_5xplu"]
-[ext_resource type="PackedScene" uid="uid://bcbc7hishekv1" path="res://Util/GimbalCamera.tscn" id="5_c4gnm"]
-[ext_resource type="PackedScene" uid="uid://cdej0n3isdl02" path="res://level/DynamicNavigationRegion.tscn" id="6_hiuel"]
-[ext_resource type="PackedScene" uid="uid://ddf2e0ngrso8l" path="res://level/DynamicMap.tscn" id="7_cy3t6"]
+[ext_resource type="PackedScene" uid="uid://cdej0n3isdl02" path="res://level/DynamicNavigationRegion.tscn" id="4_6ncen"]
+[ext_resource type="PackedScene" uid="uid://ddf2e0ngrso8l" path="res://level/DynamicMap.tscn" id="5_qpmg6"]
+[ext_resource type="Script" path="res://level/MouseSelector.cs" id="6_juk3d"]
+[ext_resource type="Script" path="res://util/TurnController.cs" id="7_5e5yv"]
+[ext_resource type="PackedScene" uid="uid://bcbc7hishekv1" path="res://util/GimbalCamera.tscn" id="8_l2bv4"]
+[ext_resource type="PackedScene" uid="uid://cf03ba848g4lg" path="res://ui/BattleMenu.tscn" id="8_ynlpg"]
 
 [node name="Level" type="Node3D"]
 script = ExtResource("1_wkkhb")
@@ -13,13 +16,22 @@ script = ExtResource("1_wkkhb")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.166769, -0.924156, -0.343691, 0, -0.348572, 0.937282, -0.985996, -0.156309, -0.0581309, 0, 0, 0)
 
-[node name="CameraController" parent="." instance=ExtResource("5_c4gnm")]
-
 [node name="PlayerCharacter" parent="." instance=ExtResource("2_eq1l1")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 SpriteFrames = ExtResource("4_5xplu")
 
-[node name="DynamicNavigationRegion" parent="." node_paths=PackedStringArray("DynamicMap") instance=ExtResource("6_hiuel")]
+[node name="DynamicNavigationRegion" parent="." node_paths=PackedStringArray("DynamicMap") instance=ExtResource("4_6ncen")]
 DynamicMap = NodePath("DynamicMap")
 
-[node name="DynamicMap" parent="DynamicNavigationRegion" instance=ExtResource("7_cy3t6")]
+[node name="DynamicMap" parent="DynamicNavigationRegion" instance=ExtResource("5_qpmg6")]
+
+[node name="MouseSelector" type="Node" parent="."]
+script = ExtResource("6_juk3d")
+
+[node name="TurnController" type="Node" parent="."]
+script = ExtResource("7_5e5yv")
+
+[node name="Control" parent="." instance=ExtResource("8_ynlpg")]
+
+[node name="CameraController" parent="." instance=ExtResource("8_l2bv4")]
+transform = Transform3D(0.866026, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866026, 0, 0, 0)

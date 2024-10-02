@@ -4,98 +4,8 @@ using System;
 // Abstract class to represent a pawn in the game
 // tracks all the necessary variables for an actor in combat
 // A pawn tracks the base stats of a character, their armour and their HP
-public abstract partial class Pawn : CharacterBody3D
+public abstract partial class Pawn : Prop
 {
-    #region movement
-
-	public const float Speed = 5.0f;
-	public const float JumpVelocity = 4.5f;
-    #endregion
-
-    #region util
-    public bool IsHighlighted { get; set; }
-    private static ShaderMaterial _highlight_shader = ResourceLoader.Load("res://shaders/edge_highlight.gdshader") as ShaderMaterial;
-    public static ShaderMaterial GetHighlightShader() => _highlight_shader;
-
-    [Export] // string title of this pawn
-    public string Title { get; set; } = "default";
-
-	[Export]
-    //<description>
-    // SpriteFrames property for the pawn. This is the sprite sheet that will be used to render the pawn.
-    ///</description>
-	public SpriteFrames SpriteFrames
-	{
-		get => _spriteFrames;
-		set
-		{
-			_spriteFrames = value;
-			var sprite = GetNodeOrNull<AnimatedSprite3D>("%AnimatedSprite3D");
-			if (sprite != null)
-			{
-				sprite.SpriteFrames = _spriteFrames;
-				sprite.Play("default");
-			} else {
-                throw new Exception("AnimatedSprite3D not found for pawn: " + Name);
-            }
-		}
-	}
-	private SpriteFrames _spriteFrames;
-
-	[Export]
-	public Vector2 SpriteOffset
-	{
-		get => _spriteOffset;
-		set
-		{
-			_spriteOffset = value;
-			var sprite = GetNodeOrNull<AnimatedSprite3D>("%AnimatedSprite3D");
-			if (sprite != null)
-			{
-				sprite.Offset = _spriteOffset;
-			}
-		}
-	}
-	private Vector2 _spriteOffset = new Vector2(0, 22f);
-
-	[Export]
-	public bool SpriteYBillboard
-	{
-		get => _spriteBillboard;
-		set
-		{
-			_spriteBillboard = value;
-			var sprite = GetNodeOrNull<AnimatedSprite3D>("%AnimatedSprite3D");
-			if (sprite != null)
-			{
-				sprite.Billboard = _spriteBillboard ? BaseMaterial3D.BillboardModeEnum.FixedY : BaseMaterial3D.BillboardModeEnum.Disabled;
-			}
-		}
-	}
-	private bool _spriteBillboard = true;
-
-	[Export(PropertyHint.Range, "0.5, 10.0, 0.1")]
-	public float CollisionRadius
-	{
-		get => this._collisionRadius;
-		set
-		{
-			this._collisionRadius = value;
-			this._collisionRadius = Mathf.Round(this._collisionRadius * 10f) / 10f;
-			var collisionShape = GetNodeOrNull<CollisionShape3D>("%CollisionShape3D");
-			if (collisionShape != null)
-			{
-				if (collisionShape.Shape is SphereShape3D sphereShape)
-				{
-					sphereShape.Radius = this._collisionRadius;
-				}
-			}
-		}
-	}
-	private float _collisionRadius = 0.5f; // Default radius value
-    #endregion
-
-
     #region attributes
     [Export]
     public int Mus { get; set; }
@@ -108,14 +18,7 @@ public abstract partial class Pawn : CharacterBody3D
     [Export]
     public int Money {get; set;}
 
-    public enum Faction
-    {
-        Wizards,
-        Nerds,
-        Moles,
-        Bones,
-        Italian
-    }
+
 
     [Export]
     public Faction PawnFaction = Faction.Wizards;

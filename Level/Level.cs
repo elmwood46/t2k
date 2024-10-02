@@ -8,12 +8,18 @@ public partial class Level : Node3D
 	PlayerCharacter player;
 	CameraController cameraGimbal;
 
+	TurnController turnController;
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		// player = GetNode<PlayerCharacter>("PlayerCharacter");
 		cameraGimbal = GetNode<CameraController>("CameraController");
 		player = GetNode<PlayerCharacter>("PlayerCharacter");
+		turnController = GetNode<TurnController>("TurnController");
+
+		
+
 	}
 
 	public override void _Input(InputEvent @event)
