@@ -1,16 +1,18 @@
-[gd_scene load_steps=9 format=3 uid="uid://f47eg7gy0g5p"]
 
-[ext_resource type="Script" path="res://level/Level.cs" id="1_m3u20"]
+[gd_scene load_steps=9 format=3 uid="uid://f47eg7gy0g5p"]
+[ext_resource type="Script" path="res://level/Level.cs" id="1_wkkhb"]
 [ext_resource type="PackedScene" uid="uid://d286wbblx4ty5" path="res://character/PlayerCharacter.tscn" id="2_eq1l1"]
 [ext_resource type="SpriteFrames" uid="uid://1rxu64ru4hc6" path="res://sprites/crowJAM.tres" id="4_5xplu"]
+
 [ext_resource type="PackedScene" uid="uid://dhv8a67qoxmyl" path="res://util/GimbalCamera.tscn" id="5_c4gnm"]
 [ext_resource type="PackedScene" uid="uid://cteinxm8opxil" path="res://level/basicMap.tscn" id="5_sfgvk"]
 [ext_resource type="Script" path="res://level/MouseSelector.cs" id="6_juk3d"]
 [ext_resource type="Script" path="res://util/TurnController.cs" id="7_5e5yv"]
 [ext_resource type="PackedScene" uid="uid://cf03ba848g4lg" path="res://ui/BattleMenu.tscn" id="8_ynlpg"]
 
+
 [node name="Level" type="Node3D"]
-script = ExtResource("1_m3u20")
+script = ExtResource("1_wkkhb")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.166769, -0.924156, -0.343691, 0, -0.348572, 0.937282, -0.985996, -0.156309, -0.0581309, 0, 0, 0)
@@ -20,6 +22,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 SpriteFrames = ExtResource("4_5xplu")
 _spriteFrames = ExtResource("4_5xplu")
 MovementTarget = Vector3(0, 2, 0)
+
 
 [node name="map" parent="." instance=ExtResource("5_sfgvk")]
 
@@ -36,3 +39,9 @@ _mouseVTracker = Object(RefCounted,"script":Resource("res://util/MouseVelocityTr
 script = ExtResource("7_5e5yv")
 
 [node name="Control" parent="." instance=ExtResource("8_ynlpg")]
+
+[node name="DynamicNavigationRegion" parent="." node_paths=PackedStringArray("DynamicMap") instance=ExtResource("6_hiuel")]
+DynamicMap = NodePath("DynamicMap")
+
+[node name="DynamicMap" parent="DynamicNavigationRegion" instance=ExtResource("7_cy3t6")]
+
