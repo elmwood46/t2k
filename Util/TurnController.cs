@@ -41,8 +41,8 @@ public partial class TurnController : Node
 	public override void _Ready()
 	{
 		// Load and instance the BattleMenu
-		//var battleMenuScene = GD.Load<PackedScene>("res://ui/BattleMenu.tscn");
-		battleMenu = GD.Load<BattleMenu>("Control");
+		// var battleMenuScene = GD.Load<PackedScene>("res://ui/BattleMenu.tscn").Instantiate();
+		battleMenu = GD.Load<PackedScene>("res://ui/BattleMenu.tscn").Instantiate<BattleMenu>();
 		_currentactor = allActors[0];
 
 		// Add the BattleMenu to the scene tree (under a container or parent node)
@@ -65,7 +65,7 @@ public partial class TurnController : Node
 				break;
 			case TurnState.GotoNextTurn:
 				turn++;
-				if (turn == allActors.Count) State=TurnState.GotoNextRound;// check for end of round
+				if (turn >= allActors.Count) State=TurnState.GotoNextRound;// check for end of round
 				else {
 					GD.Print($"Moving to turn: {turn}");
 					_currentactor = allActors[turn];

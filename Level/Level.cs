@@ -16,6 +16,10 @@ public partial class Level : Node3D
 		// player = GetNode<PlayerCharacter>("PlayerCharacter");
 		cameraGimbal = GetNode<CameraController>("CameraController");
 		player = GetNode<PlayerCharacter>("PlayerCharacter");
+		turnController = GetNode<TurnController>("TurnController");
+
+		
+
 	}
 
 	public override void _Input(InputEvent @event)

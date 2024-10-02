@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-[Tool]
+// [Tool]
 public partial class CameraController : Node3D
 {
 	[Export]
