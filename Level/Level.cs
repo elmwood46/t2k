@@ -8,7 +8,7 @@ public partial class Level : Node3D
 	PlayerCharacter player;
 	CameraController cameraGimbal;
 
-	TurnController turnController;
+	PackedScene explosionScene = ResourceLoader.Load("res://effects/Explosion.tscn") as PackedScene;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -16,10 +16,6 @@ public partial class Level : Node3D
 		// player = GetNode<PlayerCharacter>("PlayerCharacter");
 		cameraGimbal = GetNode<CameraController>("CameraController");
 		player = GetNode<PlayerCharacter>("PlayerCharacter");
-		turnController = GetNode<TurnController>("TurnController");
-
-		
-
 	}
 
 	public override void _Input(InputEvent @event)
@@ -38,12 +34,16 @@ public partial class Level : Node3D
 
 			Boolean noResult = res.Count <= 0; 
 			if(noResult) return;
-
+			Vector3 pos = (Vector3) res["position"]; 
 			Node node = (Node) res["collider"];
 			if(node is GridMap c){
 				player.MovementTarget = (Vector3) res["position"];
-				GD.Print(res["position"]);
+				//GD.Print(res["position"]);
 			}
+			Explosion explosion = explosionScene.Instantiate() as Explosion;
+			explosion.Position = pos;
+			GD.Print("Explosion instantiated at: ", pos);
+			AddChild(explosion);
 		}
 	}
 

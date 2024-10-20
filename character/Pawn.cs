@@ -7,24 +7,17 @@ using System;
 public abstract partial class Pawn : Prop
 {
     #region attributes
-    [Export]
-    public int Mus { get; set; }
-    [Export]
-    public int Bra { get; set; }
-    [Export]
-    public int Riz { get; set; }
-    [Export]
-    public int Gno { get; set; }
-    [Export]
-    public int Money {get; set;}
+    [Export] public int Mus { get; set; }
+    [Export] public int Bra { get; set; }
+    [Export] public int Riz { get; set; }
+    [Export] public int Gno { get; set; }
+    [Export] public int Money {get; set;}
 
+    [Export]public Timer StunTimer { get; set; }
 
+    [Export] public Faction PawnFaction = Faction.Wizards;
 
-    [Export]
-    public Faction PawnFaction = Faction.Wizards;
-
-    [Export]
-    public bool IsHostile = false;
+    [Export] public bool IsHostile = false;
 
     public void SetAttr(int mus, int bra, int riz, int gno)
     {
@@ -37,34 +30,22 @@ public abstract partial class Pawn : Prop
 
     #region stats
     [ExportGroup("Set Stats Manually (-1 for automatic)")]
-    [Export]
-    public int SetAtk { get; set; } = -1;
-    [Export]
-    public int SetDef { get; set; } = -1;
-    [Export]
-    public int SetSav { get; set; } = -1;
-    [Export]
-    public int SetWard { get; set; } = -1;
-    [Export]
-    public int SetMov { get; set; } = -1;
-    [Export]
-    public int SetMaxHp { get; set; } = -1;
+    [Export] public int SetAtk { get; set; } = -1;
+    [Export] public int SetDef { get; set; } = -1;
+    [Export] public int SetSav { get; set; } = -1;
+    [Export] public int SetWard { get; set; } = -1;
+    [Export] public int SetMov { get; set; } = -1;
+    [Export]  public int SetMaxHp { get; set; } = -1;
     public int Atk { get; private set; } = 0;
     // def - reduces the physical damage taken each hit. decreases over time.
-
     public int Def { get; private set; } = 0;
     // saving throw - used to resist bad status effects
-
     public int Sav { get; private set; } = 0;
     // ward - reduces the damage taken from spells and ranged attacks
-
     public int Ward { get; private set; } = 0;
     // move - how many map units a pawn can move on their turn
-
     public int Mov { get; private set; } = 0;
-
     public int HP { get; private set; } = 1;
-
     public int MaxHP { get; private set; } = 1;
 
     public void UpdateAllStats() {
@@ -87,7 +68,7 @@ public abstract partial class Pawn : Prop
         }
     }
 
-    public void Die()
+    virtual public void Die()
     {
         // Implement death logic here
         GD.Print(Title, ": I'm dead!");
@@ -183,10 +164,14 @@ public abstract partial class Pawn : Prop
     #region _ready()
     public override void _Ready()
     {
+        StunTimer.OneShot = true;
+        StunTimer.Autostart = false;
+        if (Engine.IsEditorHint()) return; //don't run in editor
         UpdateAllStats();
         GD.Print("_Ready() pawn title: ", Title, " children: ", GetChildren());
-        _ = GetNodeOrNull<CollisionShape3D>("%CollisionShape3D") ?? throw new Exception("%CollisionShape3D not found for pawn: " + Name);
-        _ = GetNodeOrNull<AnimatedSprite3D>("%AnimatedSprite3D") ?? throw new Exception("%AnimatedSprite3D not found for pawn: " + Name);
+        //if (Sprite==null) throw new Exception("AnimatedSprite3D not found for pawn: " + Name);
+        //if (CollisionShape==null) throw new Exception("CollisionShape3D not found for pawn: " + Name);
+        //if (Nav==null) throw new Exception("NavigationAgent3D not found for pawn: " + Name);
     }
     #endregion
 }
