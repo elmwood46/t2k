@@ -17,6 +17,8 @@ public partial class CameraController : Node3D
 	[Export]
 	public float cameraZoomSpeed = 1f;
 	private float _currentZoom = 20f;
+	private Prop targetObj;
+	private Vector3 cameraTarget;
 	private MouseVelocityTracker _mouseVTracker;
 	public Camera3D Camera => _camera;
 	private Camera3D _camera;
@@ -30,6 +32,8 @@ public partial class CameraController : Node3D
 
 	public override void _Ready()
 	{
+		this.targetObj = GetNodeOrNull<Prop>("../PlayerCharacter");
+
 		this._camera = GetNodeOrNull<Camera3D>("Camera");
 		if (this._camera.Equals(null))
 		{
@@ -46,6 +50,16 @@ public partial class CameraController : Node3D
 	// process - rotate and zoom the _camera 
 	public override void _Process(double delta)
 	{
+
+		this.targetObj = GetNodeOrNull<Prop>("../PlayerCharacter");
+		if (!this.targetObj.Equals(null))
+		{
+			cameraTarget = this.targetObj.Position+new Vector3(0, 0, 0);
+		}
+
+		this.Position = Position.Lerp(cameraTarget, 0.1f);
+		
+
 		if (this._camera.Equals(null))
 		{
 			GD.PrintErr("Camera not found.");
@@ -80,19 +94,19 @@ public partial class CameraController : Node3D
 		if (Input.IsActionJustPressed("ui_scroll_down"))
 		{
 			_currentZoom += cameraZoomSpeed;
-			GD.Print("set zoom to: ", _currentZoom);
+			//GD.Print("set zoom to: ", _currentZoom);
 		}
 		else if (Input.IsActionJustPressed("ui_scroll_up"))
 		{
 			_currentZoom -= cameraZoomSpeed;
-			GD.Print("set zoom to: ", _currentZoom);
+			//GD.Print("set zoom to: ", _currentZoom);
 		}
 
 		// Handle mouse movement while the middle button is pressed
 		if (Input.IsActionPressed("mb_middle"))
 		{
 			_currentZoom += _mouseVTracker.GetMouseVelocity().X / 2000;
-			GD.Print("set zoom to: ", _currentZoom);
+			//GD.Print("set zoom to: ", _currentZoom);
 		}
 
 		// Clamp the zoom level to prevent it from going out of bounds

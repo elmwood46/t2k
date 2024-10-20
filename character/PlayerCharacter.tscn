@@ -1,12 +1,17 @@
-[gd_scene load_steps=3 format=3 uid="uid://d286wbblx4ty5"]
+[gd_scene load_steps=4 format=3 uid="uid://d286wbblx4ty5"]
 
 [ext_resource type="Script" path="res://character/PlayerCharacter.cs" id="1_jtcya"]
+[ext_resource type="SpriteFrames" uid="uid://1rxu64ru4hc6" path="res://sprites/crowJAM.tres" id="2_5sdpe"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_vfi4b"]
 
-[node name="PlayerCharacter" type="CharacterBody3D"]
+[node name="PlayerCharacter" type="CharacterBody3D" node_paths=PackedStringArray("Sprite", "CollisionShape", "Nav")]
 script = ExtResource("1_jtcya")
-CollisionRadius = 0.5
+SetMaxHp = 999
+SpriteFrames = ExtResource("2_5sdpe")
+Sprite = NodePath("AnimatedSprite3D")
+CollisionShape = NodePath("CollisionShape3D")
+Nav = NodePath("NavigationAgent3D")
 
 [node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
 unique_name_in_owner = true
@@ -14,6 +19,8 @@ offset = Vector2(0, 22)
 pixel_size = 0.02
 billboard = 2
 texture_filter = 0
+sprite_frames = ExtResource("2_5sdpe")
+frame_progress = 0.860855
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 unique_name_in_owner = true
@@ -26,3 +33,6 @@ target_desired_distance = 0.5
 debug_enabled = true
 debug_path_custom_color = Color(1, 0.243137, 0.415686, 1)
 debug_path_custom_point_size = 8.0
+
+[node name="StunTimer" type="Timer" parent="."]
+one_shot = true
