@@ -164,6 +164,7 @@ public abstract partial class Pawn : Prop
     #region _ready()
     public override void _Ready()
     {
+        StunTimer = new Timer();
         StunTimer.OneShot = true;
         StunTimer.Autostart = false;
         if (Engine.IsEditorHint()) return; //don't run in editor

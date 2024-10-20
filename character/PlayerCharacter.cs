@@ -111,7 +111,7 @@ public partial class PlayerCharacter : Pawn
                 _isJumping = true;
             }
         }
-
+        
         if (StunTimer.IsStopped()) { //update player movement velocity
             // Capture input for movement (WASD or arrow keys)
             Vector2 _ipt = Input.GetVector("moveLeft","moveRight","moveUp","moveDown");
