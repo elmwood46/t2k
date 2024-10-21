@@ -12,15 +12,18 @@ public partial class StraightShot : SpellChainComponent
 
     public override void Invoke(CastPropertys cast)
     {
-        if(cast.CurrentSpellDepth == 0){
-            Projectile p = Projectile.Instantiate();
-            cast.SceneReference.AddChild(p);
-            p.Position = cast.Origin;
-            p.Velocity = cast.Direction.Normalized();
-            p.AreaEntered += (Area3D a) => {
+        Projectile p = Projectile.Instantiate();
+        cast.SceneReference.AddChild(p);
+        p.Position = cast.Origin;
+        p.Velocity = cast.Direction.Normalized();
 
-                GD.Print(a);
-            };
-        }
+        cast.CurrentSpellDepth++;
+        p.BodyEntered += (Node3D a) => {
+            if(a is GridMap){
+                GD.Print("hit griddy");
+                Next?.Invoke(cast);
+                p.QueueFree();
+            }
+        };
     }
 }

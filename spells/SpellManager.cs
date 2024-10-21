@@ -15,6 +15,7 @@ public partial class SpellManager : Node3D
 	public override void _Ready()
 	{
 		spellChainHead = new StraightShot();
+		spellChainHead.Next = new StraightShot();
 	}
 
     public override void _Input(InputEvent @event)
