@@ -2,5 +2,5 @@
 
 [ext_resource type="Script" path="res://spells/SpellManager.cs" id="1_nyeiw"]
 
-[node name="SpellManager" type="Node"]
+[node name="SpellManager" type="Node3D"]
 script = ExtResource("1_nyeiw")
