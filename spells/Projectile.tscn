@@ -1,0 +1,15 @@
+[gd_scene load_steps=4 format=3 uid="uid://tm1fk6bxsghw"]
+
+[ext_resource type="Script" path="res://spells/Projectile.cs" id="1_h1e6c"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_aix28"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_w5ik8"]
+
+[node name="Projectile" type="Area3D" node_paths=PackedStringArray("child")]
+script = ExtResource("1_h1e6c")
+shape = SubResource("SphereShape3D_aix28")
+child = NodePath("CollisionShape3D")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_w5ik8")

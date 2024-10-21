@@ -74,7 +74,7 @@ public partial class Explosion : Node3D
 	}
 
 	private void Explode() {
-		GD.Print($"Explosion {Name}!");
+		// GD.Print($"Explosion {Name}!");
 		ExplosionAnimationMesh.Visible = true;
 		ExplosionAnimation.Play("explode");
 		ExplosionSound.Play();
