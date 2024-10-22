@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://wjhyam8stuc0"]
+
+[ext_resource type="Script" path="res://character/DamageHitBox.cs" id="1_hlhcm"]
+
+[node name="DamageHitBox" type="StaticBody3D"]
+script = ExtResource("1_hlhcm")

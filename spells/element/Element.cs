@@ -1,17 +1,10 @@
 using Godot;
 using System;
 
-public partial class Element : Node
+public abstract partial class Element : Node
 {
-
-	[Export]
-	public int Damage {get; set;} 
-	
-	[Export]
-	public Area3D Projectile {get; set;} 
-
-	public void InflictDmg(Pawn pawn){
-		
-	}
-	
+	public abstract int Dmg {get;}  
+    string description;
+	public abstract string GetDescription();
+	public abstract void ApplyDamageProc(DamageHitBox hitBox);
 }

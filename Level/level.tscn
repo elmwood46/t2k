@@ -1,14 +1,18 @@
-[gd_scene load_steps=10 format=3 uid="uid://f47eg7gy0g5p"]
+[gd_scene load_steps=12 format=3 uid="uid://f47eg7gy0g5p"]
 
 [ext_resource type="Script" path="res://level/Level.cs" id="1_wkkhb"]
 [ext_resource type="PackedScene" uid="uid://d286wbblx4ty5" path="res://character/PlayerCharacter.tscn" id="2_eq1l1"]
-[ext_resource type="Material" uid="uid://dtew60icy46xh" path="res://shaders/edgeHighlightShaderMat.tres" id="3_qb8ed"]
 [ext_resource type="PackedScene" uid="uid://cdej0n3isdl02" path="res://level/DynamicNavigationRegion.tscn" id="4_6ncen"]
-[ext_resource type="SpriteFrames" uid="uid://1rxu64ru4hc6" path="res://sprites/crowJAM.tres" id="4_u7e3b"]
 [ext_resource type="MeshLibrary" uid="uid://ccxvffayggd4x" path="res://resources/meshlib/blocks.meshlib" id="5_j0x1b"]
 [ext_resource type="PackedScene" uid="uid://ddf2e0ngrso8l" path="res://level/DynamicMap.tscn" id="5_qpmg6"]
 [ext_resource type="Script" path="res://level/MouseSelector.cs" id="6_juk3d"]
 [ext_resource type="PackedScene" uid="uid://bcbc7hishekv1" path="res://util/GimbalCamera.tscn" id="8_l2bv4"]
+[ext_resource type="PackedScene" uid="uid://wjhyam8stuc0" path="res://character/DamageHitBox.tscn" id="9_q8xla"]
+[ext_resource type="PackedScene" uid="uid://bkvcf4bhcqoou" path="res://spells/SpellManager.tscn" id="10_l1mox"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_x5rf1"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_1imed"]
 
 [node name="Level" type="Node3D"]
 script = ExtResource("1_wkkhb")
@@ -16,24 +20,8 @@ script = ExtResource("1_wkkhb")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.166769, -0.924156, -0.343691, 0, -0.348572, 0.937282, -0.985996, -0.156309, -0.0581309, 0, 0, 0)
 
-[node name="PlayerCharacter" parent="." node_paths=PackedStringArray("nav") instance=ExtResource("2_eq1l1")]
+[node name="PlayerCharacter" parent="." instance=ExtResource("2_eq1l1")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
-CollisionRadius = 0.5
-_hshader_mater = ExtResource("3_qb8ed")
-_spriteFrames = ExtResource("4_u7e3b")
-_spriteOffset = Vector2(0, 22)
-_spriteBillboard = true
-_collisionRadius = 0.5
-Atk = 0
-Def = 0
-Sav = 0
-Ward = 5
-Mov = 6
-HP = 999
-MaxHP = 999
-MovementTarget = Vector3(0, 2, 0)
-gravity = 9.8
-nav = NodePath("NavigationAgent3D")
 
 [node name="DynamicNavigationRegion" parent="." node_paths=PackedStringArray("DynamicMap") instance=ExtResource("4_6ncen")]
 DynamicMap = NodePath("DynamicMap")
@@ -46,3 +34,16 @@ cell_scale = 0.5
 script = ExtResource("6_juk3d")
 
 [node name="CameraController" parent="." instance=ExtResource("8_l2bv4")]
+
+[node name="SpellManager" parent="." node_paths=PackedStringArray("player", "cameraController") instance=ExtResource("10_l1mox")]
+player = NodePath("../PlayerCharacter")
+cameraController = NodePath("../CameraController")
+
+[node name="DamageHitBox" parent="." instance=ExtResource("9_q8xla")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.34388, 3.68753)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DamageHitBox"]
+shape = SubResource("SphereShape3D_x5rf1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="DamageHitBox"]
+mesh = SubResource("SphereMesh_1imed")

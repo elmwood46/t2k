@@ -14,8 +14,8 @@ public partial class SpellManager : Node3D
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		spellChainHead = new StraightShot();
-		spellChainHead.Next = new StraightShot();
+		spellChainHead = new StraightShot(new EarthElement());
+		spellChainHead.Next = new StraightShot(new FireElement());
 	}
 
     public override void _Input(InputEvent @event)
