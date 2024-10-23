@@ -21,7 +21,7 @@ public abstract partial class SpellChainComponent : Node
 }
 
 public partial class CastPropertys{
-	public Vector3 Direction {get; private set;}
+	public Vector3 Direction {get; set;}
 	public Vector3 Origin {get; set;}
 	
 	// private int currentSpellDepth = 0;

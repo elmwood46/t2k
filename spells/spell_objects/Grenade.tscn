@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://spells/spell_objects/Grenade.cs" id="1_h3d3w"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_1ejal"]
-radius = 0.365496
+radius = 0.143911
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_ldnrg"]
 height = 0.430523
@@ -11,9 +11,9 @@ radius = 1.39953
 
 [node name="Grenade" type="RigidBody3D" node_paths=PackedStringArray("aoeBody", "aoeShape")]
 collision_layer = 0
-collision_mask = 6
+collision_mask = 2
 contact_monitor = true
-max_contacts_reported = 1
+max_contacts_reported = 10
 script = ExtResource("1_h3d3w")
 aoeBody = NodePath("Area3D")
 aoeShape = NodePath("Area3D/CollisionShape3D")
@@ -29,3 +29,7 @@ collision_mask = 4
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
 shape = SubResource("CylinderShape3D_ldnrg")
 disabled = true
+
+[node name="Label3D" type="Label3D" parent="."]
+text = "HERE"
+font_size = 67

@@ -45,17 +45,16 @@ cameraController = NodePath("../CameraController")
 spellCraftBar = NodePath("../CanvasLayer/SpellCraftBar")
 
 [node name="testChara" type="CharacterBody3D" parent="."]
-transform = Transform3D(0.998905, -0.0467926, 0, 0.0467926, 0.998905, 0, 0, 0, 1, 0, 9.77609, -3.17454)
+transform = Transform3D(0.998905, -0.0467926, 0, 0.0467926, 0.998905, 0, 0, 0, 1, 0, 6.83064, -3.17454)
 script = ExtResource("9_cwruv")
 
 [node name="DamageHitBox" parent="testChara" instance=ExtResource("9_q8xla")]
-collision_layer = 4
-collision_mask = 0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="testChara/DamageHitBox"]
 shape = SubResource("SphereShape3D_x5rf1")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="testChara/DamageHitBox"]
+visible = false
 mesh = SubResource("SphereMesh_1imed")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="testChara"]

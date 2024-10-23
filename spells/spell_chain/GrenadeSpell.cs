@@ -18,6 +18,7 @@ public partial class GrenadeSpell : SpellChainComponent
 
     public override void Invoke(CastPropertys cast)
     {
+        GD.Print("gr");
         if(element is null) throw new NoNullAllowedException("Element must be set");
 
 		Grenade g = Grenade.Instantiate();
@@ -27,7 +28,6 @@ public partial class GrenadeSpell : SpellChainComponent
         Vector3 up = new Vector3(0, 10, 0);
         g.LinearVelocity = up + cast.Direction;
 
-        // call next comp
         g.Exploded += (Area3D aoe) => {
             cast.Origin = g.Position;
             Next?.Invoke(cast);

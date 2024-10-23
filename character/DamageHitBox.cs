@@ -7,7 +7,7 @@ public partial class DamageHitBox : StaticBody3D
 	Pawn target;
 
 	public void applyDamage(int dmg){
-		GD.Print("dmgInflict " + dmg);
+		// GD.Print("dmgInflict " + dmg);
 		target?.TakeDamage(dmg);
 	}
 }

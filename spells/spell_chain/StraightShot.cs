@@ -22,14 +22,14 @@ public partial class StraightShot : SpellChainComponent
 
         Projectile p = Projectile.Instantiate();
         cast.SceneReference.AddChild(p);
-        p.Position = cast.Origin;
+        p.GlobalPosition = cast.Origin;
         p.Velocity = cast.Direction.Normalized() * speed;
 
-        cast.CurrentSpellDepth++;
+        // cast.CurrentSpellDepth++;
         p.BodyEntered += (Node3D a) => {
             if(a is DamageHitBox dhb){
                 element.ApplyDamageProc(dhb);
-                cast.Origin = a.Position; 
+                cast.Origin = a.GlobalPosition; 
                 Next?.Invoke(cast);
                 p.QueueFree();
             }

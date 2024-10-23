@@ -21,13 +21,16 @@ public partial class SpellManager : Node3D
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		// spellChainHead = new StraightShot(new EarthElement());
-		// spellChainHead.Next = new SpellSplitter();
+		// spellChainHead = new GrenadeSpell(new EarthElement());
 
-		spellChainHead = new GrenadeSpell(new FireElement());
+		// spellChainHead = new StraightShot(new EarthElement());
+		// spellChainHead.Next = new GrenadeSpell(new EarthElement());
+
+		spellChainHead = new StraightShot(new FireElement());
 		spellChainHead.Next = new SpellSplitter();
-		spellChainHead.Next.Next = new GrenadeSpell(new EarthElement());
-		spellChainHead.Next.Next.Next = new StraightShot(new EarthElement()); 
+		spellChainHead.Next.Next = new SpellSplitter();
+		spellChainHead.Next.Next.Next = new GrenadeSpell(new EarthElement());
+		// spellChainHead.Next.Next.Next.Next = new StraightShot(new EarthElement()); 
 
 		spellCraftBar.SpellsSwapped += (int from, int to) => {
 			GD.Print(from ," -> " ,to);
@@ -48,7 +51,6 @@ public partial class SpellManager : Node3D
 			// Vector3 p = (Vector3) res["position"];
 
 		// }
-
 
 		if(@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed && eventMouseButton.ButtonIndex == MouseButton.Left){
 			Vector3 from = cameraController.Camera.ProjectRayOrigin(eventMouseButton.Position);

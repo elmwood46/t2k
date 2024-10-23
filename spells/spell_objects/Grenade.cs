@@ -32,7 +32,7 @@ public partial class Grenade : RigidBody3D
 
 		aoeShape.Disabled = true;
 		BodyEntered += (Node n) => {
-			if(LinearVelocity.Y > 2) return;
+			if(LinearVelocity.Y > 0) return;
 			if(n is GridMap g){
 				CallDeferred(nameof(Explode));
 			}

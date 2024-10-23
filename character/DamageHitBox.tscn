@@ -3,4 +3,6 @@
 [ext_resource type="Script" path="res://character/DamageHitBox.cs" id="1_hlhcm"]
 
 [node name="DamageHitBox" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
 script = ExtResource("1_hlhcm")
