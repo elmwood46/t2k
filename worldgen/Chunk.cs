@@ -139,7 +139,7 @@ public partial class Chunk : StaticBody3D
 						// dont replace tree blocks if they exist
 						if (!(_blocks[x,y,z]==BlockManager.Instance.Leaves||_blocks[x,y,z]==BlockManager.Instance.Trunk)) {
 							// gen walls above ground
-							if (genWalls && y < groundHeight + 3 && WallNoise.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Y) >= 0.95f)
+							if (genWalls && y < groundHeight + 5 && ((WallNoise.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Y)+1)/2) >= 0.9f)
 							{
 								block = BlockManager.Instance.Brick;
 							}

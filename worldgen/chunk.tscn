@@ -6,11 +6,11 @@
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_xcdqp"]
 noise_type = 2
-frequency = 0.0048
+frequency = 0.0311
 fractal_type = 2
 fractal_lacunarity = 0.0
 cellular_distance_function = 2
-cellular_return_type = 0
+cellular_return_type = 6
 
 [node name="Chunk" type="StaticBody3D" node_paths=PackedStringArray("CollisionShape", "MeshInstance")]
 script = ExtResource("1_7wutr")
