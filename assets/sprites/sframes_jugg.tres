@@ -1,0 +1,25 @@
+[gd_resource type="SpriteFrames" load_steps=4 format=3 uid="uid://codisydx4k7bt"]
+
+[ext_resource type="Texture2D" uid="uid://chw2ix8j23qg8" path="res://assets/sprites/juggernaut.png" id="1_tr71p"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_aptkc"]
+atlas = ExtResource("1_tr71p")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_nkr8u"]
+atlas = ExtResource("1_tr71p")
+region = Rect2(32, 0, 32, 32)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_aptkc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_nkr8u")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]

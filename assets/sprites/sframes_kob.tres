@@ -1,0 +1,25 @@
+[gd_resource type="SpriteFrames" load_steps=4 format=3 uid="uid://bte2ojxhcgf4"]
+
+[ext_resource type="Texture2D" uid="uid://bcc7v2tlwu2q4" path="res://assets/sprites/kolbold_weak.png" id="1_yrtog"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_xf3jf"]
+atlas = ExtResource("1_yrtog")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_242nc"]
+atlas = ExtResource("1_yrtog")
+region = Rect2(32, 0, 32, 32)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_xf3jf")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_242nc")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
