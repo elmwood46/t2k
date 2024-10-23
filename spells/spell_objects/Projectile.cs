@@ -6,7 +6,7 @@ public partial class Projectile : Area3D
 {
 	// return instance of this
 	public static Projectile Instantiate(){
-		Projectile p = GD.Load<PackedScene>("res://spells/Projectile.tscn").Instantiate<Projectile>();
+		Projectile p = GD.Load<PackedScene>("res://spells/spell_objects/Projectile.tscn").Instantiate<Projectile>();
 		return p;
 	}
 

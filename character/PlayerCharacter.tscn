@@ -8,10 +8,10 @@
 [node name="PlayerCharacter" type="CharacterBody3D" node_paths=PackedStringArray("Sprite", "CollisionShape", "Nav")]
 script = ExtResource("1_jtcya")
 SetMaxHp = 999
-SpriteFrames = ExtResource("2_5sdpe")
 Sprite = NodePath("AnimatedSprite3D")
 CollisionShape = NodePath("CollisionShape3D")
 Nav = NodePath("NavigationAgent3D")
+SpriteFrames = ExtResource("2_5sdpe")
 
 [node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
 unique_name_in_owner = true
@@ -20,7 +20,7 @@ pixel_size = 0.02
 billboard = 2
 texture_filter = 0
 sprite_frames = ExtResource("2_5sdpe")
-frame_progress = 0.860855
+frame_progress = 0.645203
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 unique_name_in_owner = true

@@ -4,4 +4,4 @@
 script = null
 
 [node name="NavigationAgent3D" parent="." index="2"]
-debug_path_custom_color = Color(1, 0.337255, 0.407843, 1)
+; debug_path_custom_color = Color(1, 0.337255, 0.407843, 1)

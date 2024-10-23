@@ -4,8 +4,7 @@ using System.Data;
 
 public partial class StraightShot : SpellChainComponent
 {
-    string description = "Shoots projectile in clicked direction when projectile hit an enemy applys damage and invokes next spell a collision point";
-    public override string getDescription() { return description; }
+    public override string Description => "Shoots projectile in clicked direction when projectile hit an enemy applys damage and invokes next spell a collision point";
 
     private Element element;
 
@@ -14,6 +13,7 @@ public partial class StraightShot : SpellChainComponent
     }
 
     float speed = 10;
+
 
     public override void Invoke(CastPropertys cast)
     {

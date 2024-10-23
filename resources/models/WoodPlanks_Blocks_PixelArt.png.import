@@ -2,14 +2,11 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cc7gbi1p6nqnv"
+uid="uid://cytsxuk5jw4jl"
 path.s3tc="res://.godot/imported/WoodPlanks_Blocks_PixelArt.png-4bb631c18b8dba72373194077ed330c1.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
-}
-generator_parameters={
-"md5": "2caec07ea92e53b350bf7eee02bedc0a"
 }
 
 [deps]

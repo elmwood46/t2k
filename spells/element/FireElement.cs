@@ -9,10 +9,10 @@ public partial class FireElement : Element
     string description = "low damage but procs multiple times";
 
     public override int Dmg => 1;
+    public override float AoeLingerTime => 5;
 
     public override void ApplyDamageProc(DamageHitBox hitBox)
     {
-        GD.Print("fp: start");
         Timer t = new Timer();
         hitBox.AddChild(t);
         t.OneShot = false;

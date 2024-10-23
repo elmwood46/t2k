@@ -42,7 +42,7 @@ public partial class Level : Node3D
 			}
 			Explosion explosion = explosionScene.Instantiate() as Explosion;
 			explosion.Position = pos;
-			GD.Print("Explosion instantiated at: ", pos);
+			// GD.Print("Explosion instantiated at: ", pos);
 			AddChild(explosion);
 		}
 	}

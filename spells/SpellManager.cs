@@ -14,8 +14,14 @@ public partial class SpellManager : Node3D
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		spellChainHead = new StraightShot(new EarthElement());
-		spellChainHead.Next = new StraightShot(new FireElement());
+		// spellChainHead = new StraightShot(new EarthElement());
+		// spellChainHead.Next = new SpellSplitter();
+
+		spellChainHead = new GrenadeSpell(new FireElement());
+		spellChainHead.Next = new SpellSplitter();
+		spellChainHead.Next.Next = new GrenadeSpell(new EarthElement());
+		spellChainHead.Next.Next.Next = new StraightShot(new EarthElement()); 
+
 	}
 
     public override void _Input(InputEvent @event)
@@ -44,7 +50,10 @@ public partial class SpellManager : Node3D
 			Node node = (Node) res["collider"];
 			Vector3 p = (Vector3) res["position"];
 
-			CastPropertys c = new CastPropertys(this, player.Position, p - player.Position);
+			Vector3 dir = p - player.Position;
+			dir = new Vector3(dir.X, 0, dir.Z);
+
+			CastPropertys c = new CastPropertys(this, player.Position, dir);
 			spellChainHead.Invoke(c);
 		}
     }

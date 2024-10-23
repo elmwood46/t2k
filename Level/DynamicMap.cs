@@ -89,26 +89,26 @@ public partial class DynamicMap : GridMap
 	}
 
 //	used to test collision tile health
-    public override void _UnhandledInput(InputEvent @event)
-    {
-        if (@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed && eventMouseButton.ButtonIndex == MouseButton.Left)
-	    {
-	        Vector3 from = GetParent().GetNode<CameraController>("../CameraController").Camera.ProjectRayOrigin(eventMouseButton.Position);
-	        Vector3 to = from + GetParent().GetNode<CameraController>("../CameraController").Camera.ProjectRayNormal(eventMouseButton.Position) * 4000f;
-			PhysicsRayQueryParameters3D r = PhysicsRayQueryParameters3D.Create(from, to);
-	    	Godot.Collections.Dictionary res = GetWorld3D().DirectSpaceState.IntersectRay(r);
-			Boolean noResult = res.Count <= 0; 
-			if(noResult) return;
-			Node node = (Node) res["collider"];
-			if(node is GridMap c){
-				Vector3 p = (Vector3) res["position"];
-				// GD.Print("init:", p);
-				DamageTile(p, from, 100);
-				// GD.Print("");
+    // public override void _UnhandledInput(InputEvent @event)
+    // {
+    //     if (@event is InputEventMouseButton eventMouseButton && eventMouseButton.Pressed && eventMouseButton.ButtonIndex == MouseButton.Left)
+	//     {
+	//         Vector3 from = GetParent().GetNode<CameraController>("../CameraController").Camera.ProjectRayOrigin(eventMouseButton.Position);
+	//         Vector3 to = from + GetParent().GetNode<CameraController>("../CameraController").Camera.ProjectRayNormal(eventMouseButton.Position) * 4000f;
+	// 		PhysicsRayQueryParameters3D r = PhysicsRayQueryParameters3D.Create(from, to);
+	//     	Godot.Collections.Dictionary res = GetWorld3D().DirectSpaceState.IntersectRay(r);
+	// 		Boolean noResult = res.Count <= 0; 
+	// 		if(noResult) return;
+	// 		Node node = (Node) res["collider"];
+	// 		if(node is GridMap c){
+	// 			Vector3 p = (Vector3) res["position"];
+	// 			// GD.Print("init:", p);
+	// 			DamageTile(p, from, 100);
+	// 			// GD.Print("");
 				
-			}
-		}
-    }
+	// 		}
+	// 	}
+    // }
 
 
 	// remove particle emitter from the scene
