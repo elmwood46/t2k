@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://f47eg7gy0g5p"]
+[gd_scene load_steps=15 format=3 uid="uid://f47eg7gy0g5p"]
 
 [ext_resource type="Script" path="res://level/Level.cs" id="1_wkkhb"]
 [ext_resource type="PackedScene" uid="uid://d286wbblx4ty5" path="res://character/PlayerCharacter.tscn" id="2_eq1l1"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://level/CharacterBody3d.cs" id="9_cwruv"]
 [ext_resource type="PackedScene" uid="uid://wjhyam8stuc0" path="res://character/DamageHitBox.tscn" id="9_q8xla"]
 [ext_resource type="PackedScene" uid="uid://bkvcf4bhcqoou" path="res://spells/SpellManager.tscn" id="10_l1mox"]
+[ext_resource type="PackedScene" uid="uid://cqm4ejhjk2h3v" path="res://spells/spell_ui/SpellCraftBar.tscn" id="11_gak63"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_x5rf1"]
 
@@ -38,23 +39,28 @@ script = ExtResource("6_juk3d")
 
 [node name="CameraController" parent="." instance=ExtResource("8_l2bv4")]
 
-[node name="SpellManager" parent="." node_paths=PackedStringArray("player", "cameraController") instance=ExtResource("10_l1mox")]
+[node name="SpellManager" parent="." node_paths=PackedStringArray("player", "cameraController", "spellCraftBar") instance=ExtResource("10_l1mox")]
 player = NodePath("../PlayerCharacter")
 cameraController = NodePath("../CameraController")
+spellCraftBar = NodePath("../CanvasLayer/SpellCraftBar")
 
-[node name="CharacterBody3D" type="CharacterBody3D" parent="."]
+[node name="testChara" type="CharacterBody3D" parent="."]
 transform = Transform3D(0.998905, -0.0467926, 0, 0.0467926, 0.998905, 0, 0, 0, 1, 0, 9.77609, -3.17454)
 script = ExtResource("9_cwruv")
 
-[node name="DamageHitBox" parent="CharacterBody3D" instance=ExtResource("9_q8xla")]
+[node name="DamageHitBox" parent="testChara" instance=ExtResource("9_q8xla")]
 collision_layer = 4
 collision_mask = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D/DamageHitBox"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="testChara/DamageHitBox"]
 shape = SubResource("SphereShape3D_x5rf1")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="CharacterBody3D/DamageHitBox"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="testChara/DamageHitBox"]
 mesh = SubResource("SphereMesh_1imed")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="testChara"]
 shape = SubResource("SphereShape3D_2dmie")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="SpellCraftBar" parent="CanvasLayer" instance=ExtResource("11_gak63")]

@@ -28,6 +28,10 @@ public partial class SpellManager : Node3D
 		spellChainHead.Next = new SpellSplitter();
 		spellChainHead.Next.Next = new GrenadeSpell(new EarthElement());
 		spellChainHead.Next.Next.Next = new StraightShot(new EarthElement()); 
+
+		spellCraftBar.SpellsSwapped += (int from, int to) => {
+			GD.Print(from ," -> " ,to);
+		};
 	}
 
     public override void _Input(InputEvent @event)

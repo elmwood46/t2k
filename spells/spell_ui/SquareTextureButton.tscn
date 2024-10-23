@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://d4kh4pmt3ir3a"]
+
+[ext_resource type="Script" path="res://spells/spell_ui/SquareTextureButton.cs" id="1_7caou"]
+[ext_resource type="Texture2D" uid="uid://dsvp6tr50nwjv" path="res://spells/spell_icons/SpellSplitterIcon.jpg" id="2_t5s6s"]
+
+[node name="SquareTextureButton" type="AspectRatioContainer" node_paths=PackedStringArray("Button")]
+stretch_mode = 1
+alignment_horizontal = 0
+alignment_vertical = 0
+script = ExtResource("1_7caou")
+Button = NodePath("TextureButton")
+
+[node name="TextureButton" type="TextureButton" parent="."]
+layout_mode = 2
+texture_normal = ExtResource("2_t5s6s")
+ignore_texture_size = true
+stretch_mode = 0

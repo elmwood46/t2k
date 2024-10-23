@@ -24,7 +24,7 @@ public partial class CastPropertys{
 	public Vector3 Direction {get; private set;}
 	public Vector3 Origin {get; set;}
 	
-	private int currentSpellDepth = 0;
+	// private int currentSpellDepth = 0;
 	public int CurrentSpellDepth {get; set;}
 	public Node SceneReference {get; private set;}
 	
