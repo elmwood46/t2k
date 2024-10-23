@@ -1,15 +1,22 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 public partial class SpellManager : Node3D
 {
+	public const int MAX_SPELL_LENGTH = 6;
+
 	[Export]
 	PlayerCharacter player;
 
 	[Export]
 	CameraController cameraController;
-
 	SpellChainComponent spellChainHead;
+
+	[Export]
+	SpellCraftBar spellCraftBar;
+
+	private List<SpellChainComponent> spellChain = new List<SpellChainComponent>();
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -21,7 +28,6 @@ public partial class SpellManager : Node3D
 		spellChainHead.Next = new SpellSplitter();
 		spellChainHead.Next.Next = new GrenadeSpell(new EarthElement());
 		spellChainHead.Next.Next.Next = new StraightShot(new EarthElement()); 
-
 	}
 
     public override void _Input(InputEvent @event)
