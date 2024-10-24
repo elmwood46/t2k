@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.Serialization;
 
 public partial class SpellManager : Node3D
 {
@@ -33,6 +34,7 @@ public partial class SpellManager : Node3D
 	}
 
 	public void AddSpell(SpellChainComponent spell){
+		if(spellChain.Count == MAX_SPELL_LENGTH) throw new MaxSpellsReachedException("can't add new spell");
 		if(spellChain.Count <= 0){
 			spellChain.Add(spell);
 		}else{
@@ -45,6 +47,7 @@ public partial class SpellManager : Node3D
 	public void InsertSpell(int i, SpellChainComponent spell){
 		if(i >= spellChain.Count) throw new IndexOutOfRangeException();
 		if(i < 0) throw new IndexOutOfRangeException();
+		if(spellChain.Count == MAX_SPELL_LENGTH) throw new MaxSpellsReachedException("can't insert new spell");
 		spell.Next = spellChain[i];
 		if(i != 0){
 			spellChain[i - 1].Next = spell;
@@ -110,7 +113,7 @@ public partial class SpellManager : Node3D
 		SpellChainComponent fromComp = spellChain[from];
 		spellChain[to] = fromComp;
 		spellChain[from] = toComp;
-		
+
 		for(int i = 0; i < spellChain.Count; i++){
 			if(i == spellChain.Count - 1){
 				spellChain[i].Next = null;
@@ -119,7 +122,25 @@ public partial class SpellManager : Node3D
 			}
 		}
 		spellCraftBar.UpdateBar(spellChain);
-		// change to to from and change next value
-		// change from to 
 	}
+}
+
+[Serializable]
+internal class MaxSpellsReachedException : Exception
+{
+    public MaxSpellsReachedException()
+    {
+    }
+
+    public MaxSpellsReachedException(string message) : base(message)
+    {
+    }
+
+    public MaxSpellsReachedException(string message, Exception innerException) : base(message, innerException)
+    {
+    }
+
+    protected MaxSpellsReachedException(SerializationInfo info, StreamingContext context) : base(info, context)
+    {
+    }
 }
