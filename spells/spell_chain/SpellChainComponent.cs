@@ -8,7 +8,7 @@ public abstract partial class SpellChainComponent : Node
 {
 	// string description;
 	// public abstract string getDescription();
-	public abstract Texture Icon {get;}
+	public abstract Texture2D Icon {get;}
 	public abstract string Description {get;}
 	public SpellChainComponent Next {get; set;}
 	

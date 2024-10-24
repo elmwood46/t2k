@@ -62,4 +62,5 @@ shape = SubResource("SphereShape3D_2dmie")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="SpellCraftBar" parent="CanvasLayer" instance=ExtResource("11_gak63")]
+[node name="SpellCraftBar" parent="CanvasLayer" node_paths=PackedStringArray("spellManager") instance=ExtResource("11_gak63")]
+spellManager = NodePath("../../SpellManager")

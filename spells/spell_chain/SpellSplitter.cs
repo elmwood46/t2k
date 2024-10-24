@@ -6,7 +6,7 @@ public partial class SpellSplitter : SpellChainComponent
 	int splitCount = 2;
     float splitAngle = 45;
     public override string Description => "spawns x of the next spell component in the chain";
-    public override Texture Icon => ImageTexture.CreateFromImage(Image.LoadFromFile("res://spells/spell_icons/SpellSplitterIcon.jpg"));
+    public override Texture2D Icon => ImageTexture.CreateFromImage(Image.LoadFromFile("res://spells/spell_icons/SpellSplitterIcon.jpg"));
     
 
     public override void Invoke(CastPropertys cast)

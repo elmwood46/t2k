@@ -8,7 +8,7 @@ public partial class GrenadeSpell : SpellChainComponent
 {
     public override string Description => "throws grenade of element that explodes when hit floor of enemy leaving a aoe of element";
 
-    public override Texture Icon => ImageTexture.CreateFromImage(Image.LoadFromFile("res://spells/spell_icons/GrenadeSpellIcon.jpg"));
+    public override Texture2D Icon => ImageTexture.CreateFromImage(Image.LoadFromFile("res://spells/spell_icons/GrenadeSpellIcon.jpg"));
 
     Element element;
 

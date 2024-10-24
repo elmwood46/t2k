@@ -5,7 +5,7 @@ using System.Data;
 public partial class StraightShot : SpellChainComponent
 {
     public override string Description => "Shoots projectile in clicked direction when projectile hit an enemy applys damage and invokes next spell a collision point";
-    public override Texture Icon => ImageTexture.CreateFromImage(Image.LoadFromFile("res://spells/spell_icons/StraightShotIcon.jpg"));
+    public override Texture2D Icon => ImageTexture.CreateFromImage(Image.LoadFromFile("res://spells/spell_icons/StraightShotIcon.jpg"));
 
     private Element element;
 
