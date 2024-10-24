@@ -11,7 +11,7 @@ radius = 1.39953
 
 [node name="Grenade" type="RigidBody3D" node_paths=PackedStringArray("aoeBody", "aoeShape")]
 collision_layer = 0
-collision_mask = 2
+collision_mask = 4
 contact_monitor = true
 max_contacts_reported = 10
 script = ExtResource("1_h3d3w")

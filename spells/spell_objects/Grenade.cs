@@ -13,9 +13,10 @@ public partial class Grenade : RigidBody3D
 	[Signal]
 	public delegate void ExplodedEventHandler(Area3D aoe); 
 
-	Timer timer;
-	public double AoeLingerTime {get => timer.WaitTime; set => timer.WaitTime = value;}
+	Timer AoeLifeTimeTimer;
+	public double AoeLingerTime {get => AoeLifeTimeTimer.WaitTime; set => AoeLifeTimeTimer.WaitTime = value;}
 
+	// Timer expl
 
 	public static Grenade Instantiate(){
 		Grenade p = GD.Load<PackedScene>("res://spells/spell_objects/Grenade.tscn").Instantiate<Grenade>();
@@ -25,15 +26,16 @@ public partial class Grenade : RigidBody3D
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		timer = new Timer();
-		AddChild(timer);
-		timer.OneShot = true;
-		timer.Timeout += QueueFree;
+		AoeLifeTimeTimer = new Timer();
+		AddChild(AoeLifeTimeTimer);
+		AoeLifeTimeTimer.OneShot = true;
+		AoeLifeTimeTimer.Timeout += QueueFree;
 
 		aoeShape.Disabled = true;
 		BodyEntered += (Node n) => {
+			
 			if(LinearVelocity.Y > 0) return;
-			if(n is GridMap g){
+			if(n is StaticBody3D g){
 				CallDeferred(nameof(Explode));
 			}
 		};
@@ -45,7 +47,7 @@ public partial class Grenade : RigidBody3D
 		aoeShape.Disabled = false;
 		aoeBody.GlobalPosition = GlobalPosition; 
 		EmitSignal(nameof(Exploded), aoeBody);
-		timer.Start();
+		AoeLifeTimeTimer.Start();
 	}
 
 }

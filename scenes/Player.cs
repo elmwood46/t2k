@@ -32,7 +32,7 @@ public partial class Player : Prop
 			this.Position = new Vector3(0, 10, 0);
 		}
 
-		Input.MouseMode = Input.MouseModeEnum.Captured;
+		// Input.MouseMode = Input.MouseModeEnum.Captured;
 		_spawnTimer = new Timer();
 		AddChild(_spawnTimer);
 		_spawnTimer.WaitTime = 0.1f;

@@ -27,18 +27,21 @@ public partial class StraightShot : SpellChainComponent
 
         // cast.CurrentSpellDepth++;
         p.BodyEntered += (Node3D a) => {
+            // GD.Print(a);
+            // if(a.IsInGroup("World")) GD.Print("yep");
             if(a is DamageHitBox dhb){
                 element.ApplyDamageProc(dhb);
-                cast.Origin = a.GlobalPosition; 
+                cast.Origin = p.GlobalPosition; 
+                Next?.Invoke(cast);
+                p.QueueFree();
+            }else if(a is StaticBody3D){
+                GD.Print("hit grid");
+                cast.Origin = p.Position; 
+                cast.Direction = -cast.Direction;
                 Next?.Invoke(cast);
                 p.QueueFree();
             }
 
-            if(a is GridMap){
-                GD.Print("hit grid");
-                Next?.Invoke(cast);
-                p.QueueFree();
-            }
         };
     }
 }

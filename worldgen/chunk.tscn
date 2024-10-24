@@ -12,7 +12,7 @@ fractal_lacunarity = 0.0
 cellular_distance_function = 2
 cellular_return_type = 6
 
-[node name="Chunk" type="StaticBody3D" node_paths=PackedStringArray("CollisionShape", "MeshInstance")]
+[node name="Chunk" type="StaticBody3D" node_paths=PackedStringArray("CollisionShape", "MeshInstance") groups=["World"]]
 collision_layer = 5
 script = ExtResource("1_7wutr")
 CollisionShape = NodePath("CollisionShape3D")
