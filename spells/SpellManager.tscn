@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bkvcf4bhcqoou"]
+
+[ext_resource type="Script" path="res://spells/SpellManager.cs" id="1_nyeiw"]
+
+[node name="SpellManager" type="Node3D"]
+script = ExtResource("1_nyeiw")

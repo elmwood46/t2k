@@ -1,0 +1,18 @@
+[gd_resource type="SpriteFrames" load_steps=3 format=3 uid="uid://d07r0fwet3uox"]
+
+[ext_resource type="Texture2D" uid="uid://ct4sh8q5w27dc" path="res://assets/sprites/giant_amoeba_new.png" id="1_8fk5q"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_df4vj"]
+atlas = ExtResource("1_8fk5q")
+region = Rect2(0, 0, 32, 32)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_df4vj")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]

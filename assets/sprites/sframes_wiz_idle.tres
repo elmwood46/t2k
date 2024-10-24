@@ -1,0 +1,25 @@
+[gd_resource type="SpriteFrames" load_steps=4 format=3 uid="uid://70briji3pqbi"]
+
+[ext_resource type="Texture2D" uid="uid://bytq0eitjruhj" path="res://assets/sprites/shadowWizardSpriteIdle.png" id="1_tfpfd"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_tfb56"]
+atlas = ExtResource("1_tfpfd")
+region = Rect2(0, 0, 57, 72)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4v6g1"]
+atlas = ExtResource("1_tfpfd")
+region = Rect2(57, 0, 57, 72)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tfb56")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4v6g1")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]

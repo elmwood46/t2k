@@ -1,0 +1,25 @@
+[gd_scene load_steps=4 format=3 uid="uid://b6owchpv3avln"]
+
+[ext_resource type="Script" path="res://worldgen/Chunk.cs" id="1_7wutr"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_m5ub0"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_xcdqp"]
+noise_type = 2
+frequency = 0.0311
+fractal_type = 2
+fractal_lacunarity = 0.0
+cellular_distance_function = 2
+cellular_return_type = 6
+
+[node name="Chunk" type="StaticBody3D" node_paths=PackedStringArray("CollisionShape", "MeshInstance") groups=["World"]]
+collision_layer = 5
+script = ExtResource("1_7wutr")
+CollisionShape = NodePath("CollisionShape3D")
+MeshInstance = NodePath("MeshInstance3D")
+Noise = SubResource("FastNoiseLite_m5ub0")
+WallNoise = SubResource("FastNoiseLite_xcdqp")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
