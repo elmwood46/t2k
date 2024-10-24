@@ -13,6 +13,7 @@ cellular_distance_function = 2
 cellular_return_type = 6
 
 [node name="Chunk" type="StaticBody3D" node_paths=PackedStringArray("CollisionShape", "MeshInstance")]
+collision_layer = 5
 script = ExtResource("1_7wutr")
 CollisionShape = NodePath("CollisionShape3D")
 MeshInstance = NodePath("MeshInstance3D")
