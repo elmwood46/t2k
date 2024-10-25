@@ -11,6 +11,11 @@ public partial class FireElement : Element
     public override int Dmg => 1;
     public override float AoeLingerTime => 5;
 
+    public override Vector3 Color => new Vector3(1, 0, 0);
+
+    // public override Material Material => ElementMaterialLoader.FIRE_MATERIAL;
+
+
     public override void ApplyDamageProc(DamageHitBox hitBox)
     {
         Timer t = new Timer();

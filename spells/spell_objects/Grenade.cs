@@ -13,6 +13,12 @@ public partial class Grenade : RigidBody3D
 	[Signal]
 	public delegate void ExplodedEventHandler(Area3D aoe); 
 
+	[Export]
+	MeshInstance3D grendeVisual;
+
+	[Export]
+	MeshInstance3D areaVisual;
+
 	Timer AoeLifeTimeTimer;
 	public double AoeLingerTime {get => AoeLifeTimeTimer.WaitTime; set => AoeLifeTimeTimer.WaitTime = value;}
 
@@ -48,6 +54,19 @@ public partial class Grenade : RigidBody3D
 		aoeBody.GlobalPosition = GlobalPosition; 
 		EmitSignal(nameof(Exploded), aoeBody);
 		AoeLifeTimeTimer.Start();
+	}
+
+	public void SetColor(Vector3 color){
+		StandardMaterial3D grenadeMaterial = new StandardMaterial3D();
+		GD.Print(grenadeMaterial);
+		grenadeMaterial.AlbedoColor = new Godot.Color(color.X, color.Y, color.Z, 1);
+		grendeVisual.MaterialOverride = grenadeMaterial;
+
+		StandardMaterial3D areaMaterial = new StandardMaterial3D();
+		areaMaterial.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+		areaMaterial.AlbedoColor = new Godot.Color(color.X, color.Y, color.Z, 0.5f);
+		areaVisual.MaterialOverride = areaMaterial;
+
 	}
 
 }

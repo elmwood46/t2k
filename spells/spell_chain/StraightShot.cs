@@ -24,6 +24,8 @@ public partial class StraightShot : SpellChainComponent
         cast.SceneReference.AddChild(p);
         p.GlobalPosition = cast.Origin;
         p.Velocity = cast.Direction.Normalized() * speed;
+        // p.SetMaterial(element.Color);
+        p.SetColor(element.Color);
 
         // cast.CurrentSpellDepth++;
         p.BodyEntered += (Node3D a) => {

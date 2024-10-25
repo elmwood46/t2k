@@ -25,6 +25,7 @@ public partial class GrenadeSpell : SpellChainComponent
         cast.SceneReference.AddChild(g);
         g.Position = cast.Origin;
         g.AoeLingerTime = element.AoeLingerTime;
+        g.SetColor(element.Color);
         Vector3 up = new Vector3(0, 10, 0);
         g.LinearVelocity = up + cast.Direction;
 

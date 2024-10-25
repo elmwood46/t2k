@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 SaveManager="*res://worldgen/SaveManager.cs"
 DebugManager="*res://menus/DebugManager.cs"
 MenuManager="*res://menus/MenuManager.cs"
+ElementMaterialLoader="*res://spells/element/ElementMaterialLoader.cs"
 
 [dotnet]
 

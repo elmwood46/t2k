@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://tm1fk6bxsghw"]
+[gd_scene load_steps=6 format=3 uid="uid://tm1fk6bxsghw"]
 
 [ext_resource type="Script" path="res://spells/spell_objects/Projectile.cs" id="1_h1e6c"]
 
@@ -8,12 +8,21 @@ radius = 1.0
 [sub_resource type="SphereShape3D" id="SphereShape3D_w5ik8"]
 radius = 0.6
 
-[node name="Projectile" type="Area3D" node_paths=PackedStringArray("child")]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ryrju"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_l6asd"]
+material = SubResource("StandardMaterial3D_ryrju")
+
+[node name="Projectile" type="Area3D" node_paths=PackedStringArray("child", "mesh")]
 collision_layer = 0
 collision_mask = 4
 script = ExtResource("1_h1e6c")
 shape = SubResource("SphereShape3D_3ab5c")
 child = NodePath("CollisionShape3D")
+mesh = NodePath("MeshInstance3D")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_w5ik8")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_l6asd")
