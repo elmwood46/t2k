@@ -9,6 +9,7 @@ public partial class Player : Prop
 	[Export] public int Money = 10;
 	[Export] public int Ward = 5;
 	[Export] public float Speed = 5.0f;
+	[Export] public MeshInstance3D HeightLine {get; set;}
 	public static Player Instance { get; private set; }
 
 	public const float JumpVelocity = 4.5f;
@@ -16,13 +17,19 @@ public partial class Player : Prop
 	private float _maxHealth;
 	private Timer _spawnTimer;
 
+	public static string State {get; private set;}
+
 	public Player()
 	{
 		_maxHealth = Health;
+		Title = "Player";
+		State = "idle";
 	}
 
 	public override void _Ready()
 	{
+		base._Ready();
+		HeightLine.Visible = false;
 		if (Engine.IsEditorHint()) return;
 		Instance = this;
 		if (SaveManager.Instance.SaveFileExists())
@@ -46,6 +53,7 @@ public partial class Player : Prop
 		if (!_spawnTimer.IsStopped()) return;
 
 		HandleMovement(delta);
+		UpdateStateString();
 
 		if (Health <=0) Die();
 
@@ -58,8 +66,30 @@ public partial class Player : Prop
 		}
 	}
 
+	public string GetStunTimeLeft()
+	{
+		return _stunTimer.TimeLeft.ToString();
+	}
+
+	private void UpdateStateString()
+	{
+		if (IsStunned())
+		{
+			State = "stunned";
+		} else if (IsOnFloor())
+		{
+			if (Velocity.Length() < 0.1f)
+				State = "idle";
+			else State = "walking";
+		} else
+		{
+			State = "air";
+		}
+	}
+
 	private void Die()
     {
+		HeightLine.Visible = false;
         // Implement death logic here
 		DebugManager.Log($"{Title}: I'm dead!");
         QueueFree();
@@ -67,24 +97,44 @@ public partial class Player : Prop
 
 	private void HandleMovement(double delta)
     {
-		var velocity = Velocity;
-
 		if (!IsOnFloor())
 		{
-			velocity.Y -= _gravity * (float)delta;
-			if (Position.Y < -100f) Die(); // fall out of map
+			Velocity -= new Vector3( 0f, _gravity * (float)delta, 0f);
+			HeightLine.Visible = true;
+			if (GlobalPosition.Y < -100f) Die(); // fall out of map
+		} else HeightLine.Visible = false;
+
+		if (!IsStunned()) { // input changes movement
+			var velocity = Velocity;
+
+			var ipt = Input.GetVector("move_left","move_right","move_up","move_down");
+
+			var direction = new Vector3(ipt.X, 0f, ipt.Y)
+			.Rotated(Vector3.Up, CameraManager.Instance.Rotation.Y)
+			.Normalized();
+
+			velocity.X = direction.X * Speed;
+			velocity.Z = direction.Z * Speed;
+			velocity.Y = Velocity[1];
+
+			if (IsOnFloor()) Velocity = velocity;
+			else {
+				Velocity += new Vector3(direction.X, 0f, direction.Z);
+				var _horzVelocity = new Vector3(Velocity[0],0f,Velocity[2]);
+				float len = _horzVelocity.Length();
+				if (_horzVelocity.Length() > Speed) {
+					var lerplen = Mathf.Lerp(len, Speed, 0.5f);
+					_horzVelocity = _horzVelocity.Normalized()*lerplen;
+				}
+				Velocity = new Vector3(_horzVelocity[0],Velocity[1],_horzVelocity[2]);
+			}
+		} else {
+			float friction = 0.98f;
+			var _velocity = Velocity;
+			if (IsOnFloor()) _velocity = new Vector3(_velocity.X*friction, Velocity[1], _velocity.Z*friction);
+			Velocity = _velocity;
 		}
 
-		var ipt = Input.GetVector("move_left","move_right","move_up","move_down").Normalized();
-
-		var direction = new Vector3(ipt.X, 0f, ipt.Y)
-		.Rotated(Vector3.Up, CameraManager.Instance.Rotation.Y)
-		.Normalized();
-
-		velocity.X = direction.X * Speed;
-		velocity.Z = direction.Z * Speed;
-
-		Velocity = velocity;
 		MoveAndSlide();
     }
 }

@@ -37,6 +37,6 @@ public partial class MenuManager : Node3D
         Instance.Visible = !Instance.Visible;
         GetTree().Paused = Instance.Visible;
         PauseMenu.Visible = Instance.Visible;
-        Input.MouseMode = Instance.Visible ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
+        Input.MouseMode = Instance.Visible ? Input.MouseModeEnum.Visible : Globals.DefaultMouseMode;
     }
 }
