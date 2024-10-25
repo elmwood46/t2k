@@ -21,11 +21,11 @@ public partial class StraightShot : SpellChainComponent
         if(element is null) throw new NoNullAllowedException("Element must be set");
 
         Projectile p = Projectile.Instantiate();
-        cast.SceneReference.AddChild(p);
-        p.GlobalPosition = cast.Origin;
+        p.Position = cast.Origin;
         p.Velocity = cast.Direction.Normalized() * speed;
         // p.SetMaterial(element.Color);
         p.SetColor(element.Color);
+        cast.SceneReference.AddChild(p);
 
         // cast.CurrentSpellDepth++;
         p.BodyEntered += (Node3D a) => {

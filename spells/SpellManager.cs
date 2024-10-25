@@ -28,7 +28,7 @@ public partial class SpellManager : Node3D
 	{
 		AddSpell(new StraightShot(new FireElement()));
 		AddSpell(new SpellSplitter());
-		AddSpell(new GrenadeSpell(new EarthElement()));
+		AddSpell(new GrenadeSpell(new FireElement()));
 
 		spellCraftBar.SpellsSwapped += SwapSpells;
 	}

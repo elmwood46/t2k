@@ -22,12 +22,12 @@ public partial class GrenadeSpell : SpellChainComponent
         if(element is null) throw new NoNullAllowedException("Element must be set");
 
 		Grenade g = Grenade.Instantiate();
-        cast.SceneReference.AddChild(g);
-        g.Position = cast.Origin;
-        g.AoeLingerTime = element.AoeLingerTime;
         g.SetColor(element.Color);
+        g.Position = cast.Origin;
         Vector3 up = new Vector3(0, 10, 0);
         g.LinearVelocity = up + cast.Direction;
+        g.AoeLingerTime = element.AoeLingerTime;
+        cast.SceneReference.AddChild(g);
 
         g.Exploded += (Area3D aoe) => {
             cast.Origin = g.Position;

@@ -1,9 +1,12 @@
-[gd_scene load_steps=8 format=3 uid="uid://8vdiulq3p86y"]
+[gd_scene load_steps=9 format=3 uid="uid://8vdiulq3p86y"]
 
 [ext_resource type="Script" path="res://spells/spell_objects/Grenade.cs" id="1_h3d3w"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_1ejal"]
 radius = 0.143911
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gccoe"]
+albedo_color = Color(0.751494, 0.688803, 0.43239, 1)
 
 [sub_resource type="SphereMesh" id="SphereMesh_mi3b5"]
 radius = 0.072
@@ -21,22 +24,24 @@ initial_velocity_max = 4.47
 [sub_resource type="CylinderMesh" id="CylinderMesh_vqepj"]
 top_radius = 1.4
 bottom_radius = 1.4
-height = 0.1
+height = 0.5
 
-[node name="Grenade" type="RigidBody3D" node_paths=PackedStringArray("aoeBody", "aoeShape", "areaVisual")]
+[node name="Grenade" type="RigidBody3D" node_paths=PackedStringArray("aoeBody", "aoeShape", "grendeVisual", "areaVisual")]
 collision_layer = 0
 collision_mask = 4
 contact_monitor = true
-max_contacts_reported = 10
+max_contacts_reported = 50
 script = ExtResource("1_h3d3w")
 aoeBody = NodePath("Area3D")
 aoeShape = NodePath("Area3D/CollisionShape3D")
+grendeVisual = NodePath("MeshInstance3D")
 areaVisual = NodePath("Area3D/MeshInstance3D")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_1ejal")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+material_override = SubResource("StandardMaterial3D_gccoe")
 mesh = SubResource("SphereMesh_mi3b5")
 
 [node name="Area3D" type="Area3D" parent="."]
@@ -54,7 +59,6 @@ process_material = SubResource("ParticleProcessMaterial_evnk8")
 draw_pass_1 = SubResource("SphereMesh_bxead")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Area3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.194956, 0)
 mesh = SubResource("CylinderMesh_vqepj")
 
 [node name="Label3D" type="Label3D" parent="."]
