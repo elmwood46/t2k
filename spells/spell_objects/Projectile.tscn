@@ -3,7 +3,6 @@
 [ext_resource type="Script" path="res://spells/spell_objects/Projectile.cs" id="1_h1e6c"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_3ab5c"]
-radius = 1.0
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_w5ik8"]
 radius = 0.6

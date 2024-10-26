@@ -40,4 +40,5 @@ public partial class GrenadeSpell : SpellChainComponent
             aoe.BodyEntered += (Node3D n) => {if(n is DamageHitBox hb){element.ApplyDamageProc(hb);}};
         };
     }
+
 }

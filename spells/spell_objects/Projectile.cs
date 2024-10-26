@@ -25,12 +25,19 @@ public partial class Projectile : Area3D
 
 	public override void _Ready()
 	{
+		Range = 0.1f;
+		shape.Changed += () => {
+			if(mesh.Mesh is SphereMesh m){
+				m.Radius = shape.Radius / 2;
+				m.Height = shape.Radius;
+			}
+		};
+
 		child.Shape = shape;
 		if(mesh.Mesh is SphereMesh m){
-			m.Radius = shape.Radius /2;
+			m.Radius = shape.Radius / 2;
 			m.Height = shape.Radius;
 		}
-		Range = 0.1f;
 	}
 
 	public override void _Process(double delta)
@@ -39,8 +46,8 @@ public partial class Projectile : Area3D
 	}
 
 	public void SetColor(Vector3 color){
-		if(mesh.Mesh is SphereMesh m)
- 			if(m.Material is StandardMaterial3D s)
-				s.AlbedoColor = new Godot.Color(color.X, color.Y, color.Z, 1);
+		StandardMaterial3D sm = new StandardMaterial3D();
+		sm.AlbedoColor = new Godot.Color(color.X, color.Y, color.Z, 1);
+		mesh.MaterialOverride = sm;
 	}
 }

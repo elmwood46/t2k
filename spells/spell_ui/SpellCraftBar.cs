@@ -60,6 +60,9 @@ public partial class SpellCraftBar : Control
 	}
 
 
+	/// <summary>
+	/// Updates the spell craft bar with the icons from the provided spell chain.
+	/// </summary>
 	public void UpdateBar(List<SpellChainComponent> spellChain){
 		for(int i = 0; i < spellChain.Count; i++){
 			Texture2D t = spellChain[i].Icon;
@@ -68,5 +71,4 @@ public partial class SpellCraftBar : Control
 		}
 	}
 
-	// public 
 }

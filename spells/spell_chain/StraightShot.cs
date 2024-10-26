@@ -15,7 +15,6 @@ public partial class StraightShot : SpellChainComponent
 
     float speed = 10;
 
-
     public override void Invoke(CastPropertys cast)
     {
         if(element is null) throw new NoNullAllowedException("Element must be set");
@@ -43,7 +42,6 @@ public partial class StraightShot : SpellChainComponent
                 Next?.Invoke(cast);
                 p.QueueFree();
             }
-
         };
     }
 }
