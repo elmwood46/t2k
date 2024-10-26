@@ -22,7 +22,7 @@ public partial class EnemyManager : Node3D
 	private void OnSpawnTimerTimeout()
 	{
 		var enemyInstance = enemyScene.Instantiate<Enemy>();
-		enemyInstance.GlobalPosition = Player.Instance.GlobalPosition + Vector3.Up * 10;
 		AddChild(enemyInstance);
+		enemyInstance.GlobalPosition = Player.Instance.GlobalPosition + Vector3.Up * 10;
 	}
 }

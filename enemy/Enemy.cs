@@ -3,7 +3,11 @@ using System;
 
 public partial class Enemy : Prop
 {
-	public int Health {get; set;} = 20;
+	[Export]
+	int health = 20;
+
+	[Signal]
+	public delegate void DiedEventHandler();
 
 	public const float Speed = 4.0f;
 	public const float JumpVelocity = 4.5f;
@@ -13,7 +17,12 @@ public partial class Enemy : Prop
 	private RayCast3D jumpCast;
     private float jumpRange = 1f;
 
-	public override void _PhysicsProcess(double delta)
+    public override void _Ready()
+    {
+		Died += QueueFree;	
+    }
+
+    public override void _PhysicsProcess(double delta)
 	{
 		Vector3 velocity = Velocity;
 
@@ -24,7 +33,9 @@ public partial class Enemy : Prop
 		}
 
 
-		jumpCast.TargetPosition = velocity.Normalized() * jumpRange;
+		Vector3 target = velocity.Normalized() * jumpRange;
+		target.Y = 0;
+		jumpCast.TargetPosition = target;
 		jumpCast.ForceRaycastUpdate();
 		// Handle Jump.
 		if (jumpCast.IsColliding())
@@ -51,6 +62,12 @@ public partial class Enemy : Prop
 
 		Velocity = velocity;
 		MoveAndSlide();
+	}
+
+	
+	public void TakeDamage(int dmg){
+		health -= dmg;
+		if(health <= 0) EmitSignal(nameof(Died));
 	}
 
 }

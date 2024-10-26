@@ -36,7 +36,6 @@ public partial class StraightShot : SpellChainComponent
                 Next?.Invoke(cast);
                 p.QueueFree();
             }else if(a is StaticBody3D){
-                GD.Print("hit grid");
                 cast.Origin = p.Position; 
                 cast.Direction = -cast.Direction;
                 Next?.Invoke(cast);

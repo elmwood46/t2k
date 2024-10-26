@@ -11,7 +11,6 @@ public partial class SpellSplitter : SpellChainComponent
 
     public override void Invoke(CastPropertys cast)
     {
-        GD.Print("splt");
         Vector3 v = cast.Direction.Rotated(new Vector3(0, 1, 0), Mathf.DegToRad(-(splitAngle - (splitAngle / 2)))); 
         for(int i = 0; i < splitCount; i ++){
 			Vector3 val = v.Rotated(new Vector3(0, 1, 0), Mathf.DegToRad(splitAngle * i)); 

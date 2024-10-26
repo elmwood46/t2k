@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://btnshawregy47"]
+[gd_scene load_steps=5 format=3 uid="uid://btnshawregy47"]
 
 [ext_resource type="Script" path="res://enemy/Enemy.cs" id="1_p8isv"]
 [ext_resource type="SpriteFrames" uid="uid://ljqtvvirpi8i" path="res://enemy/enemySF.tres" id="2_2si8t"]
+[ext_resource type="PackedScene" uid="uid://wjhyam8stuc0" path="res://damage/DamageHitBox.tscn" id="3_fjm76"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_1ri8b"]
 
@@ -14,6 +15,12 @@ SpriteFrames = ExtResource("2_2si8t")
 SpriteYBillboard = true
 CollisionShape = NodePath("CollisionShape3D")
 
+[node name="DamageHitBox" parent="." node_paths=PackedStringArray("target") instance=ExtResource("3_fjm76")]
+target = NodePath("..")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DamageHitBox"]
+shape = SubResource("SphereShape3D_1ri8b")
+
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_1ri8b")
 
@@ -23,4 +30,3 @@ texture_filter = 2
 sprite_frames = ExtResource("2_2si8t")
 
 [node name="RayCast3D" type="RayCast3D" parent="."]
-target_position = Vector3(3.415, 5.41, 5.015)
