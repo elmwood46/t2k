@@ -4,7 +4,7 @@ using System;
 public partial class Enemy : Prop
 {
 	[Export]
-	int health = 20;
+	float health = 50;
 
 	[Signal]
 	public delegate void DiedEventHandler();
@@ -19,6 +19,7 @@ public partial class Enemy : Prop
 
     public override void _Ready()
     {
+		base._Ready();
 		Died += QueueFree;	
     }
 
@@ -65,7 +66,7 @@ public partial class Enemy : Prop
 	}
 
 	
-	public void TakeDamage(int dmg){
+	public void TakeDamage(float dmg){
 		health -= dmg;
 		if(health <= 0) EmitSignal(nameof(Died));
 	}

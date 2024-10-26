@@ -59,6 +59,12 @@ public partial class Explosion : Node3D
 			} else if (node is Chunk) {
 				Chunk c = node as Chunk;
 				//d.DamageTile(ray.GetCollisionPoint(), GlobalTransform.Origin, CalculateDamage(ray.GetCollisionPoint()));
+			} 
+			
+			if (node is DamageHitBox dhb){
+				float dist = dhb.GlobalPosition.DistanceTo(GlobalPosition);
+				float per = Mathf.Max((ExplosionRadius - dist) / ExplosionRadius, 0.1f);
+				dhb.applyDamage(Damage * per);
 			}
 		}
 

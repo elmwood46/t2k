@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=3 uid="uid://c6opi4llwubwx"]
+[gd_scene load_steps=31 format=3 uid="uid://c6opi4llwubwx"]
 
 [ext_resource type="Script" path="res://scenes/BlockManager.cs" id="1_ewn8t"]
 [ext_resource type="Script" path="res://Main.cs" id="1_h5sf0"]
@@ -17,8 +17,6 @@
 [ext_resource type="Texture2D" uid="uid://c4vrgh206oxx4" path="res://assets/block_textures/trunk.png" id="9_vr6h8"]
 [ext_resource type="Texture2D" uid="uid://b0m7q81wfwglb" path="res://assets/block_textures/bricks.png" id="10_l0gwe"]
 [ext_resource type="Texture2D" uid="uid://pm4k47osdsfh" path="res://assets/block_textures/lava.png" id="11_yvn1r"]
-[ext_resource type="PackedScene" uid="uid://bkvcf4bhcqoou" path="res://spells/SpellManager.tscn" id="17_qrvkq"]
-[ext_resource type="PackedScene" uid="uid://cqm4ejhjk2h3v" path="res://spells/spell_ui/SpellCraftBar.tscn" id="18_d4hsv"]
 [ext_resource type="PackedScene" path="res://scenes/map_cursor.tscn" id="18_sdhcb"]
 [ext_resource type="Script" path="res://EnemyManager.cs" id="21_udwnj"]
 
@@ -117,15 +115,7 @@ shadow_opacity = 0.8
 shadow_blur = 0.0
 directional_shadow_mode = 1
 
-[node name="SpellManager" parent="." node_paths=PackedStringArray("player", "cameraController", "spellCraftBar") instance=ExtResource("17_qrvkq")]
-player = NodePath("../Player")
-cameraController = NodePath("../CameraManager")
-spellCraftBar = NodePath("../CanvasLayer/SpellCraftBar")
-
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
-
-[node name="SpellCraftBar" parent="CanvasLayer" node_paths=PackedStringArray("spellManager") instance=ExtResource("18_d4hsv")]
-spellManager = NodePath("../../SpellManager")
 
 [node name="MapCursor" parent="." instance=ExtResource("18_sdhcb")]
 

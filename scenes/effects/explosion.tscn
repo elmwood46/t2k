@@ -219,3 +219,4 @@ stream = ExtResource("2_nvuq2")
 max_distance = 442.29
 
 [node name="Area3D" type="Area3D" parent="."]
+collision_mask = 5
