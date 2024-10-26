@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3 uid="uid://c6opi4llwubwx"]
+[gd_scene load_steps=33 format=3 uid="uid://c6opi4llwubwx"]
 
 [ext_resource type="Script" path="res://scenes/BlockManager.cs" id="1_ewn8t"]
 [ext_resource type="Script" path="res://Main.cs" id="1_h5sf0"]
@@ -20,6 +20,7 @@
 [ext_resource type="PackedScene" uid="uid://bkvcf4bhcqoou" path="res://spells/SpellManager.tscn" id="17_qrvkq"]
 [ext_resource type="PackedScene" uid="uid://cqm4ejhjk2h3v" path="res://spells/spell_ui/SpellCraftBar.tscn" id="18_d4hsv"]
 [ext_resource type="PackedScene" path="res://scenes/map_cursor.tscn" id="18_sdhcb"]
+[ext_resource type="Script" path="res://EnemyManager.cs" id="21_udwnj"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_4bguo"]
 sky_top_color = Color(0, 0.821474, 0.775616, 1)
@@ -127,3 +128,6 @@ spellCraftBar = NodePath("../CanvasLayer/SpellCraftBar")
 spellManager = NodePath("../../SpellManager")
 
 [node name="MapCursor" parent="." instance=ExtResource("18_sdhcb")]
+
+[node name="EnemyManager" type="Node3D" parent="."]
+script = ExtResource("21_udwnj")
