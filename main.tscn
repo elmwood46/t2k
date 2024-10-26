@@ -1,6 +1,7 @@
-[gd_scene load_steps=30 format=3 uid="uid://c6opi4llwubwx"]
+[gd_scene load_steps=32 format=3 uid="uid://c6opi4llwubwx"]
 
 [ext_resource type="Script" path="res://scenes/BlockManager.cs" id="1_ewn8t"]
+[ext_resource type="Script" path="res://Main.cs" id="1_h5sf0"]
 [ext_resource type="Script" path="res://worldgen/ChunkManager.cs" id="2_8ctru"]
 [ext_resource type="Script" path="res://worldgen/Block.cs" id="2_uaj0t"]
 [ext_resource type="Texture2D" uid="uid://cboj7dieehlc7" path="res://assets/block_textures/stone.png" id="3_4iamt"]
@@ -18,6 +19,7 @@
 [ext_resource type="Texture2D" uid="uid://pm4k47osdsfh" path="res://assets/block_textures/lava.png" id="11_yvn1r"]
 [ext_resource type="PackedScene" uid="uid://bkvcf4bhcqoou" path="res://spells/SpellManager.tscn" id="17_qrvkq"]
 [ext_resource type="PackedScene" uid="uid://cqm4ejhjk2h3v" path="res://spells/spell_ui/SpellCraftBar.tscn" id="18_d4hsv"]
+[ext_resource type="PackedScene" path="res://scenes/map_cursor.tscn" id="18_sdhcb"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_4bguo"]
 sky_top_color = Color(0, 0.821474, 0.775616, 1)
@@ -78,7 +80,11 @@ Texture = ExtResource("11_yvn1r")
 TopTexture = ExtResource("11_yvn1r")
 BottomTexture = ExtResource("11_yvn1r")
 
-[node name="Node3D" type="Node3D"]
+[node name="Node3D" type="Node3D" node_paths=PackedStringArray("Player", "CameraGimbal", "MapCursor")]
+script = ExtResource("1_h5sf0")
+Player = NodePath("Player")
+CameraGimbal = NodePath("CameraManager")
+MapCursor = NodePath("MapCursor")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_1u3ph")
@@ -119,3 +125,5 @@ spellCraftBar = NodePath("../CanvasLayer/SpellCraftBar")
 
 [node name="SpellCraftBar" parent="CanvasLayer" node_paths=PackedStringArray("spellManager") instance=ExtResource("18_d4hsv")]
 spellManager = NodePath("../../SpellManager")
+
+[node name="MapCursor" parent="." instance=ExtResource("18_sdhcb")]
