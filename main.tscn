@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3 uid="uid://c6opi4llwubwx"]
+[gd_scene load_steps=32 format=3 uid="uid://c6opi4llwubwx"]
 
 [ext_resource type="Script" path="res://scenes/BlockManager.cs" id="1_ewn8t"]
 [ext_resource type="Script" path="res://Main.cs" id="1_h5sf0"]
@@ -17,8 +17,9 @@
 [ext_resource type="Texture2D" uid="uid://c4vrgh206oxx4" path="res://assets/block_textures/trunk.png" id="9_vr6h8"]
 [ext_resource type="Texture2D" uid="uid://b0m7q81wfwglb" path="res://assets/block_textures/bricks.png" id="10_l0gwe"]
 [ext_resource type="Texture2D" uid="uid://pm4k47osdsfh" path="res://assets/block_textures/lava.png" id="11_yvn1r"]
+[ext_resource type="PackedScene" uid="uid://tugvcnh8tv0k" path="res://ui/points_bar.tscn" id="18_3yxxq"]
 [ext_resource type="PackedScene" path="res://scenes/map_cursor.tscn" id="18_sdhcb"]
-[ext_resource type="Script" path="res://EnemyManager.cs" id="21_udwnj"]
+[ext_resource type="Script" path="res://enemy/EnemyManager.cs" id="21_udwnj"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_4bguo"]
 sky_top_color = Color(0, 0.821474, 0.775616, 1)
@@ -116,6 +117,8 @@ shadow_blur = 0.0
 directional_shadow_mode = 1
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="PointsBar" parent="CanvasLayer" instance=ExtResource("18_3yxxq")]
 
 [node name="MapCursor" parent="." instance=ExtResource("18_sdhcb")]
 

@@ -22,7 +22,7 @@ public partial class SpellManager : Node3D
 	private List<SpellChainComponent> spellChain = new List<SpellChainComponent>();
 	public List<SpellChainComponent> SpellChainList {get => spellChain;}
 
-	public override void _Ready()
+	public override void _Ready() 
 	{
 		AddSpell(new StraightShot(new FireElement()));
 		AddSpell(new SpellSplitter());

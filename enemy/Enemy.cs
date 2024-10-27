@@ -20,7 +20,7 @@ public partial class Enemy : Prop
     public override void _Ready()
     {
 		base._Ready();
-		Died += QueueFree;	
+		Died += Die;	
     }
 
     public override void _PhysicsProcess(double delta)
@@ -71,4 +71,10 @@ public partial class Enemy : Prop
 		if(health <= 0) EmitSignal(nameof(Died));
 	}
 
+
+	private void Die()
+	{
+		GamePoints.UpdatePoints(10); 
+		QueueFree();
+	}
 }
