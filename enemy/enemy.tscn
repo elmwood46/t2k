@@ -26,7 +26,9 @@ shape = SubResource("SphereShape3D_1ri8b")
 
 [node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
 transform = Transform3D(3.61, 0, 0, 0, 3.61, 0, 0, 0, 3.61, 0, 0, 0)
+billboard = 2
 texture_filter = 2
 sprite_frames = ExtResource("2_2si8t")
+frame_progress = 0.397004
 
 [node name="RayCast3D" type="RayCast3D" parent="."]

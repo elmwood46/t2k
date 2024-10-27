@@ -17,11 +17,26 @@ public partial class Enemy : Prop
 	private RayCast3D jumpCast;
     private float jumpRange = 1f;
 
+	private RayCast3D attackCast;
+	private Timer attackTimer;
+	[Export]
+	private float attackTimerCount = 0.5f;
+    private float attackRange = 0.9f;
+
     public override void _Ready()
-    {
+	{
 		base._Ready();
-		Died += Die;	
-    }
+	    Sprite.Play("default");
+		attackCast = new RayCast3D();
+		AddChild(attackCast);
+		attackTimer = new Timer();
+		attackTimer.WaitTime = attackTimerCount;
+		attackTimer.OneShot = false;
+		attackTimer.Timeout += OnAttackTimerTimeout;
+		AddChild(attackTimer);
+		attackTimer.Start();
+		Died += Die;
+	}
 
     public override void _PhysicsProcess(double delta)
 	{
@@ -33,12 +48,12 @@ public partial class Enemy : Prop
 			velocity += Vector3.Down * gravity * (float)delta;
 		}
 
-
-		Vector3 target = velocity.Normalized() * jumpRange;
+		Vector3 target = velocity.Normalized();
 		target.Y = 0;
-		jumpCast.TargetPosition = target;
+		jumpCast.TargetPosition = target * jumpRange;
 		jumpCast.ForceRaycastUpdate();
 		// Handle Jump.
+
 		if (jumpCast.IsColliding())
 		{
 			Node3D n = (Node3D)jumpCast.GetCollider();
@@ -70,7 +85,22 @@ public partial class Enemy : Prop
 		health -= dmg;
 		if(health <= 0) EmitSignal(nameof(Died));
 	}
-
+	
+	private void OnAttackTimerTimeout()
+	{
+		Vector3 direction = GlobalPosition.DirectionTo(Player.Instance.GlobalPosition);
+		attackCast.TargetPosition = direction.Normalized() * attackRange;
+		attackCast.ForceRaycastUpdate();
+		if (attackCast.IsColliding())
+		{
+			Node3D collider = (Node3D)attackCast.GetCollider();
+			GD.Print(collider);
+			if (collider is Player player)
+			{
+				player.TakeDamage(1); // Assuming Player has a TakeDamage method
+			}
+		}
+	}
 
 	private void Die()
 	{

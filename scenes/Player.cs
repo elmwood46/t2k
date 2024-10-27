@@ -21,6 +21,12 @@ public partial class Player : Prop
 
 	public static string State { get; private set; }
 
+	[Signal]
+	public delegate void DamagedEventHandler();
+
+	[Signal]
+	public delegate void DiedEventHandler();
+
 	public Player()
 	{
 		_maxHealth = Health;
@@ -59,8 +65,6 @@ public partial class Player : Prop
 		HandleMovement(delta);
 		UpdateStateString();
 		ControlDecal();
-
-		if (Health <= 0) Die();
 
 		// store position in save manager
 		SaveManager.Instance.State.Data.PlayerPosition = (Position.X, Position.Y, Position.Z);
@@ -125,6 +129,7 @@ public partial class Player : Prop
 		HeightLine.Visible = false;
 		// Implement death logic here
 		DebugManager.Log($"{Title}: I'm dead!");
+		EmitSignal(nameof(Died));
 		QueueFree();
 	}
 
@@ -175,5 +180,11 @@ public partial class Player : Prop
 		}
 
 		MoveAndSlide();
+	}
+
+	public void TakeDamage(float dmg){
+		Health -= dmg;
+		if(Health <= 0) Die();
+		EmitSignal(nameof(Damaged));
 	}
 }

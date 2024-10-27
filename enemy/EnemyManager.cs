@@ -6,6 +6,8 @@ public partial class EnemyManager : Node3D
 	PackedScene enemyScene;
 	Timer spawnTimer;
 
+	float spawnRange = 30;
+
 	public override void _Ready()
 	{
 		base._Ready();
@@ -23,6 +25,7 @@ public partial class EnemyManager : Node3D
 	{
 		var enemyInstance = enemyScene.Instantiate<Enemy>();
 		AddChild(enemyInstance);
-		enemyInstance.GlobalPosition = Player.Instance.GlobalPosition + Vector3.Up * 10;
+		Vector3 dir = Vector3.Forward.Rotated(Vector3.Up, Mathf.DegToRad(new Random().Next(360))) * spawnRange; 
+		enemyInstance.GlobalPosition = Player.Instance.GlobalPosition + Vector3.Up * 10 + dir;
 	}
 }

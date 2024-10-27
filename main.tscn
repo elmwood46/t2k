@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3 uid="uid://c6opi4llwubwx"]
+[gd_scene load_steps=35 format=3 uid="uid://c6opi4llwubwx"]
 
 [ext_resource type="Script" path="res://scenes/BlockManager.cs" id="1_ewn8t"]
 [ext_resource type="Script" path="res://Main.cs" id="1_h5sf0"]
@@ -19,6 +19,8 @@
 [ext_resource type="Texture2D" uid="uid://pm4k47osdsfh" path="res://assets/block_textures/lava.png" id="11_yvn1r"]
 [ext_resource type="PackedScene" uid="uid://tugvcnh8tv0k" path="res://ui/points_bar.tscn" id="18_3yxxq"]
 [ext_resource type="PackedScene" path="res://scenes/map_cursor.tscn" id="18_sdhcb"]
+[ext_resource type="Script" path="res://HealthLabel.cs" id="19_0us2n"]
+[ext_resource type="FontFile" uid="uid://c5odas4b851ks" path="res://assets/Roboto-Black.ttf" id="19_uok86"]
 [ext_resource type="Script" path="res://enemy/EnemyManager.cs" id="21_udwnj"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_4bguo"]
@@ -80,6 +82,11 @@ Texture = ExtResource("11_yvn1r")
 TopTexture = ExtResource("11_yvn1r")
 BottomTexture = ExtResource("11_yvn1r")
 
+[sub_resource type="LabelSettings" id="LabelSettings_pd2h2"]
+font = ExtResource("19_uok86")
+outline_size = 1
+outline_color = Color(0, 0, 0, 1)
+
 [node name="Node3D" type="Node3D" node_paths=PackedStringArray("Player", "CameraGimbal", "MapCursor")]
 script = ExtResource("1_h5sf0")
 Player = NodePath("Player")
@@ -119,6 +126,25 @@ directional_shadow_mode = 1
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="PointsBar" parent="CanvasLayer" instance=ExtResource("18_3yxxq")]
+
+[node name="Control" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/Control" node_paths=PackedStringArray("player")]
+layout_mode = 1
+offset_left = 25.0
+offset_top = 22.0
+offset_right = 179.0
+offset_bottom = 64.0
+text = "Health: "
+label_settings = SubResource("LabelSettings_pd2h2")
+script = ExtResource("19_0us2n")
+player = NodePath("../../../Player")
 
 [node name="MapCursor" parent="." instance=ExtResource("18_sdhcb")]
 
