@@ -124,6 +124,7 @@ shadow_blur = 0.0
 directional_shadow_mode = 1
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
+layer = -1
 
 [node name="PointsBar" parent="CanvasLayer" instance=ExtResource("18_3yxxq")]
 
@@ -135,7 +136,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Label" type="Label" parent="CanvasLayer/Control" node_paths=PackedStringArray("player")]
+[node name="Health" type="Label" parent="CanvasLayer/Control" node_paths=PackedStringArray("player")]
 layout_mode = 1
 offset_left = 25.0
 offset_top = 22.0

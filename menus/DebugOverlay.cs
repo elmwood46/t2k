@@ -14,6 +14,7 @@ public partial class DebugOverlay : Control
 
     // add text to debug overlay
     public override void _Process(double delta) {
+
         StopwatchLabel.Text = $"Elapsed Time: {_stopwatch.Elapsed}";
         PlayerInfo.Text = "\n";
         PlayerInfo.Text += $"PlayerPosition: {Player.Instance.Position}\n";

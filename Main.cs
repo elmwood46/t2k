@@ -13,9 +13,15 @@ public partial class Main : Node3D
 
 	private Vector3? _targetPosition = null;
 
+	[Signal]
+	public delegate void GameEndEventHandler();
+
+
 	public override void _Ready() {
-		Input.MouseMode = Globals.DefaultMouseMode;
+		// Input.MouseMode = Globals.DefaultMouseMode;
+		Player.Instance.Died += () => EmitSignal(nameof(GameEnd));
 	}
+
 
 	public override void _Input(InputEvent @event)
 	{

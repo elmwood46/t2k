@@ -37,7 +37,7 @@ cast_shadow = 2
 offset = Vector2(0, 32)
 billboard = 2
 sprite_frames = ExtResource("2_c2nrv")
-frame_progress = 0.109723
+frame_progress = 0.878462
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_8lj6a")

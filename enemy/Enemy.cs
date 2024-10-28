@@ -94,7 +94,6 @@ public partial class Enemy : Prop
 		if (attackCast.IsColliding())
 		{
 			Node3D collider = (Node3D)attackCast.GetCollider();
-			GD.Print(collider);
 			if (collider is Player player)
 			{
 				player.TakeDamage(1); // Assuming Player has a TakeDamage method
