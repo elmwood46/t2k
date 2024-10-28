@@ -17,6 +17,7 @@ public partial class DamageHitBox : StaticBody3D
 		label.Text = Mathf.Round(dmg).ToString();
 		label.Position = this.Position;
 		label.PixelSize = 0.008f;
+		label.Billboard = BaseMaterial3D.BillboardModeEnum.Enabled;
 		AddChild(label);
 
 		Tween tween = GetTree().CreateTween();
