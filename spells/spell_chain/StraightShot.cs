@@ -15,15 +15,16 @@ public partial class StraightShot : SpellChainComponent
 
     float speed = 10;
 
-
     public override void Invoke(CastPropertys cast)
     {
         if(element is null) throw new NoNullAllowedException("Element must be set");
 
         Projectile p = Projectile.Instantiate();
-        cast.SceneReference.AddChild(p);
-        p.GlobalPosition = cast.Origin;
+        p.Position = cast.Origin;
         p.Velocity = cast.Direction.Normalized() * speed;
+        // p.SetMaterial(element.Color);
+        p.SetColor(element.Color);
+        cast.SceneReference.AddChild(p);
 
         // cast.CurrentSpellDepth++;
         p.BodyEntered += (Node3D a) => {
@@ -35,13 +36,11 @@ public partial class StraightShot : SpellChainComponent
                 Next?.Invoke(cast);
                 p.QueueFree();
             }else if(a is StaticBody3D){
-                GD.Print("hit grid");
                 cast.Origin = p.Position; 
                 cast.Direction = -cast.Direction;
                 Next?.Invoke(cast);
                 p.QueueFree();
             }
-
         };
     }
 }

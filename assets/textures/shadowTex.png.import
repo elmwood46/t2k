@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dun8oyk8hj4a6"
-path.s3tc="res://.godot/imported/clyde.png-3d0017d235471090b9b1d0e11a17887e.s3tc.ctex"
+uid="uid://bj6at3mkbo7ui"
+path.s3tc="res://.godot/imported/shadowTex.png-e635716607a79e5658e591ad39363156.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/sprites/clyde.png"
-dest_files=["res://.godot/imported/clyde.png-3d0017d235471090b9b1d0e11a17887e.s3tc.ctex"]
+source_file="res://assets/textures/shadowTex.png"
+dest_files=["res://.godot/imported/shadowTex.png-e635716607a79e5658e591ad39363156.s3tc.ctex"]
 
 [params]
 

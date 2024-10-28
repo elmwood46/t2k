@@ -1,0 +1,39 @@
+[gd_resource type="SpriteFrames" load_steps=6 format=3 uid="uid://ljqtvvirpi8i"]
+
+[ext_resource type="Texture2D" uid="uid://dun8oyk8hj4a6" path="res://assets/sprites/clyde.png" id="1_e10gg"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2j8pg"]
+atlas = ExtResource("1_e10gg")
+region = Rect2(0, 0, 27, 22)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4c2u2"]
+atlas = ExtResource("1_e10gg")
+region = Rect2(27, 0, 27, 22)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dffgb"]
+atlas = ExtResource("1_e10gg")
+region = Rect2(54, 0, 27, 22)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_s5dng"]
+atlas = ExtResource("1_e10gg")
+region = Rect2(81, 0, 27, 22)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2j8pg")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4c2u2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dffgb")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_s5dng")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]

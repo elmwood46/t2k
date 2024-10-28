@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://ds14gad02mt7j"]
+
+[ext_resource type="Script" path="res://GameManager.cs" id="1_7oq6p"]
+[ext_resource type="PackedScene" uid="uid://bne05b3k8mv1h" path="res://menus/MainMenu.tscn" id="2_osnqn"]
+[ext_resource type="PackedScene" uid="uid://cl3kyenk8qo4r" path="res://menus/GameEnd.tscn" id="3_bacn7"]
+
+[node name="GameManager" type="Node3D" node_paths=PackedStringArray("mainMenu", "gameEndMenu")]
+script = ExtResource("1_7oq6p")
+mainMenu = NodePath("CanvasLayer/MainMenu")
+gameEndMenu = NodePath("CanvasLayer/GameEnd")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="MainMenu" parent="CanvasLayer" instance=ExtResource("2_osnqn")]
+process_mode = 3
+
+[node name="GameEnd" parent="CanvasLayer" instance=ExtResource("3_bacn7")]

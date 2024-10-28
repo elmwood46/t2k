@@ -11,7 +11,6 @@ public abstract partial class SpellChainComponent : Node
 	public abstract Texture2D Icon {get;}
 	public abstract string Description {get;}
 	public SpellChainComponent Next {get; set;}
-	
 
 	/* 
 	performs action described in spells discription and then call invoke on next component 

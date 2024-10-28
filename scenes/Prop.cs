@@ -77,7 +77,10 @@ public abstract partial class Prop : CharacterBody3D
         }
     }
 
-    public Timer StunTimer { get; set; }
+    protected Timer _stunTimer = new() {
+        OneShot = true,
+        Autostart = false
+    };
 
     // check if highlighted
     public bool IsHighlighted = false;
@@ -89,6 +92,27 @@ public abstract partial class Prop : CharacterBody3D
     private Vector2 _spriteOffset;
     private bool _spriteYBillboard;
     private float _collisionRadius = 1.0f;
+
+    public override void _Ready() {
+        AddChild(_stunTimer);
+    }
+
+    public void Stun(double duration) {
+        if (_stunTimer.IsStopped())
+        {
+            _stunTimer.WaitTime = duration;
+            _stunTimer.Start();
+        } else {
+            var timeLeft = _stunTimer.TimeLeft + duration;
+            _stunTimer.Stop();
+            _stunTimer.WaitTime = timeLeft;
+            _stunTimer.Start(_stunTimer.TimeLeft + duration);
+        }
+    }
+
+    public bool IsStunned() {
+        return _stunTimer.TimeLeft > 0d;
+    }
 
     public void UpdateOutline()
     {

@@ -22,13 +22,16 @@ public partial class SpellManager : Node3D
 	private List<SpellChainComponent> spellChain = new List<SpellChainComponent>();
 	public List<SpellChainComponent> SpellChainList {get => spellChain;}
 
-
-	// Called when the node enters the scene tree for the first time.
-	public override void _Ready()
+	public override void _Ready() 
 	{
 		AddSpell(new StraightShot(new FireElement()));
 		AddSpell(new SpellSplitter());
+		AddSpell(new GrenadeSpell(new FireElement()));
 		AddSpell(new GrenadeSpell(new EarthElement()));
+		AddSpell(new StraightShot(new EarthElement()));
+		AddSpell(new SpellSplitter());
+	
+
 
 		spellCraftBar.SpellsSwapped += SwapSpells;
 	}

@@ -1,0 +1,34 @@
+[gd_scene load_steps=5 format=3 uid="uid://btnshawregy47"]
+
+[ext_resource type="Script" path="res://enemy/Enemy.cs" id="1_p8isv"]
+[ext_resource type="SpriteFrames" uid="uid://ljqtvvirpi8i" path="res://enemy/enemySF.tres" id="2_2si8t"]
+[ext_resource type="PackedScene" uid="uid://wjhyam8stuc0" path="res://damage/DamageHitBox.tscn" id="3_fjm76"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1ri8b"]
+
+[node name="Enemy" type="CharacterBody3D" node_paths=PackedStringArray("jumpCast", "Sprite", "CollisionShape")]
+script = ExtResource("1_p8isv")
+jumpCast = NodePath("RayCast3D")
+Title = "Enemy"
+Sprite = NodePath("AnimatedSprite3D")
+SpriteFrames = ExtResource("2_2si8t")
+SpriteYBillboard = true
+CollisionShape = NodePath("CollisionShape3D")
+
+[node name="DamageHitBox" parent="." node_paths=PackedStringArray("target") instance=ExtResource("3_fjm76")]
+target = NodePath("..")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DamageHitBox"]
+shape = SubResource("SphereShape3D_1ri8b")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_1ri8b")
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
+transform = Transform3D(3.61, 0, 0, 0, 3.61, 0, 0, 0, 3.61, 0, 0, 0)
+billboard = 2
+texture_filter = 2
+sprite_frames = ExtResource("2_2si8t")
+frame_progress = 0.397004
+
+[node name="RayCast3D" type="RayCast3D" parent="."]
