@@ -8,6 +8,9 @@ public partial class GameManager : Node3D
 	[Export]
 	MainMenu mainMenu;
 
+	[Export]
+	GameEnd gameEndMenu;
+
 	Main main;
 
 	// Called when the node enters the scene tree for the first time.
@@ -16,14 +19,27 @@ public partial class GameManager : Node3D
 		mainMenu.PlayBtn.Pressed += Start;
 		mainMenu.QuitBtn.Pressed += Quit;
 
+		gameEndMenu.RestartBtn.Pressed += Start;
+		gameEndMenu.MainMenuBtn.Pressed += GoToMainMenu;
+		gameEndMenu.QuitBtn.Pressed += Quit;
+		gameEndMenu.Visible = false;
+
 		ResetGame();
         Input.MouseMode = Input.MouseModeEnum.Visible;
 	}
 
+    private void GoToMainMenu()
+    {
+		mainMenu.Visible = true;
+		gameEndMenu.Visible = false;
+    }
+
     private void Start()
     {
+		GamePoints.ResetPoints();
 		GD.Print("start");
         mainMenu.Visible = false;
+		gameEndMenu.Visible = false;
 		GetTree().Paused = false;
         Input.MouseMode = Globals.DefaultMouseMode;
     }
@@ -35,12 +51,14 @@ public partial class GameManager : Node3D
 
 	private void GameEnd(){
         Input.MouseMode = Input.MouseModeEnum.Visible;
-		mainMenu.Visible = true;
+		gameEndMenu.Visible = true;
+		gameEndMenu.LevelLabel.Text = "Level Reached: " + GamePoints.Level;
 		GetTree().Paused = true;
 		ResetGame();
 	}
 
 	private void ResetGame(){
+		GamePoints.ResetPoints();
 		if(main != null){
 			RemoveChild(main);
 		}

@@ -4,8 +4,6 @@ using System;
 public partial class MainMenu : Control
 {
 
-	PackedScene gameScene = GD.Load<PackedScene>("res://main.tscn");
-
 	[Export]
 	public Button PlayBtn {get; private set;}
 	[Export]

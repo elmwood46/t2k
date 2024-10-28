@@ -8,20 +8,30 @@ public partial class EnemyManager : Node3D
 
 	float spawnRange = 30;
 
+	float startingTime = 2;
+	float minTime = 0.1f;
+
 	public override void _Ready()
 	{
 		base._Ready();
 		enemyScene = GD.Load<PackedScene>("res://enemy/enemy.tscn");
 
 		spawnTimer = new Timer();
-		spawnTimer.WaitTime = 2f;
+		spawnTimer.WaitTime = startingTime;
 		spawnTimer.Autostart = true;
 		spawnTimer.OneShot = false;
 		spawnTimer.Timeout += OnSpawnTimerTimeout;
+
+		GamePoints.Instance.Updated += Updated; 
 		AddChild(spawnTimer);
 	}
 
-	private void OnSpawnTimerTimeout()
+    private void Updated(int points, int level)
+    {
+		spawnTimer.WaitTime = Mathf.Max(minTime, startingTime - (level * 0.1));
+    }
+
+    private void OnSpawnTimerTimeout()
 	{
 		var enemyInstance = enemyScene.Instantiate<Enemy>();
 		AddChild(enemyInstance);

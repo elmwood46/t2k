@@ -23,6 +23,7 @@ public partial class GamePoints : Node
     [Signal]
     public delegate void UpdatedEventHandler(int points, int level);
 
+
     private GamePoints() { }
 
     public override void _Ready()
