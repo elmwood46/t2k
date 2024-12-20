@@ -1,0 +1,117 @@
+[gd_scene load_steps=27 format=3 uid="uid://deyat72y3hmc1"]
+
+[ext_resource type="Script" path="res://ChunkManager.cs" id="1_0ir14"]
+[ext_resource type="Script" path="res://BlockManager.cs" id="1_1vhrc"]
+[ext_resource type="PackedScene" uid="uid://da5ax8fx3rml2" path="res://Chunk.tscn" id="1_peckr"]
+[ext_resource type="Script" path="res://Block.cs" id="2_7x5ym"]
+[ext_resource type="Texture2D" uid="uid://cboj7dieehlc7" path="res://BlockTextures/stone.png" id="3_wcc8v"]
+[ext_resource type="Texture2D" uid="uid://bvlycywksqrek" path="res://BlockTextures/dirt.png" id="5_5b4ue"]
+[ext_resource type="Texture2D" uid="uid://dinlc1868cmq6" path="res://BlockTextures/grass_side.png" id="6_vi13c"]
+[ext_resource type="Texture2D" uid="uid://cedssbc17dwdy" path="res://BlockTextures/grass.png" id="7_135lk"]
+[ext_resource type="Texture2D" uid="uid://b6nibvog2f0wt" path="res://BlockTextures/leaves.png" id="8_620yq"]
+[ext_resource type="PackedScene" uid="uid://dvt10rp16ksw8" path="res://Player.tscn" id="8_we1o3"]
+[ext_resource type="Texture2D" uid="uid://c4spwl71x1h4u" path="res://BlockTextures/trunkBase.png" id="9_48atv"]
+[ext_resource type="Texture2D" uid="uid://uyvm30m1rae0" path="res://BlockTextures/trunk.png" id="10_vwk1l"]
+[ext_resource type="Texture2D" uid="uid://cppaeip3o1gab" path="res://BlockTextures/bricks.png" id="11_xoj02"]
+[ext_resource type="Texture2D" uid="uid://b2l14qu6ygspc" path="res://BlockTextures/lava.png" id="12_jp6bq"]
+[ext_resource type="Material" uid="uid://cc8jelgps50k7" path="res://shaders/LavaShader.tres" id="13_ry1cx"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_2uccx"]
+
+[sub_resource type="Sky" id="Sky_wtvrs"]
+sky_material = SubResource("ProceduralSkyMaterial_2uccx")
+
+[sub_resource type="Environment" id="Environment_oic5h"]
+background_mode = 2
+sky = SubResource("Sky_wtvrs")
+glow_enabled = true
+glow_bloom = 0.02
+
+[sub_resource type="Resource" id="Resource_xxcol"]
+script = ExtResource("2_7x5ym")
+
+[sub_resource type="Resource" id="Resource_xblo2"]
+script = ExtResource("2_7x5ym")
+Texture = ExtResource("3_wcc8v")
+TopTexture = ExtResource("3_wcc8v")
+BottomTexture = ExtResource("3_wcc8v")
+
+[sub_resource type="Resource" id="Resource_pj1vn"]
+script = ExtResource("2_7x5ym")
+Texture = ExtResource("5_5b4ue")
+TopTexture = ExtResource("5_5b4ue")
+BottomTexture = ExtResource("5_5b4ue")
+
+[sub_resource type="Resource" id="Resource_b2y18"]
+script = ExtResource("2_7x5ym")
+Texture = ExtResource("6_vi13c")
+TopTexture = ExtResource("7_135lk")
+BottomTexture = ExtResource("5_5b4ue")
+
+[sub_resource type="Resource" id="Resource_dq5wt"]
+script = ExtResource("2_7x5ym")
+Texture = ExtResource("8_620yq")
+TopTexture = ExtResource("8_620yq")
+BottomTexture = ExtResource("8_620yq")
+
+[sub_resource type="Resource" id="Resource_8t0b1"]
+script = ExtResource("2_7x5ym")
+Texture = ExtResource("10_vwk1l")
+TopTexture = ExtResource("9_48atv")
+BottomTexture = ExtResource("9_48atv")
+
+[sub_resource type="Resource" id="Resource_d3ajv"]
+script = ExtResource("2_7x5ym")
+Texture = ExtResource("11_xoj02")
+TopTexture = ExtResource("11_xoj02")
+BottomTexture = ExtResource("11_xoj02")
+
+[sub_resource type="Resource" id="Resource_ntjqf"]
+script = ExtResource("2_7x5ym")
+Texture = ExtResource("12_jp6bq")
+TopTexture = ExtResource("12_jp6bq")
+BottomTexture = ExtResource("12_jp6bq")
+
+[node name="Level" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_oic5h")
+
+[node name="BlockManager" type="Node" parent="."]
+script = ExtResource("1_1vhrc")
+Air = SubResource("Resource_xxcol")
+Stone = SubResource("Resource_xblo2")
+Dirt = SubResource("Resource_pj1vn")
+Grass = SubResource("Resource_b2y18")
+Leaves = SubResource("Resource_dq5wt")
+Trunk = SubResource("Resource_8t0b1")
+Brick = SubResource("Resource_d3ajv")
+Lava = SubResource("Resource_ntjqf")
+LavaShaderMaterial = ExtResource("13_ry1cx")
+
+[node name="ChunkManager" type="Node" parent="."]
+script = ExtResource("1_0ir14")
+ChunkScene = ExtResource("1_peckr")
+
+[node name="Player" parent="." instance=ExtResource("8_we1o3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 372.059, 0)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.904552, -0.358104, 0.231402, 0, 0.542735, 0.839904, -0.426363, -0.759737, 0.490932, 0, 33.2873, 0)
+shadow_enabled = true
+
+[node name="DebugLog" type="RichTextLabel" parent="."]
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -371.0
+offset_top = 33.0
+offset_right = -44.0
+offset_bottom = -557.0
+grow_horizontal = 0
+grow_vertical = 2
+size_flags_horizontal = 3
+mouse_force_pass_scroll_events = false
+scroll_active = false
+scroll_following = true
