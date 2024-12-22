@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 public partial class Player : CharacterBody3D
 {
@@ -77,9 +78,49 @@ public partial class Player : CharacterBody3D
 			{
 				// can't break lava
 				Block b = chunk.GetBlock((Vector3I)(intBlockPosition - chunk.GlobalPosition));
+
 				if (b != BlockManager.Instance.Lava) {
-					chunk.DamageBlock((Vector3I)(intBlockPosition - chunk.GlobalPosition), 5);
-					chunk.ForceUpdate();
+					//ChunkManager.Instance.DamageBlocks(new Vector3I[] {(Vector3I)(intBlockPosition - chunk.GlobalPosition)}, 5);
+
+						// LINE ATTACK PATTERN
+						Dictionary<Vector3I,int> blockDamages = new();
+						int l = 20;
+						int w = 4;
+						Basis rot = new(Vector3.Up, Head.Rotation.Y);
+						for (int x = -w/2; x <= w/2; x++)
+						{
+							for (int y = -w/2; y <= w/2; y++)
+							{
+								for (int z = -l; z <= 0; z++)
+								{
+									Vector3I bpos = intBlockPosition + (Vector3I)(rot *new Vector3(x, y, z));
+									int damage = Mathf.Max(20+z,0);
+									blockDamages[bpos] = damage;
+								}
+							}
+						}
+						ChunkManager.Instance.DamageBlocks(blockDamages);
+
+					/*List<Vector3I> blocksInSphere = new();
+					int r = Mathf.CeilToInt(10.0f);
+
+					for (int x = -r; x <= r; x++)
+					{
+						for (int y = -r; y <= r; y++)
+						{
+							for (int z = -r; z <= r; z++)
+							{
+								Vector3I bpos = intBlockPosition + new Vector3I(x, y, z);
+
+								// Check if the block is within the sphere
+								if (bpos.Y >= 0 && bpos.Y <=Chunk.Dimensions.Y && intBlockPosition.DistanceTo(bpos) <= r)
+								{
+									blocksInSphere.Add(bpos);
+								}
+							}
+						}
+					}
+					ChunkManager.Instance.DamageBlocks(blocksInSphere.ToArray(), Mathf.CeilToInt(5));*/
 				}
 			}
 

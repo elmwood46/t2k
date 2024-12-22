@@ -176,20 +176,23 @@ public partial class Chunk : StaticBody3D
 		SaveManager.Instance.SaveChunk(chunkId, _blocks);
 	}
 
-	public void DamageBlock(Vector3I blockPosition, int damage)
-	{
-		_blockHealth[blockPosition.X, blockPosition.Y, blockPosition.Z] -= damage;
-		if (_blockHealth[blockPosition.X, blockPosition.Y, blockPosition.Z] <= 0)
+	public void DamageBlocks(List<(Vector3I, int)> blockDamages)
+	{ // array of tuples with block global position as Item1 and damage as Item2
+		foreach ((Vector3I,int) blockdamage in blockDamages)
 		{
-			_blockHealth[blockPosition.X, blockPosition.Y, blockPosition.Z] = (int)BlockHealth.Air;
-			_blocks[blockPosition.X, blockPosition.Y, blockPosition.Z] = BlockManager.Instance.Air;
+			if (blockdamage.Item1.X < 0 || blockdamage.Item1.X >= Dimensions.X) continue;
+			if (blockdamage.Item1.Y < 0 || blockdamage.Item1.Y >= Dimensions.Y) continue;
+			if (blockdamage.Item1.Z < 0 || blockdamage.Item1.Z >= Dimensions.Z) continue;
+			_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] -= blockdamage.Item2;
+			if (_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] <= 0)
+			{
+				_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] = (int)BlockHealth.Air;
+				_blocks[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] = BlockManager.Instance.Air;
+			}
 		}
-	}
-
-	public void ForceUpdate() {
 		Update();
 	}
-
+	
 	private void SetPlayerSpawnY(float y) {
 		Player.Instance.Position = new Vector3(0, y, 0);
 	}

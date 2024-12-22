@@ -1,0 +1,96 @@
+[gd_scene load_steps=4 format=3 uid="uid://cl3kyenk8qo4r"]
+
+[ext_resource type="FontFile" uid="uid://bkgo54nya5xjn" path="res://menus/Roboto-Black.ttf" id="1_iuc5h"]
+[ext_resource type="Script" path="res://menus/GameEnd.cs" id="2_q5po8"]
+
+[sub_resource type="Theme" id="Theme_m3nwd"]
+default_font = ExtResource("1_iuc5h")
+/colors/asd = Color(0.232969, 0.45326, 0.393833, 1)
+/fonts/font = ExtResource("1_iuc5h")
+Button/fonts/f = ExtResource("1_iuc5h")
+
+[node name="GameEnd" type="Control" node_paths=PackedStringArray("RestartBtn", "MainMenuBtn", "QuitBtn", "LevelLabel")]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_m3nwd")
+script = ExtResource("2_q5po8")
+RestartBtn = NodePath("VBoxContainer/Restart")
+MainMenuBtn = NodePath("VBoxContainer/MainMenu")
+QuitBtn = NodePath("VBoxContainer/Quit")
+LevelLabel = NodePath("points")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.240771, 0.437113, 0.527511, 1)
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.184
+anchor_right = 0.5
+anchor_bottom = 0.184
+offset_left = -164.0
+offset_top = -25.232
+offset_right = 168.0
+offset_bottom = 27.768
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 46
+text = "Game End"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="points" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.29
+anchor_right = 0.5
+anchor_bottom = 0.29
+offset_left = -93.0
+offset_top = -20.92
+offset_right = 93.0
+offset_bottom = 26.08
+grow_horizontal = 2
+text = "Level reached: x"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.609
+anchor_right = 0.5
+anchor_bottom = 0.609
+offset_left = -165.0
+offset_top = -140.632
+offset_right = 165.0
+offset_bottom = 171.368
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Restart" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "Restart"
+
+[node name="MainMenu" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "Main Menu"
+
+[node name="Quit" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "Quit"

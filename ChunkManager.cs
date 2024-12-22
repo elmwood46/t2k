@@ -82,6 +82,46 @@ public partial class ChunkManager : Node
 		}
 	}
 
+	public void DamageBlocks(Dictionary<Vector3I, int> blockAndDamage)
+	{
+		var chunkBlockMapping = new Dictionary<Vector2I, List<(Vector3I, int)>>();
+
+		foreach (var (globalPosition, damage) in blockAndDamage)
+		{
+			var chunkTilePosition = new Vector2I(
+				Mathf.FloorToInt(globalPosition.X / (float)Chunk.Dimensions.X),
+				Mathf.FloorToInt(globalPosition.Z / (float)Chunk.Dimensions.Z)
+			);
+
+			var chunkGlobalPosition = new Vector3I(
+				chunkTilePosition.X * Chunk.Dimensions.X,
+				0,
+				chunkTilePosition.Y * Chunk.Dimensions.Z
+			);
+
+			var relativePosition = globalPosition - chunkGlobalPosition;
+
+			if (!chunkBlockMapping.TryGetValue(chunkTilePosition, out var blockList))
+			{
+				blockList = new List<(Vector3I, int)>();
+				chunkBlockMapping[chunkTilePosition] = blockList;
+			}
+
+			blockList.Add((relativePosition, damage));
+		}
+
+		lock (_positionToChunk)
+		{
+			foreach (var (chunkTilePosition, blockList) in chunkBlockMapping)
+			{
+				if (_positionToChunk.TryGetValue(chunkTilePosition, out var chunk))
+				{
+					chunk.DamageBlocks(blockList);
+				}
+			}
+		}
+	}
+
 	public override void _PhysicsProcess(double delta)
 	{
 		if (!Engine.IsEditorHint())

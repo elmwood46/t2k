@@ -1,0 +1,222 @@
+[gd_scene load_steps=19 format=3 uid="uid://bsjuauhgsut6i"]
+
+[ext_resource type="Script" path="res://effects/Explosion.cs" id="1_72nc2"]
+[ext_resource type="AudioStream" uid="uid://bdrjt0o5ku3do" path="res://audio/explosion.ogg" id="2_nvuq2"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ho45n"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_f02vq"]
+material = SubResource("StandardMaterial3D_ho45n")
+rings = 4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_emytk"]
+transparency = 1
+albedo_color = Color(1, 0.564706, 0, 1)
+emission_enabled = true
+emission = Color(1, 0.584314, 0, 1)
+emission_energy_multiplier = 10.02
+
+[sub_resource type="SphereMesh" id="SphereMesh_bsbdn"]
+material = SubResource("StandardMaterial3D_emytk")
+rings = 4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ug8kj"]
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 3.02
+
+[sub_resource type="SphereMesh" id="SphereMesh_2q0hj"]
+material = SubResource("StandardMaterial3D_ug8kj")
+rings = 4
+
+[sub_resource type="Animation" id="Animation_wem18"]
+length = 0.001
+tracks/0/type = "scale_3d"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("shockwave")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = PackedFloat32Array(0, 1, 1, 1, 1)
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("shockwave:transparency")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.0001),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.5, 0.5]
+}
+tracks/2/type = "scale_3d"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("explosion")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = PackedFloat32Array(0, 1, 1, 1, 1)
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("explosion:transparency")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/4/type = "scale_3d"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("center")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = PackedFloat32Array(0, 1, 1, 1, 1)
+
+[sub_resource type="Animation" id="Animation_2o7cb"]
+resource_name = "explode"
+tracks/0/type = "scale_3d"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("shockwave")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = PackedFloat32Array(0.0333333, 1, 0.1, 0.1, 0.1, 0.133333, 1, 0.5, 0.5, 0.5, 0.566667, 1, 3, 3, 3)
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("shockwave:transparency")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0.0333333, 0.133333, 0.566667),
+"transitions": PackedFloat32Array(1, 1, 0.420449),
+"update": 0,
+"values": [0.5, 0.5, 1.0]
+}
+tracks/2/type = "scale_3d"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("explosion")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = PackedFloat32Array(0, 1, 0.2, 0.2, 0.2, 0.133333, 1, 2, 2, 2, 0.6, 1, 1, 1, 1)
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("explosion:transparency")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.133333, 0.466667, 0.6),
+"transitions": PackedFloat32Array(1, 1.93187, 1, 1),
+"update": 0,
+"values": [0.5, 0.9, 0.99, 1.0]
+}
+tracks/4/type = "scale_3d"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("center")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = PackedFloat32Array(-0.0333333, 1, 0.1, 0.1, 0.1, 0.1333, 1, 0.5, 0.5, 0.5, 0.633333, 1, 0.01, 0.01, 0.01)
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_y3xwe"]
+_data = {
+"RESET": SubResource("Animation_wem18"),
+"explode": SubResource("Animation_2o7cb")
+}
+
+[sub_resource type="Curve" id="Curve_ow620"]
+min_value = -200.0
+max_value = 200.0
+_data = [Vector2(0.0214286, -70.0061), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_ft7a5"]
+curve = SubResource("Curve_ow620")
+
+[sub_resource type="Curve" id="Curve_0pv1g"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(0.589286, 0.773671), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_li4qh"]
+curve = SubResource("Curve_0pv1g")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_0o1cd"]
+lifetime_randomness = 0.77
+emission_shape_scale = Vector3(0.05, 0.05, 0.05)
+emission_shape = 3
+emission_box_extents = Vector3(2, 2, 2)
+radial_velocity_min = -2.23517e-05
+radial_velocity_max = 0.999978
+gravity = Vector3(0, 0, 0)
+linear_accel_curve = SubResource("CurveTexture_ft7a5")
+radial_accel_min = 21.37
+radial_accel_max = 61.06
+tangential_accel_min = -2.23517e-06
+tangential_accel_max = 24.58
+scale_max = 3.0
+scale_curve = SubResource("CurveTexture_li4qh")
+turbulence_enabled = true
+turbulence_noise_scale = 1.173
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ccuhh"]
+transparency = 1
+albedo_color = Color(1, 0.54902, 0, 1)
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 8.76
+
+[sub_resource type="BoxMesh" id="BoxMesh_ibngf"]
+material = SubResource("StandardMaterial3D_ccuhh")
+size = Vector3(0.05, 0.05, 0.05)
+
+[node name="Explosion" type="Node3D" node_paths=PackedStringArray("ExplosionParticles", "ExplosionSound", "ExplosionAnimation", "ExplosionAnimationMeshes", "ExplosionCollisionArea")]
+script = ExtResource("1_72nc2")
+ExplosionParticles = NodePath("GPUParticles3D")
+ExplosionSound = NodePath("explodeSound")
+ExplosionAnimation = NodePath("mesh/AnimationPlayer")
+ExplosionAnimationMeshes = NodePath("mesh")
+ExplosionCollisionArea = NodePath("Area3D")
+
+[node name="mesh" type="Node3D" parent="."]
+
+[node name="shockwave" type="MeshInstance3D" parent="mesh"]
+transparency = 0.5
+cast_shadow = 0
+mesh = SubResource("SphereMesh_f02vq")
+
+[node name="explosion" type="MeshInstance3D" parent="mesh"]
+cast_shadow = 0
+mesh = SubResource("SphereMesh_bsbdn")
+
+[node name="center" type="MeshInstance3D" parent="mesh"]
+cast_shadow = 0
+mesh = SubResource("SphereMesh_2q0hj")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="mesh"]
+libraries = {
+"": SubResource("AnimationLibrary_y3xwe")
+}
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="."]
+emitting = false
+amount = 64
+one_shot = true
+explosiveness = 1.0
+randomness = 0.2
+fixed_fps = 60
+process_material = SubResource("ParticleProcessMaterial_0o1cd")
+draw_pass_1 = SubResource("BoxMesh_ibngf")
+
+[node name="explodeSound" type="AudioStreamPlayer3D" parent="."]
+stream = ExtResource("2_nvuq2")
+max_distance = 442.29
+
+[node name="Area3D" type="Area3D" parent="."]
+collision_mask = 5

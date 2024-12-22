@@ -1,0 +1,48 @@
+[gd_scene load_steps=2 format=3 uid="uid://15urchad3hk0"]
+
+[ext_resource type="Script" path="res://menus/DebugOverlay.cs" id="1_gy8od"]
+
+[node name="DebugOverlay" type="Control" node_paths=PackedStringArray("DebugLog", "PlayerInfo", "StopwatchLabel")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gy8od")
+DebugLog = NodePath("MarginContainer/HBoxContainer/DebugLog")
+PlayerInfo = NodePath("MarginContainer/HBoxContainer/VBoxContainer/PlayerInfo")
+StopwatchLabel = NodePath("MarginContainer/HBoxContainer/VBoxContainer/Stopwatch")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_direction = 2
+layout_mode = 2
+
+[node name="DebugLog" type="RichTextLabel" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(256, 0)
+layout_mode = 2
+text = "Hey there
+This is 
+The Debug Log"
+scroll_active = false
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Stopwatch" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+text = "Stopwatch"
+
+[node name="PlayerInfo" type="RichTextLabel" parent="MarginContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Player Info"
