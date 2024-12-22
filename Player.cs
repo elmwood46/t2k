@@ -6,9 +6,11 @@ public partial class Player : CharacterBody3D
 {
 	[Export] public Node3D Head { get; set; }
 	[Export] public Camera3D Camera { get; set; }
+	[Export] public Node3D CameraSmooth {get; set;}
 	[Export] public RayCast3D RayCast { get; set; }
 	[Export] public MeshInstance3D BlockHighlight { get; set; }
-    [Export] public RayCast3D RayDetectWall { get; set; }
+    [Export] public RayCast3D StairsAheadRay { get; set; }
+	[Export] public RayCast3D StairsBelowRay { get; set; }
 
 	[Export] private float _mouseSensitivity = 0.3f;
     [Export] public float WALK_SPEED = 5.0f;
@@ -16,6 +18,12 @@ public partial class Player : CharacterBody3D
     [Export] public float JUMP_VELOCITY = 4.8f;
     [Export] public float SENSITIVITY = 0.004f;
     private float _movespeed;
+
+	const float MAX_STEP_HEIGHT = 0.55f; // Raycasts length should match this. StairsAhead one should be slightly longer.
+	bool _snappedToStairsLastFrame = false;
+	int _lastFrameOnFloor = -1;
+	private Vector3 _savedCameraGlobalPos ; 
+	private Vector3 _cameraPosReset = new Vector3(999,999,999);
 
     //bob variables
     const float BOB_FREQ = 2.4f;
@@ -26,11 +34,7 @@ public partial class Player : CharacterBody3D
     const float BASE_FOV = 75.0f;
     const float FOV_CHANGE = 1.5f;
 
-	[Export] private float _jumpVelocity = 10f;
-
 	private float _cameraXRotation;
-
-	private Timer spawnTimer;
 
 	private float _gravity = ProjectSettings.GetSetting("physics/3d/default_gravity").AsSingle();
 
@@ -49,13 +53,7 @@ public partial class Player : CharacterBody3D
 		}
 
 		Input.MouseMode = Input.MouseModeEnum.Captured;
-		spawnTimer = new Timer();
-		AddChild(spawnTimer);
-		spawnTimer.WaitTime = 0.1f;
-		spawnTimer.OneShot = true;
-		spawnTimer.Start();
 	}
-
 	public override void _Input(InputEvent @event)
 	{
 		if (@event is InputEventMouseMotion)
@@ -73,9 +71,82 @@ public partial class Player : CharacterBody3D
 		}
 	}
 
+	private void SaveCameraPosForSmoothing() {
+		if (_savedCameraGlobalPos==_cameraPosReset) {
+			_savedCameraGlobalPos = CameraSmooth.GlobalPosition;
+		}
+	}
+
+	private void ResetCameraSmooth(float delta) {
+		if (_savedCameraGlobalPos==_cameraPosReset) return;
+		CameraSmooth.GlobalPosition = new Vector3 (CameraSmooth.GlobalPosition.X,_savedCameraGlobalPos.Y, CameraSmooth.GlobalPosition.Z);
+		CameraSmooth.Position = new Vector3(CameraSmooth.Position.X,Mathf.Clamp(CameraSmooth.Position.Y, -0.7f, 0.7f),CameraSmooth.Position.Z);
+		var move_amount = Mathf.Max(Velocity.Length() * delta, WALK_SPEED/2 * delta);
+		CameraSmooth.Position = new Vector3(CameraSmooth.Position.X,Mathf.Lerp(CameraSmooth.Position.Y, 0f, move_amount),CameraSmooth.Position.Z);
+		if (CameraSmooth.Position.Y == 0f) {
+			_savedCameraGlobalPos = _cameraPosReset;
+		}
+	}
+
+	private bool SnapUpStairsCheck(float delta)
+	{
+		if (!(IsOnFloor() || _snappedToStairsLastFrame)) return false;
+		if (Velocity.Y > 0 || (Velocity * new Vector3(1,0,1)).Length() == 0) return false;
+
+		var expectedMoveMotion = Velocity * new Vector3(1, 0, 1) * delta;
+		var stepPosWithClearance = GlobalTransform.Translated(expectedMoveMotion + new Vector3(0, MAX_STEP_HEIGHT * 2, 0));
+
+		var downCheckResult = new KinematicCollision3D();
+		if (TestMove(stepPosWithClearance, new Vector3(0, -MAX_STEP_HEIGHT * 2, 0), downCheckResult) && (downCheckResult.GetCollider() is StaticBody3D || downCheckResult.GetCollider() is Chunk))
+		{
+			var stepHeight = ((stepPosWithClearance.Origin + downCheckResult.GetTravel()) - GlobalPosition).Y;
+			if (stepHeight > MAX_STEP_HEIGHT || stepHeight <= 0.01 || (downCheckResult.GetPosition() - GlobalPosition).Y> MAX_STEP_HEIGHT) return false;
+
+			StairsAheadRay.GlobalPosition = downCheckResult.GetPosition() + new Vector3(0, MAX_STEP_HEIGHT, 0) + expectedMoveMotion.Normalized() * 0.1f;
+			StairsAheadRay.ForceRaycastUpdate();
+
+			if (StairsAheadRay.IsColliding() && !IsSurfaceTooSteep(StairsAheadRay.GetCollisionNormal()))
+			{
+				SaveCameraPosForSmoothing();
+				GlobalPosition = stepPosWithClearance.Origin + downCheckResult.GetTravel();
+				ApplyFloorSnap();
+				_snappedToStairsLastFrame = true;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private void SnapDownToStairsCheck() {
+		var didSnap = false;
+		StairsBelowRay.ForceRaycastUpdate();
+		var floorBelow = StairsBelowRay.IsColliding() && !IsSurfaceTooSteep(StairsBelowRay.GetCollisionNormal());
+		var wasOnFloorLastFrame = ((int)Engine.GetPhysicsFrames() == _lastFrameOnFloor);
+		if (!IsOnFloor() && Velocity.Y <= 0 && (wasOnFloorLastFrame || _snappedToStairsLastFrame) && floorBelow)
+		{
+			var bodyTestResult = new KinematicCollision3D();
+			if (TestMove(GlobalTransform, new Vector3(0, -MAX_STEP_HEIGHT, 0), bodyTestResult))
+			{
+				SaveCameraPosForSmoothing();
+				var translateY = bodyTestResult.GetTravel().Y;
+				Position += new Vector3(0, translateY, 0);
+				ApplyFloorSnap();
+				didSnap = true;
+			}
+		}
+		_snappedToStairsLastFrame = didSnap;
+	}
+
+	private bool IsSurfaceTooSteep(Vector3 normal)
+	{
+		return normal.AngleTo(Vector3.Up) > FloorMaxAngle;
+	}
+
+	//private bool RunBodyTestMotion
+
 	public override void _Process(double delta)
 	{
-		if (!spawnTimer.IsStopped()) return;
 
         // do block modify stuff
 		if (RayCast.IsColliding() && RayCast.GetCollider() is Chunk chunk)
@@ -173,18 +244,21 @@ public partial class Player : CharacterBody3D
 
 	public override void _PhysicsProcess(double delta)
 	{
-		if (!spawnTimer.IsStopped()) return;
+		if (IsOnFloor() || _snappedToStairsLastFrame)
+		{
+			_lastFrameOnFloor = (int)Engine.GetPhysicsFrames();
+		}
 
 		var velocity = Velocity;
 
-		if (!IsOnFloor())
+		if (!(IsOnFloor() || _snappedToStairsLastFrame))
 		{
 			velocity.Y -= _gravity * (float)delta;
 		}
 
-		if (Input.IsActionJustPressed("Jump") && IsOnFloor())
+		if (Input.IsActionJustPressed("Jump") && (IsOnFloor() || _snappedToStairsLastFrame))
 		{
-			velocity.Y = _jumpVelocity;
+			velocity.Y = JUMP_VELOCITY;
 		}
 
         // set direction
@@ -202,73 +276,44 @@ public partial class Player : CharacterBody3D
         }
 
         // lerp velocity
-        if (IsOnFloor()) {
+        if (IsOnFloor() || _snappedToStairsLastFrame) {
             if (direction.Length() > 0.1) {
                 velocity.X = direction.X * _movespeed;
                 velocity.Z = direction.Z * _movespeed;
             } else {
-                velocity.X = Mathf.Lerp(velocity.X, direction.X * speed, (float)delta * 7.0f);
-                velocity.z = Mathf.Lerp(velocity.Z, direction.Z * speed, (float)delta * 7.0f);
+                velocity.X = Mathf.Lerp(velocity.X, direction.X * _movespeed, (float)delta * 7.0f);
+                velocity.Z = Mathf.Lerp(velocity.Z, direction.Z * _movespeed, (float)delta * 7.0f);
             }
         } else {
-            velocity.X = Mathf.Lerp(velocity.X, direction.X * speed, (float)delta * 3.0f);
-            velocity.Z = Mathf.Lerp(velocity.Z, direction.Z * speed, (float)delta * 3.0f);
+            velocity.X = Mathf.Lerp(velocity.X, direction.X * _movespeed, (float)delta * 3.0f);
+            velocity.Z = Mathf.Lerp(velocity.Z, direction.Z * _movespeed, (float)delta * 3.0f);
         }
-
-        // Wall detection and moving up ---------------------------------------------------------------
-        // Check if a wall was hit
-        if (IsOnFloor() && RayDetectWall.IsColliding() && RayDetectWall.GetCollider() is Chunk chunk)
-        {
-			var blockPosition = RayDetectWall.GetCollisionPoint() - 0.5f * RayDetectWall.GetCollisionNormal();
-			var intBlockPosition = new Vector3I(
-				Mathf.FloorToInt(blockPosition.X),
-				Mathf.FloorToInt(blockPosition.Y*2),
-				Mathf.FloorToInt(blockPosition.Z));
-            intBlockPosition = (Vector3I)(intBlockPosition - chunk.GlobalPosition);
-
-            int i=1;
-            bool canJump = true;
-            while (i < 4) {
-                if (intBlockPosition.Y + i >= Chunk.Dimensions.Y) {
-                    break;
-                }
-                if (chunk.GetBlock(intBlockPosition + new Vector3I(0,i,0)) != BlockManager.Instance.Air) {
-
-                    canJump = false;
-                    break;
-                }
-                i++;
-            }
-
-            if (canJump) { // free space above
-                Vector3 xz = velocity.Length() < 0.01 ? direction : velocity;
-                xz.Y = 0;
-                xz = xz.Normalized();
-                if (xz.Dot(new Vector3(0,0,-1) * Head.GlobalBasis.Z) > 0.0f) {
-                    GlobalPosition += new Vector3(xz.X,1,xz.Z);
-                }
-            }
-        }
-        // ---------------------------------------------------------------
 
 		Velocity = velocity;
 
         //Head bob
-        t_bob += (float)delta * velocity.length() * (float)IsOnFloor();
-        Camera.Transform.Origin = Headbob(t_bob);
+        t_bob += (float)delta * velocity.Length() * ((IsOnFloor() || _snappedToStairsLastFrame) ? 1.0f : 0.0f);
+        Camera.Position = Headbob(t_bob);
 
         // FOV
-        var velocity_clamped = Mathf.Clamp(velocity.length(), 0.5, SPRINT_SPEED * 2);
-        var target_fov = BASE_FOV + FOV_CHANGE * velocity_clamped;
-        Camera.fov = lerp(camera.fov, target_fov, delta * 8.0f);
+        var velocity_clamped = Mathf.Clamp(velocity.Length(), 0.5f, SPRINT_SPEED * 2.0f);
+        float target_fov = BASE_FOV + FOV_CHANGE * velocity_clamped;
+        Camera.Fov = Mathf.Lerp(Camera.Fov, target_fov, 0.25f);
 
-		MoveAndSlide();
+
+		if (!SnapUpStairsCheck((float)delta))
+		{
+			MoveAndSlide();
+			SnapDownToStairsCheck();
+		}	
+
+		ResetCameraSmooth((float)delta);
 	}
 
     private Vector3 Headbob(float time) {
         var pos = Vector3.Zero;
-        pos.y = Mathf.Sin(time * BOB_FREQ) * BOB_AMP;
-        pos.x = Mathf.Cos(time * BOB_FREQ / 2) * BOB_AMP;
+        pos.Y = Mathf.Sin(time * BOB_FREQ) * BOB_AMP;
+        pos.X = Mathf.Cos(time * BOB_FREQ / 2) * BOB_AMP;
         return pos;
     }
 }
