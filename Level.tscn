@@ -9,12 +9,12 @@
 [ext_resource type="Texture2D" uid="uid://dinlc1868cmq6" path="res://BlockTextures/grass_side.png" id="6_vi13c"]
 [ext_resource type="Texture2D" uid="uid://cedssbc17dwdy" path="res://BlockTextures/grass.png" id="7_135lk"]
 [ext_resource type="Texture2D" uid="uid://b6nibvog2f0wt" path="res://BlockTextures/leaves.png" id="8_620yq"]
-[ext_resource type="PackedScene" uid="uid://dvt10rp16ksw8" path="res://Player.tscn" id="8_we1o3"]
 [ext_resource type="Texture2D" uid="uid://c4spwl71x1h4u" path="res://BlockTextures/trunkBase.png" id="9_48atv"]
 [ext_resource type="Texture2D" uid="uid://uyvm30m1rae0" path="res://BlockTextures/trunk.png" id="10_vwk1l"]
 [ext_resource type="Texture2D" uid="uid://cppaeip3o1gab" path="res://BlockTextures/bricks.png" id="11_xoj02"]
 [ext_resource type="Texture2D" uid="uid://b2l14qu6ygspc" path="res://BlockTextures/lava.png" id="12_jp6bq"]
 [ext_resource type="Material" uid="uid://cc8jelgps50k7" path="res://shaders/LavaShader.tres" id="13_ry1cx"]
+[ext_resource type="PackedScene" uid="uid://cu8vpiefrhpvp" path="res://Player.tscn" id="15_72lf1"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_2uccx"]
 
@@ -93,8 +93,7 @@ LavaShaderMaterial = ExtResource("13_ry1cx")
 script = ExtResource("1_0ir14")
 ChunkScene = ExtResource("1_peckr")
 
-[node name="Player" parent="." instance=ExtResource("8_we1o3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 372.059, 0)
+[node name="Player" parent="." instance=ExtResource("15_72lf1")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.904552, -0.358104, 0.231402, 0, 0.542735, 0.839904, -0.426363, -0.759737, 0.490932, 0, 33.2873, 0)

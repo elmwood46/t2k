@@ -1,43 +1,44 @@
 using Godot;
-using System;
-using System.Collections.Generic;
 
 public partial class Player : CharacterBody3D
 {
-	[Export] public Node3D Head { get; set; }
-	[Export] public Camera3D Camera { get; set; }
-	[Export] public RayCast3D RayCast { get; set; }
-	[Export] public MeshInstance3D BlockHighlight { get; set; }
+    [Export] public float Speed = 10f;
+    [Export] public float Acceleration = 5f;
+    [Export] public float Deceleration = 10f;
+    [Export] public float JumpForce = 5f;
+    [Export] public float Gravity = ProjectSettings.GetSetting("physics/3d/default_gravity").AsSingle();
+    [Export] public float WallDetectionDistance = 1.5f;  // Raycast distance to check for walls
+    [Export] public float WallHeightThreshold = 0.5f;  // Wall height threshold for moving up
+    [Export] public RayCast3D RayDetectWall { get; set; }
 
-	[Export] private float _mouseSensitivity = 0.3f;
-	[Export] private float _movementSpeed = 16f;
-	[Export] private float _jumpVelocity = 10f;
+    [Export] public Camera3D Camera;  // Reference to the Camera3D
+    [Export] public Node3D CameraGimbal;
+    [Export] public float SmoothSpeed = 5f;
+    [Export] private float _mouseSensitivity = 0.3f;
 
-	private float _cameraXRotation;
+    private Vector3 _velocity = Vector3.Zero;
 
-	private Timer spawnTimer;
+    private float _cameraXRotation;
 
-	private float _gravity = ProjectSettings.GetSetting("physics/3d/default_gravity").AsSingle();
+    public static Player Instance { get; private set; }
 
-	public static Player Instance { get; private set; }
-
-	public override void _Ready()
+    public override void _Ready()
 	{
+         if (Camera == null)
+        {
+            GD.PrintErr("Camera is not assigned!");
+        }
+        Camera.LookAt(GlobalPosition, Vector3.Up);
+        
 		Instance = this;
 		if (SaveManager.Instance.SaveFileExists())
 		{
 			this.Position = SaveManager.Instance.LoadPlayerPosition();
-			this.Head.RotateY(SaveManager.Instance.State.Data.HeadRotation);
 		} else {
 			this.Position = new Vector3(0, 10, 0);
 		}
 
 		Input.MouseMode = Input.MouseModeEnum.Captured;
-		spawnTimer = new Timer();
-		AddChild(spawnTimer);
-		spawnTimer.WaitTime = 0.1f;
-		spawnTimer.OneShot = true;
-		spawnTimer.Start();
 	}
 
 	public override void _Input(InputEvent @event)
@@ -45,139 +46,112 @@ public partial class Player : CharacterBody3D
 		if (@event is InputEventMouseMotion)
 		{
 			var mouseMotion = @event as InputEventMouseMotion;
-			var deltaX = mouseMotion.Relative.Y * _mouseSensitivity;
+
 			var deltaY = -mouseMotion.Relative.X * _mouseSensitivity;
+			CameraGimbal.RotateY(Mathf.DegToRad(deltaY));
 
-			Head.RotateY(Mathf.DegToRad(deltaY));
-			if (_cameraXRotation + deltaX > -90 && _cameraXRotation + deltaX < 90)
-			{
-				Camera.RotateX(Mathf.DegToRad(-deltaX));
-				_cameraXRotation += deltaX;
-			}
 		}
 	}
 
-	public override void _Process(double delta)
-	{
-		if (!spawnTimer.IsStopped()) return;
+    public override void _PhysicsProcess(double delta)
+    {
+        // Handle player movement
+        Vector3 inputDirection = GetInputDirection();
+        Vector3 horizontalVelocity = _velocity;
+        horizontalVelocity.Y = 0;
 
-		if (RayCast.IsColliding() && RayCast.GetCollider() is Chunk chunk)
-		{
-			BlockHighlight.Visible = true;
+        // Acceleration and Deceleration
+        if (inputDirection != Vector3.Zero)
+        {
+            horizontalVelocity = horizontalVelocity.Lerp(inputDirection * Speed, (float)delta * Acceleration);
+        }
+        else
+        {
+            horizontalVelocity = horizontalVelocity.Lerp(Vector3.Zero, (float)delta * Deceleration);
+        }
 
-			var blockPosition = (RayCast.GetCollisionPoint() - 0.5f * RayCast.GetCollisionNormal());
-			var intBlockPosition = new Vector3I(Mathf.FloorToInt(blockPosition.X), Mathf.FloorToInt(blockPosition.Y*2), Mathf.FloorToInt(blockPosition.Z));
-			BlockHighlight.GlobalPosition = new Vector3(
-					Mathf.FloorToInt(blockPosition.X),
-					Mathf.FloorToInt(blockPosition.Y*2)/2.0f,
-					Mathf.FloorToInt(blockPosition.Z)
-				)
-				+ new Vector3(0.5f, 0.25f, 0.5f);
+        // Apply gravity
+        _velocity.Y -= Gravity * (float)delta;
 
-			if (Input.IsActionJustPressed("Break"))
-			{
-				// can't break lava
-				Block b = chunk.GetBlock((Vector3I)(intBlockPosition - chunk.GlobalPosition));
+        // Jump
+        if (IsOnFloor() && Input.IsActionJustPressed("Jump"))
+        {
+            _velocity.Y = JumpForce;
+        }
 
-				if (b != BlockManager.Instance.Lava) {
-					//ChunkManager.Instance.DamageBlocks(new Vector3I[] {(Vector3I)(intBlockPosition - chunk.GlobalPosition)}, 5);
+        // Wall detection and moving up ---------------------------------------------------------------
+        // Check if a wall was hit
+        if (RayDetectWall.IsColliding() && RayDetectWall.GetCollider() is Chunk chunk)
+        {
+			var blockPosition = RayDetectWall.GetCollisionPoint() - 0.5f * RayDetectWall.GetCollisionNormal();
+			var intBlockPosition = new Vector3I(
+				Mathf.FloorToInt(blockPosition.X),
+				Mathf.FloorToInt(blockPosition.Y*2),
+				Mathf.FloorToInt(blockPosition.Z));
+            intBlockPosition = (Vector3I)(intBlockPosition - chunk.GlobalPosition);
 
-						// LINE ATTACK PATTERN
-						Dictionary<Vector3I,int> blockDamages = new();
-						int l = 20;
-						int w = 4;
-						Basis rot = new(Vector3.Up, Head.Rotation.Y);
-						for (int x = -w/2; x <= w/2; x++)
-						{
-							for (int y = -w/2; y <= w/2; y++)
-							{
-								for (int z = -l; z <= 0; z++)
-								{
-									Vector3I bpos = intBlockPosition + (Vector3I)(rot *new Vector3(x, y, z));
-									int damage = Mathf.Max(20+z,0);
-									blockDamages[bpos] = damage;
-								}
-							}
-						}
-						ChunkManager.Instance.DamageBlocks(blockDamages);
 
-					/*List<Vector3I> blocksInSphere = new();
-					int r = Mathf.CeilToInt(10.0f);
+            int i=1;
+            bool canJump = true;
+            while (i < 4) {
+                if (intBlockPosition.Y + i >= Chunk.Dimensions.Y) {
 
-					for (int x = -r; x <= r; x++)
-					{
-						for (int y = -r; y <= r; y++)
-						{
-							for (int z = -r; z <= r; z++)
-							{
-								Vector3I bpos = intBlockPosition + new Vector3I(x, y, z);
+                    break;
+                }
+                if (chunk.GetBlock(intBlockPosition + new Vector3I(0,i,0)) != BlockManager.Instance.Air) {
 
-								// Check if the block is within the sphere
-								if (bpos.Y >= 0 && bpos.Y <=Chunk.Dimensions.Y && intBlockPosition.DistanceTo(bpos) <= r)
-								{
-									blocksInSphere.Add(bpos);
-								}
-							}
-						}
-					}
-					ChunkManager.Instance.DamageBlocks(blocksInSphere.ToArray(), Mathf.CeilToInt(5));*/
-				}
-			}
+                    canJump = false;
+                    break;
+                }
+                i++;
+            }
 
-			if (Input.IsActionJustPressed("Place"))
-			{
-				ChunkManager.Instance.SetBlock((Vector3I)(intBlockPosition + RayCast.GetCollisionNormal()), BlockManager.Instance.Stone);
-			}
+            if (canJump) { // free space above
+                Vector3 xz = _velocity.Length() < 0.05 ? inputDirection : _velocity;
+                xz.Y = 0;
+                xz = xz.Normalized();
+                if (xz.Dot(new Vector3(0,0,-1) * CameraGimbal.GlobalBasis.Z) > 0.5f) {
+                    _velocity.Y = 2.5f;
+                }
+            }
+        }
+        // ---------------------------------------------------------------
 
-			if (Input.IsActionJustPressed("debug_reload"))
-			{
-				GetTree().ReloadCurrentScene();
-			}
-		}
-		else
-		{
-			BlockHighlight.Visible = false;
-		}
-	}
+        // Combine horizontal and vertical velocity
+        _velocity.X = horizontalVelocity.X;
+        _velocity.Z = horizontalVelocity.Z;
 
-	public override void _PhysicsProcess(double delta)
-	{
-		if (!spawnTimer.IsStopped()) return;
+        Velocity = _velocity;
 
-		var velocity = Velocity;
+        // Move the player
+        MoveAndSlide();
 
-		if (!IsOnFloor())
-		{
-			velocity.Y -= _gravity * (float)delta;
-		}
+        // Camera follow logic
+        if (Camera != null)
+        {
+            FollowCamera(delta);
+        }
+    }
 
-		if (Input.IsActionJustPressed("Jump") && IsOnFloor())
-		{
-			velocity.Y = _jumpVelocity;
-		}
 
-		var inputDirection = Input.GetVector("Left", "Right", "Back", "Forward").Normalized();
+    private Vector3 GetInputDirection()
+    {
+        var inputDirection = Input.GetVector("Left", "Right", "Forward", "Back").Normalized();
+        Vector3 direction = Vector3.Zero;
+        direction += inputDirection.X * CameraGimbal.GlobalBasis.X; 
+        direction += inputDirection.Y * CameraGimbal.GlobalBasis.Z;
+        return direction;
+    }
 
-		var direction = Vector3.Zero;
+    private void FollowCamera(double delta)
+    {
+        // Smoothly interpolate the camera's position
+        CameraGimbal.GlobalTransform = new Transform3D(
+            CameraGimbal.GlobalTransform.Basis,
+            CameraGimbal.GlobalTransform.Origin.Lerp(GlobalPosition, (float)delta * SmoothSpeed)
+        );
 
-		direction += inputDirection.X * Head.GlobalBasis.X;
-
-		// Forward is the negative Z direction
-		direction += inputDirection.Y * -Head.GlobalBasis.Z;
-
-		velocity.X = direction.X * _movementSpeed;
-		velocity.Z = direction.Z * _movementSpeed;
-
-		Velocity = velocity;
-		MoveAndSlide();
-
-		// store position and rotation in save manager
-		SaveManager.Instance.State.Data.PlayerPosition = (Position.X, Position.Y, Position.Z);
-		SaveManager.Instance.State.Data.HeadRotation = this.Head.Rotation.Y;
-
-		if (Input.IsActionJustPressed("SaveGame"))
-		{
-			SaveManager.Instance.SaveGame();
-		}
-	}
+        // Make the camera look at the player
+        //Camera.LookAt(GlobalPosition, Vector3.Up);
+    }
 }
