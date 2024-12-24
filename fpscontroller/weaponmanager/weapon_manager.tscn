@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://dvpv1rc1oo10c"]
+
+[ext_resource type="Script" path="res://fpscontroller/weaponmanager/WeaponManager.cs" id="1_5xeao"]
+
+[node name="WeaponManager" type="Node3D"]
+script = ExtResource("1_5xeao")
+
+[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
+
+[node name="RayCast3D" type="RayCast3D" parent="."]

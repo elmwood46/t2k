@@ -1,0 +1,27 @@
+[gd_resource type="Resource" load_steps=7 format=3 uid="uid://cje2ik326lx0p"]
+
+[ext_resource type="AudioStream" uid="uid://d3vi2o7bmt2yc" path="res://fpscontroller/weaponmanager/sounds/cc0-276959__gfl7__pistol-reload-sound.mp3" id="1_hbpru"]
+[ext_resource type="PackedScene" uid="uid://bdtbgl5hqia1g" path="res://fpscontroller/weaponmanager/weapons/deagle/deagle - viewmodel.glb" id="1_qjfwl"]
+[ext_resource type="PackedScene" uid="uid://bnijqi6kngdky" path="res://fpscontroller/weaponmanager/weapons/deagle/deagle.glb" id="2_kcpoh"]
+[ext_resource type="AudioStream" uid="uid://d2lu16lp40dm0" path="res://fpscontroller/weaponmanager/sounds/cc0-371041__morganpurkis__single-gunshot-3.wav" id="2_s3bib"]
+[ext_resource type="Script" path="res://fpscontroller/weaponmanager/WeaponResource.cs" id="3_an7jt"]
+[ext_resource type="AudioStream" uid="uid://counu6xs7ni2t" path="res://fpscontroller/weaponmanager/sounds/cc0-377145__nioczkus__pistol-draw-unholster.wav" id="3_gjbkj"]
+
+[resource]
+script = ExtResource("3_an7jt")
+Damage = 10
+ViewModel = ExtResource("1_qjfwl")
+WorldModel = ExtResource("2_kcpoh")
+ViewModelPos = Vector3(0.13, -0.325, 0.306)
+ViewModelRot = Vector3(0, -3.14159, 0)
+ViewModelScale = Vector3(1, 1, 1)
+WorldModelPos = Vector3(0.325984, 1.65718, -0.817)
+WorldModelRot = Vector3(0, 1.74533, 0)
+WorldModelScale = Vector3(0.14, 0.14, 0.14)
+ViewIdleAnim = "Idle"
+ViewEquipAnim = "Unholster"
+ViewShootAnim = "Shoot"
+ViewReloadAnim = "Reload"
+ShootSound = ExtResource("2_s3bib")
+ReloadSound = ExtResource("1_hbpru")
+UnholsterSound = ExtResource("3_gjbkj")

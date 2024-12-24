@@ -16,5 +16,5 @@ render_priority = 0
 shader = ExtResource("1_34xfh")
 shader_parameter/timeScaleFactor = 0.04
 shader_parameter/emission_color = Color(1, 0.294118, 0.0117647, 1)
-shader_parameter/emission_strength = 1.109
+shader_parameter/emission_strength = 3.459
 shader_parameter/noise_texture = SubResource("NoiseTexture2D_kip8t")

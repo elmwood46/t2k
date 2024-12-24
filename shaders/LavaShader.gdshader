@@ -51,8 +51,9 @@ void fragment() {
     vec3 emission = emission_color * emission_strength;
 
 	 // Use the UV coordinates for texture sampling and animation
-    vec2 uv = UV - 0.5;
-    uv *= 3.0; // Scale UVs for larger effect
+	vec2 world_pos_xz = (INV_VIEW_MATRIX * vec4(VERTEX.xyz, 1.0)).xz;
+    vec2 uv = world_pos_xz;
+    //uv *= 3.0; // Scale UVs for larger effect
 
     float rz = flow(uv);
     vec3 col = vec3(0.2, 0.07, 0.01) / rz;

@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3 uid="uid://deyat72y3hmc1"]
+[gd_scene load_steps=33 format=3 uid="uid://deyat72y3hmc1"]
 
 [ext_resource type="Script" path="res://ChunkManager.cs" id="1_0ir14"]
 [ext_resource type="Script" path="res://BlockManager.cs" id="1_1vhrc"]
@@ -15,6 +15,7 @@
 [ext_resource type="Texture2D" uid="uid://b2l14qu6ygspc" path="res://BlockTextures/lava.png" id="12_jp6bq"]
 [ext_resource type="Material" uid="uid://cc8jelgps50k7" path="res://shaders/LavaShader.tres" id="13_ry1cx"]
 [ext_resource type="PackedScene" uid="uid://dvt10rp16ksw8" path="res://Player.tscn" id="15_72lf1"]
+[ext_resource type="PackedScene" uid="uid://b1ovqgjwms7u4" path="res://props/ladder.tscn" id="16_usagc"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_2uccx"]
 
@@ -72,6 +73,18 @@ Texture = ExtResource("12_jp6bq")
 TopTexture = ExtResource("12_jp6bq")
 BottomTexture = ExtResource("12_jp6bq")
 
+[sub_resource type="BoxMesh" id="BoxMesh_5f7rv"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_7o2ry"]
+points = PackedVector3Array(-0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_u3mn0"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_r6ns0"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_i34ip"]
+points = PackedVector3Array(-0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
+
 [node name="Level" type="Node3D"]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
@@ -94,6 +107,19 @@ script = ExtResource("1_0ir14")
 ChunkScene = ExtResource("1_peckr")
 
 [node name="Player" parent="." instance=ExtResource("15_72lf1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.66351, 0)
+
+[node name="Ladder" parent="." groups=["ladder_area3d"] instance=ExtResource("16_usagc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10.522, -7)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 15, 0, 0, 0, 1, 0, 10.5799, -7.55022)
+mesh = SubResource("BoxMesh_5f7rv")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
+shape = SubResource("ConvexPolygonShape3D_7o2ry")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.904552, -0.358104, 0.231402, 0, 0.542735, 0.839904, -0.426363, -0.759737, 0.490932, 0, 33.2873, 0)
@@ -114,3 +140,13 @@ size_flags_horizontal = 3
 mouse_force_pass_scroll_events = false
 scroll_active = false
 scroll_following = true
+
+[node name="RigidBody3D" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.659, 3.47894)
+physics_material_override = SubResource("PhysicsMaterial_u3mn0")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="RigidBody3D"]
+mesh = SubResource("BoxMesh_r6ns0")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D"]
+shape = SubResource("ConvexPolygonShape3D_i34ip")
