@@ -11,6 +11,7 @@ public partial class Player : CharacterBody3D
 
 	[Export] public RayCast3D RayCast { get; set; }
 	[Export] public MeshInstance3D BlockHighlight { get; set; }
+	[Export] public ShapeCast3D ShapeCast { get; set; }
     [Export] public RayCast3D StairsAheadRay { get; set; }
 	[Export] public RayCast3D StairsBelowRay { get; set; }
 
@@ -21,10 +22,13 @@ public partial class Player : CharacterBody3D
     [Export] public float JUMP_VELOCITY = 4.8f;
     [Export] public float SENSITIVITY = 0.004f;
 
+	[Export] public float Mass = 80.0f;
+	[Export] public float PushForce = 5.0f;
+
     private float _movespeed;
 	const float MAX_STEP_HEIGHT = 0.50f; // Raycasts length should match this. StairsAhead one should be slightly longer.
 	private bool _snappedToStairsLastFrame = false;
-	private int _lastFrameOnFloor = -1;
+	private ulong _lastFrameOnFloor = 99999999999UL;
 
 	// ladder variables
 	private Area3D _curLadderClimbing = null; 
@@ -60,10 +64,10 @@ public partial class Player : CharacterBody3D
         _movespeed = WALK_SPEED;
 		if (SaveManager.Instance.SaveFileExists())
 		{
-			this.Position = SaveManager.Instance.LoadPlayerPosition();
-			this.Head.RotateY(SaveManager.Instance.State.Data.HeadRotation);
+			Position = SaveManager.Instance.LoadPlayerPosition();
+			Head.RotateY(SaveManager.Instance.State.Data.HeadRotation);
 		} else {
-			this.Position = new Vector3(0, 10, 0);
+			Position = new Vector3(0, 10, 0);
 		}
 
 		Input.MouseMode = Input.MouseModeEnum.Captured;
@@ -85,11 +89,39 @@ public partial class Player : CharacterBody3D
 		}
 	}
 
+	public InteractableComponent GetInteractableComponentAtShapecast() {
+		// confirms the first collider is the player character body; if not, something is wrong 
+		if (ShapeCast.GetCollisionCount() > 0 && ShapeCast.GetCollider(0) != this)
+			return null;
+
+		for (int i = 0; i < ShapeCast.GetCollisionCount(); i++) {
+			var collider = ShapeCast.GetCollider(i) as Node;
+			if (collider.GetNodeOrNull("InteractableComponent") is InteractableComponent interactable)
+				return interactable;
+		}
+		return null;
+	}
+
 	public void UpdateViewAndWorldModelMasks() {
 		SetCullLayerRecursive(GetNode<Node3D>("%HandWorldModel"), WORLD_MODEL_LAYER, false);
 		SetCullLayerRecursive(GetNode<Node3D>("%HandViewModel"), VIEW_MODEL_LAYER, true);
 		Camera.SetCullMaskValue(WORLD_MODEL_LAYER, false); // hide the world model layer
 		//Camera.SetCullMaskValue(VIEW_MODEL_LAYER, false); // hide the view model layer -- e.g. for mirrors and other cameras
+	}
+
+	public void PushAwayRigidBodies() {
+		for (int i=0; i<GetSlideCollisionCount();i++) {
+			var c = GetSlideCollision(i);
+			if (c.GetCollider() is RigidBody3D r) {
+				var push_dir = -c.GetNormal();
+				var veldiff = Velocity.Dot(push_dir) - r.LinearVelocity.Dot(push_dir);
+				veldiff = Mathf.Max(veldiff, 0f);
+				var massratio = Mathf.Min(1f,Mass/r.Mass);
+				push_dir.Y = 0f;
+				var push_force = massratio * PushForce;
+				r.ApplyImpulse(push_dir * push_force * veldiff, c.GetPosition() - r.GlobalPosition);
+			}
+		}
 	}
 
     // Recursive method to process all child nodes
@@ -166,7 +198,7 @@ public partial class Player : CharacterBody3D
 		var didSnap = false;
 		StairsBelowRay.ForceRaycastUpdate();
 		var floorBelow = StairsBelowRay.IsColliding() && !IsSurfaceTooSteep(StairsBelowRay.GetCollisionNormal());
-		var wasOnFloorLastFrame = ((int)Engine.GetPhysicsFrames() == _lastFrameOnFloor);
+		var wasOnFloorLastFrame = Engine.GetPhysicsFrames() == _lastFrameOnFloor;
 		if (!IsOnFloor() && Velocity.Y <= 0 && (wasOnFloorLastFrame || _snappedToStairsLastFrame) && floorBelow)
 		{
 			var bodyTestResult = new KinematicCollision3D();
@@ -239,32 +271,32 @@ public partial class Player : CharacterBody3D
             if (mountingFromTop)
             {
                 if (ladderClimbVel > 0) {
-					GD.Print("dismounting from ladderClimbVel > 0 (mounting from top)");
+					//GD.Print("dismounting from ladderClimbVel > 0 (mounting from top)");
 					shouldDismount = true;
 				}
             }
             else
             {
                 if ((ladderTransform.AffineInverse().Basis * _wish_dir).Z >= 0) {
-					GD.Print("dismounting from ladderTransform.AffineInverse().Basis * _wish_dir).Z >= 0");
+					//GD.Print("dismounting from ladderTransform.AffineInverse().Basis * _wish_dir).Z >= 0");
                     shouldDismount = true;
 				}
             }
 
             if (posRelToLadder.Z > 0.1f) {
-				GD.Print("dismounting from Mathf.Abs(posRelToLadder.Z) > 0.1f");
+				//GD.Print("dismounting from Mathf.Abs(posRelToLadder.Z) > 0.1f");
 				shouldDismount = true;
 			}
         }
 
         if (IsOnFloor() && ladderClimbVel <= 0) {
-			GD.Print("dismounting from floor and no climb vel");
+			//GD.Print("dismounting from floor and no climb vel");
 			shouldDismount = true;
 		}
 
 		GD.Print(ladderClimbVel);
-		GD.Print("currLadder ", _curLadderClimbing);
-		GD.Print("shoulddismount ", shouldDismount);
+		//GD.Print("currLadder ", _curLadderClimbing);
+		//GD.Print("shoulddismount ", shouldDismount);
 
         if (shouldDismount)
         {
@@ -286,12 +318,20 @@ public partial class Player : CharacterBody3D
         posRelToLadder.Z = 0;
         GlobalPosition = ladderTransform * posRelToLadder;
 
+		PushAwayRigidBodies();
         MoveAndSlide();
         return true;
 	}
 
 	public override void _Process(double delta)
 	{
+		var interactable = GetInteractableComponentAtShapecast();
+		if (interactable != null) {
+			interactable.HoverCursor(this);
+			if (Input.IsActionJustPressed("Interact")) {
+				interactable.Interact();
+			}
+		}
 
         // do block modify stuff
 		if (RayCast.IsColliding() && RayCast.GetCollider() is Chunk chunk)
@@ -394,7 +434,7 @@ public partial class Player : CharacterBody3D
 	{
 		if (IsOnFloor() || _snappedToStairsLastFrame)
 		{
-			_lastFrameOnFloor = (int)Engine.GetPhysicsFrames();
+			_lastFrameOnFloor = Engine.GetPhysicsFrames();
 		}
 
 		// get velocity
@@ -454,6 +494,7 @@ public partial class Player : CharacterBody3D
 
 			if (!SnapUpStairsCheck((float)delta))
 			{
+				PushAwayRigidBodies();
 				MoveAndSlide();
 				SnapDownToStairsCheck();
 			}	
