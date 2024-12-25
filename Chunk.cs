@@ -131,7 +131,7 @@ public partial class Chunk : StaticBody3D
 									&&  treeBlockPosition.Y < Dimensions.Y && treeBlockPosition.Y >= 0
 									&&  treeBlockPosition.Z < Dimensions.Z && treeBlockPosition.Z >= 0)
 										_blocks[treeBlockPosition.X,treeBlockPosition.Y,treeBlockPosition.Z] = kvp.Value;
-									else GD.Print($"Tree block at {treeBlockPosition} was out of bounds");
+									//else GD.Print($"Tree block at {treeBlockPosition} was out of bounds");
 								}
 							}
 						}

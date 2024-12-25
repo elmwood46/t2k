@@ -28,6 +28,8 @@ public partial class WeaponResource : Resource
 
 	const float RAYCAST_DIST = 9999f;
 
+    private int _num_shots_fired = 0;
+
     // weapon logic
     public bool IsEquipped
     {
@@ -92,14 +94,18 @@ public partial class WeaponResource : Resource
         WeaponManager.Instance.PlaySound(ShootSound);
         WeaponManager.Instance.PlayAnim(ViewShootAnim);
         WeaponManager.Instance.QueueAnim(ViewIdleAnim);
+        WeaponManager.Instance.ShowMuzzleFlash();
+
         var raycast = WeaponManager.Instance.BulletRaycast;
         raycast.TargetPosition = new Vector3(0,0,-RAYCAST_DIST);
         raycast.ForceRaycastUpdate();
+        var bullet_target_pos = raycast.GlobalTransform * raycast.TargetPosition;
         if (raycast.IsColliding())
         {
             var obj = raycast.GetCollider();
             var normal = raycast.GetCollisionNormal();
             var pos = raycast.GetCollisionPoint();
+            bullet_target_pos = pos;
 
             BulletDecalPool.SpawnBulletDecal(pos, normal, (Node3D)obj, raycast.GlobalBasis, null);
 
@@ -111,5 +117,7 @@ public partial class WeaponResource : Resource
                 obj.Call("TakeDamage", Damage);
             }
         }
+        if (_num_shots_fired%2==0) WeaponManager.Instance.MakeBulletTrail(bullet_target_pos);
+        _num_shots_fired++;
     }
 }

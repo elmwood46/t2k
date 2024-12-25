@@ -98,8 +98,6 @@ public partial class Player : CharacterBody3D
         // Iterate over the current node's children
         foreach (Node child in node.GetChildren())
         {
-            GD.Print("Processing child node: " + child.Name);
-
             // Example: If it's a VisualInstance3D, modify properties or do other logic
             if (child is VisualInstance3D visual)
             {

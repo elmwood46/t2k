@@ -1,5 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://cpb76lskq81pb"]
 
+[ext_resource type="Script" path="res://fpscontroller/weaponmanager/BulletTracer.cs" id="1_uowai"]
+
 [sub_resource type="Gradient" id="Gradient_cnkis"]
 offsets = PackedFloat32Array(0, 0.0553846, 0.923077, 1)
 colors = PackedColorArray(0.823529, 0.447059, 0, 0, 0.823529, 0.447059, 0, 1, 1, 1, 0.431373, 1, 1, 1, 1, 0)
@@ -24,28 +26,9 @@ size = 0.013
 sections = 2
 section_length = 0.5
 
-[sub_resource type="GDScript" id="GDScript_duk0w"]
-script/source = "extends MeshInstance3D
+[node name="BulletTracer" type="Node3D"]
+script = ExtResource("1_uowai")
 
-@export var target_pos = Vector3(0,0,0)
-@export var speed = 75.0
-@export var tracer_length = 1
-
-const MAX_LIFETIME_MS = 5000
-
-@onready var spawn_time = Time.get_ticks_msec()
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	var diff = target_pos - self.global_position
-	var add = diff.normalized() * speed * delta
-	add = add.limit_length(diff.length())
-	self.global_position += add
-	if (target_pos - self.global_position).length() <= tracer_length or Time.get_ticks_msec() - spawn_time >= MAX_LIFETIME_MS:
-		self.queue_free()
-"
-
-[node name="BulletTracer" type="MeshInstance3D"]
+[node name="BulletTracer" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, -0.504076)
 mesh = SubResource("RibbonTrailMesh_4dwll")
-script = SubResource("GDScript_duk0w")

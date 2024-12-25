@@ -1,8 +1,7 @@
-[gd_scene load_steps=7 format=3 uid="uid://dvt10rp16ksw8"]
+[gd_scene load_steps=6 format=3 uid="uid://dvt10rp16ksw8"]
 
 [ext_resource type="Script" path="res://Player.cs" id="1_ppsmb"]
 [ext_resource type="PackedScene" uid="uid://dvpv1rc1oo10c" path="res://fpscontroller/weaponmanager/weapon_manager.tscn" id="2_y8l63"]
-[ext_resource type="Resource" uid="uid://cje2ik326lx0p" path="res://fpscontroller/weaponmanager/weapons/deagle/Deagle.tres" id="3_el3xo"]
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_do4yt"]
 radius = 0.45
@@ -58,7 +57,6 @@ unique_name_in_owner = true
 
 [node name="WeaponManager" parent="." node_paths=PackedStringArray("BulletRaycast", "ViewModelContainer", "WorldModelContainer") instance=ExtResource("2_y8l63")]
 BulletRaycast = NodePath("../Head/CameraSmooth/Camera3D/BulletRay")
-CurrentWeapon = ExtResource("3_el3xo")
 ViewModelContainer = NodePath("../Head/CameraSmooth/Camera3D/HandViewModel")
 WorldModelContainer = NodePath("../HandWorldModel")
 
