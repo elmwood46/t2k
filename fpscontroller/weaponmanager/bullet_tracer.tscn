@@ -1,0 +1,51 @@
+[gd_scene load_steps=6 format=3 uid="uid://cpb76lskq81pb"]
+
+[sub_resource type="Gradient" id="Gradient_cnkis"]
+offsets = PackedFloat32Array(0, 0.0553846, 0.923077, 1)
+colors = PackedColorArray(0.823529, 0.447059, 0, 0, 0.823529, 0.447059, 0, 1, 1, 1, 0.431373, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_etrsf"]
+gradient = SubResource("Gradient_cnkis")
+height = 25
+fill_from = Vector2(0.503311, 1)
+fill_to = Vector2(0.490066, 0)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ugdic"]
+transparency = 1
+cull_mode = 2
+albedo_texture = SubResource("GradientTexture2D_etrsf")
+emission_enabled = true
+emission_energy_multiplier = 4.1
+emission_texture = SubResource("GradientTexture2D_etrsf")
+
+[sub_resource type="RibbonTrailMesh" id="RibbonTrailMesh_4dwll"]
+material = SubResource("StandardMaterial3D_ugdic")
+size = 0.013
+sections = 2
+section_length = 0.5
+
+[sub_resource type="GDScript" id="GDScript_duk0w"]
+script/source = "extends MeshInstance3D
+
+@export var target_pos = Vector3(0,0,0)
+@export var speed = 75.0
+@export var tracer_length = 1
+
+const MAX_LIFETIME_MS = 5000
+
+@onready var spawn_time = Time.get_ticks_msec()
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta: float) -> void:
+	var diff = target_pos - self.global_position
+	var add = diff.normalized() * speed * delta
+	add = add.limit_length(diff.length())
+	self.global_position += add
+	if (target_pos - self.global_position).length() <= tracer_length or Time.get_ticks_msec() - spawn_time >= MAX_LIFETIME_MS:
+		self.queue_free()
+"
+
+[node name="BulletTracer" type="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, -0.504076)
+mesh = SubResource("RibbonTrailMesh_4dwll")
+script = SubResource("GDScript_duk0w")

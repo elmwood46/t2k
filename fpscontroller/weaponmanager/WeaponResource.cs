@@ -101,6 +101,8 @@ public partial class WeaponResource : Resource
             var normal = raycast.GetCollisionNormal();
             var pos = raycast.GetCollisionPoint();
 
+            BulletDecalPool.SpawnBulletDecal(pos, normal, (Node3D)obj, raycast.GlobalBasis, null);
+
             if (obj is RigidBody3D r) {
                 r.ApplyImpulse(-normal * RigidBodyPushForce/r.Mass, pos - r.GlobalPosition);
             }

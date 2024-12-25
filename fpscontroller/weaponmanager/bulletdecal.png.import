@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://djs1o5hqycdur"
-path="res://.godot/imported/bulletdecal.png-a63413ed632a286e2bc2a5bf6f2e188d.ctex"
+path="res://.godot/imported/bulletdecal.png-f30518e434b82b3ff87eaff26ab67cbc.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://fpscontroller/weaponmanager/weapons/bulletdecal.png"
-dest_files=["res://.godot/imported/bulletdecal.png-a63413ed632a286e2bc2a5bf6f2e188d.ctex"]
+source_file="res://fpscontroller/weaponmanager/bulletdecal.png"
+dest_files=["res://.godot/imported/bulletdecal.png-f30518e434b82b3ff87eaff26ab67cbc.ctex"]
 
 [params]
 

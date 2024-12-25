@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://docwoowlnqc1r"]
 
-[ext_resource type="Texture2D" uid="uid://djs1o5hqycdur" path="res://fpscontroller/weaponmanager/weapons/bulletdecal.png" id="1_41vi7"]
+[ext_resource type="Texture2D" uid="uid://djs1o5hqycdur" path="res://fpscontroller/weaponmanager/bulletdecal.png" id="1_41vi7"]
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_hf7g2"]
 angle_min = 1.07288e-05

@@ -17,9 +17,6 @@ public partial class WeaponManager : Node3D
 
 	private AudioStreamPlayer3D _audioStreamPlayer;
 
-
-
-
 	public static WeaponManager Instance { get; private set; }
 
 	private void UpdateWeaponModel() {
@@ -30,6 +27,7 @@ public partial class WeaponManager : Node3D
 			_current_weapon_view_model.Position = CurrentWeapon.ViewModelPos;
 			_current_weapon_view_model.Rotation = CurrentWeapon.ViewModelRot;
 			_current_weapon_view_model.Scale = CurrentWeapon.ViewModelScale;
+			ShaderUtils.ApplyClipAndFovShaderToViewModel(_current_weapon_view_model);
 			_current_weapon_world_model.Position = CurrentWeapon.WorldModelPos;
 			_current_weapon_world_model.Rotation = CurrentWeapon.WorldModelRot;
 			_current_weapon_world_model.Scale = CurrentWeapon.WorldModelScale;
