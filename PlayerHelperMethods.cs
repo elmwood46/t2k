@@ -3,6 +3,25 @@ using System;
 
 public partial class Player : CharacterBody3D
 {
+    public void AddRecoil(float pitch, float yaw) {
+        TargetRecoil.X += pitch;
+        TargetRecoil.Y += yaw;
+    }
+    public Vector2 GetCurrentRecoil() {
+        return CurrentRecoil;
+    }
+    public void UpdateRecoil(float delta) {
+        TargetRecoil = TargetRecoil.Lerp(Vector2.Zero, RECOIL_RECOVER_SPEED * delta);
+        var prevRecoil=CurrentRecoil;
+        CurrentRecoil = CurrentRecoil.Lerp(TargetRecoil, RECOIL_APPLY_SPEED * delta);
+        var recoilDifference = CurrentRecoil - prevRecoil;
+
+        Head.RotateY(recoilDifference.Y);
+        Camera.RotateX(recoilDifference.X);
+        Camera.Rotation = new Vector3(Mathf.Clamp(Camera.Rotation.X, -Mathf.Pi/2, Mathf.Pi/2),Camera.Rotation.Y,Camera.Rotation.Z);
+        _cameraXRotation = Camera.Rotation.X;
+    }
+
     public void UpdateAnimations() {
         if (!IsOnFloor() && !_snappedToStairsLastFrame) {
             _stateMachinePlayback.Travel("MidJump");
@@ -24,8 +43,8 @@ public partial class Player : CharacterBody3D
     }
 
     public float GetMoveSpeed() {
-        if (Input.IsActionPressed("Sprint")) return SPRINT_SPEED;
-        return WALK_SPEED;
+        if (Input.IsActionPressed("Sprint")) return SprintSpeed;
+        return WalkSpeed;
     }
 	public InteractableComponent GetInteractableComponentAtShapecast() {
 		// confirms the first collider is the player character body; if not, something is wrong 
@@ -101,7 +120,7 @@ public partial class Player : CharacterBody3D
 		if (_savedCameraGlobalPos==_cameraPosReset) return;
 		CameraSmooth.GlobalPosition = new Vector3 (CameraSmooth.GlobalPosition.X,_savedCameraGlobalPos.Y, CameraSmooth.GlobalPosition.Z);
 		CameraSmooth.Position = new Vector3(CameraSmooth.Position.X,Mathf.Clamp(CameraSmooth.Position.Y, -0.7f, 0.7f),CameraSmooth.Position.Z);
-		var move_amount = Mathf.Max(Velocity.Length() * delta, WALK_SPEED/2 * delta);
+		var move_amount = Mathf.Max(Velocity.Length() * delta, WalkSpeed/2 * delta);
 		CameraSmooth.Position = new Vector3(CameraSmooth.Position.X,Mathf.Lerp(CameraSmooth.Position.Y, 0f, move_amount),CameraSmooth.Position.Z);
 		if (CameraSmooth.Position.Y == 0f) {
 			_savedCameraGlobalPos = _cameraPosReset;
@@ -198,13 +217,13 @@ public partial class Player : CharacterBody3D
                                  new Vector3(sideMove, 0, 0);
 
         // Strafe velocity
-        float ladderStrafeVel = CLIMB_SPEED * (ladderSideMove.X + ladderForwardMove.X);
+        float ladderStrafeVel = ClimbSpeed * (ladderSideMove.X + ladderForwardMove.X);
 
         // Climb velocity
-        float ladderClimbVel = CLIMB_SPEED * -ladderSideMove.Z;
+        float ladderClimbVel = ClimbSpeed * -ladderSideMove.Z;
         float upWish = new Vector3(0, 1, 0).Rotated(new Vector3(1, 0, 0), Mathf.DegToRad(-45))
                                           .Dot(ladderForwardMove);
-        ladderClimbVel += CLIMB_SPEED * upWish;
+        ladderClimbVel += ClimbSpeed * upWish;
 
         // Dismount logic
         bool shouldDismount = false;
@@ -251,7 +270,7 @@ public partial class Player : CharacterBody3D
         // Jump off ladder mid-climb
         if (wasClimbingLadder && Input.IsActionJustPressed("Jump"))
         {
-            Velocity = _curLadderClimbing.GlobalTransform.Basis.Z * JUMP_VELOCITY * 1.5f;
+            Velocity = _curLadderClimbing.GlobalTransform.Basis.Z * JumpVelocity * 1.5f;
             _curLadderClimbing = null;
             return false;
         }

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" load_steps=7 format=3 uid="uid://cje2ik326lx0p"]
+[gd_resource type="Resource" load_steps=8 format=3 uid="uid://cje2ik326lx0p"]
 
 [ext_resource type="AudioStream" uid="uid://d3vi2o7bmt2yc" path="res://fpscontroller/weaponmanager/sounds/cc0-276959__gfl7__pistol-reload-sound.mp3" id="1_hbpru"]
 [ext_resource type="PackedScene" uid="uid://bdtbgl5hqia1g" path="res://fpscontroller/weaponmanager/weapons/deagle/deagle - viewmodel.glb" id="1_qjfwl"]
@@ -7,9 +7,22 @@
 [ext_resource type="Script" path="res://fpscontroller/weaponmanager/WeaponResource.cs" id="3_an7jt"]
 [ext_resource type="AudioStream" uid="uid://counu6xs7ni2t" path="res://fpscontroller/weaponmanager/sounds/cc0-377145__nioczkus__pistol-draw-unholster.wav" id="3_gjbkj"]
 
+[sub_resource type="Curve2D" id="Curve2D_lgs55"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 0, -200)
+}
+point_count = 1
+
 [resource]
 script = ExtResource("3_an7jt")
 Damage = 10
+CurrentAmmo = 7
+MagazineSize = 7
+ReserveAmmo = 999
+MaxReserveAmmo = 999
+AutoFire = false
+MaxFireRateMs = 50.0
+SprayPattern = SubResource("Curve2D_lgs55")
 ViewModel = ExtResource("1_qjfwl")
 WorldModel = ExtResource("2_kcpoh")
 ViewModelPos = Vector3(0.13, -0.325, 0.306)

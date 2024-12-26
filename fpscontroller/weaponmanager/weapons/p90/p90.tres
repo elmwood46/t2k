@@ -1,0 +1,36 @@
+[gd_resource type="Resource" load_steps=6 format=3 uid="uid://dbqqt7myed2m0"]
+
+[ext_resource type="Script" path="res://fpscontroller/weaponmanager/WeaponResource.cs" id="1_3onbh"]
+[ext_resource type="AudioStream" uid="uid://bkdnd7l3whrp" path="res://fpscontroller/weaponmanager/sounds/cc0-415912__okieactor__heathers-gunshot-effect2.wav" id="2_rqbut"]
+[ext_resource type="AudioStream" uid="uid://counu6xs7ni2t" path="res://fpscontroller/weaponmanager/sounds/cc0-377145__nioczkus__pistol-draw-unholster.wav" id="3_h21ie"]
+[ext_resource type="PackedScene" uid="uid://d3umdlg6x0hgy" path="res://fpscontroller/weaponmanager/weapons/p90/p90.glb" id="4_2eu8l"]
+
+[sub_resource type="Curve2D" id="Curve2D_tvd5n"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -1, 0, 0, 0, 0, 0, -3, -1, 0, 0, 0, 0, -3, -2, 0, 0, 0, 0, 1, -5, 0, 0, 0, 0, 1, -5, 0, 0, 0, 0, 4, -6, 0, 0, 0, 0, 6, -9, 0, 0, 0, 0, 9, -13, 0, 0, 0, 0, 12, -21, 0, 0, 0, 0, 14, -30, 0, 0, 0, 0, 15, -41, 0, 0, 0, 0, 18, -51, 0, 0, 0, 0, 20, -54, 0, 0, 0, 0, 18, -56, 0, 0, 0, 0, 12, -56, 0, 0, 0, 0, 5, -55, 0, 0, 0, 0, 1, -54, 0, 0, 0, 0, -12, -54, 0, 0, 0, 0, -13, -53, 0, 0, 0, 0, -12, -50, 0, 0, 0, 0, 7, -50, 0, 0, 0, 0, 14, -51, 0, 0, 0, 0, 17, -53, 0, 0, 0, 0, 16, -50, 0, 0, 0, 0, 13, -49, 0, 0, 0, 0, 5, -49, 0, 0, 0, 0, -2, -45, 0, 0, 0, 0, -11, -46)
+}
+point_count = 28
+
+[resource]
+script = ExtResource("1_3onbh")
+Damage = 10
+CurrentAmmo = 99999
+MagazineSize = 99999
+ReserveAmmo = 270
+MaxReserveAmmo = 300
+AutoFire = true
+MaxFireRateMs = 50.0
+SprayPattern = SubResource("Curve2D_tvd5n")
+ViewModel = ExtResource("4_2eu8l")
+ViewModelPos = Vector3(0.5, -0.435, -0.485)
+ViewModelRot = Vector3(0, 1.571, 0)
+ViewModelScale = Vector3(0.16, 0.16, 0.16)
+WorldModelPos = Vector3(0, 0, 0)
+WorldModelRot = Vector3(0, 0, 0)
+WorldModelScale = Vector3(1, 1, 1)
+ViewIdleAnim = ""
+ViewEquipAnim = ""
+ViewShootAnim = ""
+ViewReloadAnim = ""
+ShootSound = ExtResource("2_rqbut")
+UnholsterSound = ExtResource("3_h21ie")

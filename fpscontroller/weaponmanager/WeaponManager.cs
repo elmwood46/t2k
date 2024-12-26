@@ -29,6 +29,13 @@ public partial class WeaponManager : Node3D
 	private AudioStreamPlayer3D _audioStreamPlayer;
 	private GpuParticles3D _muzzleFlashEffect;
 
+	private float _recoilHeat = 0f;
+	private float _recoilHeatRecoverSpeed = 10.0f;
+
+	private string _lastPlayedAnim = "";
+	private Callable? _currentAnimFinishedCallback;
+	private Callable? _currentAnimCancelledCallback;
+
 	public static WeaponManager Instance { get; private set; }
 
 	private void UpdateWeaponModel() {
@@ -40,6 +47,8 @@ public partial class WeaponManager : Node3D
 			_current_weapon_view_model.Position = CurrentWeapon.ViewModelPos;
 			_current_weapon_view_model.Rotation = CurrentWeapon.ViewModelRot;
 			_current_weapon_view_model.Scale = CurrentWeapon.ViewModelScale;
+			var animPlayer = _current_weapon_view_model.GetNodeOrNull<AnimationPlayer>("AnimationPlayer");
+			animPlayer?.Connect("current_animation_changed", new Callable(this,nameof(CurrentAnimChanged)));
 			ShaderUtils.ApplyClipAndFovShaderToViewModel(_current_weapon_view_model);
 			_current_weapon_world_model.Position = CurrentWeapon.WorldModelPos;
 			_current_weapon_world_model.Rotation = CurrentWeapon.WorldModelRot;
@@ -74,6 +83,9 @@ public partial class WeaponManager : Node3D
 			} else if (@event.IsActionReleased("Shoot")) {
 				CurrentWeapon.TriggerDown = false;
 			}
+			if (@event.IsActionPressed("Reload")) {
+				CurrentWeapon.ReloadPressed();
+			}
 		}
     }
 
@@ -103,10 +115,29 @@ public partial class WeaponManager : Node3D
 		}
 	}
 
+	public Vector2 GetCurrentRecoil() {
+		return Player.Instance.GetCurrentRecoil();
+	}
+
+	public void ApplyRecoil() {
+		Vector2 sprayRecoil = Vector2.Zero;
+		if (CurrentWeapon.SprayPattern != null) {
+			sprayRecoil = CurrentWeapon.SprayPattern.GetPointPosition((int)_recoilHeat % CurrentWeapon.SprayPattern.PointCount)* 0.0005f;
+		}
+		var randomRecoil = new Vector2((float)GD.RandRange(-1.0f, 1.0f), (float)GD.RandRange(-1.0f, 1.0f)) * 0.01f;
+		var recoil = sprayRecoil;// + randomRecoil; // negative because the recoil pattern is set up in godot 2d space
+		Player.Instance.AddRecoil(-recoil.Y,-recoil.X); // Y component is pitch, X component is yaw
+		_recoilHeat += 1.0f;
+	}
+
 	public override void _Process(double delta) // align position of muzzle flash
 	{
 		if (_current_weapon_muzzle != null) 
 			_muzzleFlashEffect.GlobalPosition = _current_weapon_muzzle.GlobalPosition;
+
+		_recoilHeat = Mathf.Max(0f, _recoilHeat - _recoilHeatRecoverSpeed * (float)delta);
+
+		CurrentWeapon?.OnProcess((float) delta);
 	}
 
 	public void PlaySound(AudioStream sound) {
@@ -118,9 +149,23 @@ public partial class WeaponManager : Node3D
 		_audioStreamPlayer.Stop();
 	}
 
-	public void PlayAnim(string animName) {
+	public void PlayAnim(string animName, Callable? finishedCalledback = null, Callable? cancelledCallback = null) {
 		var animPlayer = _current_weapon_view_model.GetNodeOrNull<AnimationPlayer>("AnimationPlayer");
-		if (animPlayer==null || !animPlayer.HasAnimation(animName)) return;
+
+		if (_lastPlayedAnim != null && GetAnim() == _lastPlayedAnim && _currentAnimCancelledCallback is Callable cancelledcall)
+			cancelledcall.Call();
+
+		if (animPlayer==null || !animPlayer.HasAnimation(animName)) {
+			if (finishedCalledback is Callable finishedcall) finishedcall.Call();
+			return;
+		} 
+
+		_currentAnimFinishedCallback = finishedCalledback;
+		_currentAnimCancelledCallback = cancelledCallback;
+		_lastPlayedAnim = animName;
+		animPlayer.ClearQueue();
+
+
 		animPlayer.Seek(0f);
 		animPlayer.Play(animName);
 	}
@@ -129,5 +174,22 @@ public partial class WeaponManager : Node3D
 		var animPlayer = _current_weapon_view_model.GetNodeOrNull<AnimationPlayer>("AnimationPlayer");
 		if (animPlayer==null || !animPlayer.HasAnimation(animName)) return;
 		animPlayer.Queue(animName);
+	}
+
+	public void CurrentAnimChanged(string newAnim) {
+		var animPlayer = _current_weapon_view_model.GetNodeOrNull<AnimationPlayer>("AnimationPlayer");
+		if (newAnim != _lastPlayedAnim && _currentAnimFinishedCallback is Callable finishedcall)
+			finishedcall.Call();
+		_lastPlayedAnim = animPlayer.CurrentAnimation;
+		if (_lastPlayedAnim != animPlayer.CurrentAnimation) {
+			_currentAnimFinishedCallback = null;
+			_currentAnimCancelledCallback = null;
+		}
+	}
+
+	public string GetAnim() {
+		var animPlayer = _current_weapon_view_model.GetNodeOrNull<AnimationPlayer>("AnimationPlayer");
+		if (animPlayer==null) return "";
+		return animPlayer.CurrentAnimation;
 	}
 }

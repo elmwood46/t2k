@@ -15,13 +15,16 @@ public partial class Player : CharacterBody3D
     [Export] public RayCast3D StairsAheadRay { get; set; }
 	[Export] public RayCast3D StairsBelowRay { get; set; }
 
-	[Export] private float _mouseSensitivity = 0.3f;
-    [Export] public float WALK_SPEED = 5.0f;
-    [Export] public float SPRINT_SPEED = 8.0f;
-	[Export] public float CLIMB_SPEED = 7.0f;
-    [Export] public float JUMP_VELOCITY = 4.8f;
-    [Export] public float SENSITIVITY = 0.004f;
-
+	[Export] public float MouseSensitivity = 0.3f;
+    [Export] public float WalkSpeed = 5.0f;
+    [Export] public float SprintSpeed = 8.0f;
+	[Export] public float ClimbSpeed = 7.0f;
+    [Export] public float JumpVelocity = 4.8f;
+	
+	[Export] public Vector2 TargetRecoil = Vector2.Zero;
+	[Export] public Vector2 CurrentRecoil = Vector2.Zero;
+	const float RECOIL_APPLY_SPEED = 10f;
+	const float  RECOIL_RECOVER_SPEED = 7f;
 	[Export] public float Mass = 80.0f;
 	[Export] public float PushForce = 5.0f;
 
@@ -68,7 +71,7 @@ public partial class Player : CharacterBody3D
 		// set the world models invisible to camera so the character model does not clip through the camera
 		UpdateViewAndWorldModelMasks();
 		
-        _movespeed = WALK_SPEED;
+        _movespeed = WalkSpeed;
 		if (SaveManager.Instance.SaveFileExists())
 		{
 			Position = SaveManager.Instance.LoadPlayerPosition();
@@ -84,8 +87,8 @@ public partial class Player : CharacterBody3D
 		if (@event is InputEventMouseMotion)
 		{
 			var mouseMotion = @event as InputEventMouseMotion;
-			var deltaX = mouseMotion.Relative.Y * _mouseSensitivity;
-			var deltaY = -mouseMotion.Relative.X * _mouseSensitivity;
+			var deltaX = mouseMotion.Relative.Y * MouseSensitivity;
+			var deltaY = -mouseMotion.Relative.X * MouseSensitivity;
 
 			Head.RotateY(Mathf.DegToRad(deltaY));
 			if (_cameraXRotation + deltaX > -90 && _cameraXRotation + deltaX < 90)
@@ -98,8 +101,6 @@ public partial class Player : CharacterBody3D
 
 	public override void _Process(double delta)
 	{
-		AlignWorldModelToLookDir();
-
 		var interactable = GetInteractableComponentAtShapecast();
 		if (interactable != null) {
 			interactable.HoverCursor(this);
@@ -194,13 +195,14 @@ public partial class Player : CharacterBody3D
 			BlockHighlight.Visible = false;
 		}
 
+		AlignWorldModelToLookDir();
+		UpdateRecoil((float) delta);
+		UpdateAnimations();
+
         // SAVING GAME 
         // store position and rotation in save manager
 		SaveManager.Instance.State.Data.PlayerPosition = (Position.X, Position.Y, Position.Z);
 		SaveManager.Instance.State.Data.HeadRotation = this.Head.Rotation.Y;
-
-		UpdateAnimations();
-
 		if (Input.IsActionJustPressed("SaveGame"))
 		{
 			SaveManager.Instance.SaveGame();
@@ -226,7 +228,7 @@ public partial class Player : CharacterBody3D
 		// jump
 		if (Input.IsActionJustPressed("Jump") && (IsOnFloor() || _snappedToStairsLastFrame))
 		{
-			velocity.Y = JUMP_VELOCITY;
+			velocity.Y = JumpVelocity;
 		}
 
         // set direction
@@ -243,9 +245,9 @@ public partial class Player : CharacterBody3D
 
         // check for sprint speed adjustment
         if (Input.IsActionPressed("Sprint")) {
-            _movespeed = SPRINT_SPEED;
+            _movespeed = SprintSpeed;
         } else {
-            _movespeed = WALK_SPEED;
+            _movespeed = WalkSpeed;
         }
 
         // lerp velocity
@@ -280,7 +282,7 @@ public partial class Player : CharacterBody3D
 		ResetCameraSmooth((float)delta);
 
         // FOV
-        var velocity_clamped = Mathf.Clamp(velocity.Length(), 0.5f, SPRINT_SPEED * 2.0f);
+        var velocity_clamped = Mathf.Clamp(velocity.Length(), 0.5f, SprintSpeed * 2.0f);
         float target_fov = BASE_FOV + FOV_CHANGE * velocity_clamped;
         Camera.Fov = Mathf.Lerp(Camera.Fov, target_fov, 0.25f);
 	}
