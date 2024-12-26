@@ -1,0 +1,34 @@
+[gd_resource type="Resource" load_steps=7 format=3 uid="uid://i7tuf5jj3yv8"]
+
+[ext_resource type="AudioStream" uid="uid://mo7wjc6cs6j4" path="res://fpscontroller/weaponmanager/sounds/cc0-swoosh.wav" id="1_cpxfk"]
+[ext_resource type="Script" path="res://fpscontroller/weaponmanager/MeleeWeaponResource.cs" id="1_n17kf"]
+[ext_resource type="AudioStream" uid="uid://caqx08x73s06y" path="res://fpscontroller/weaponmanager/sounds/cc0-118792__lmbubec__1_knife_slash_a.wav" id="3_yyc7o"]
+[ext_resource type="AudioStream" uid="uid://counu6xs7ni2t" path="res://fpscontroller/weaponmanager/sounds/cc0-377145__nioczkus__pistol-draw-unholster.wav" id="4_oous1"]
+[ext_resource type="PackedScene" uid="uid://b7sexbof307ow" path="res://fpscontroller/weaponmanager/weapons/knife/knife viewmodel.glb" id="5_ac8ht"]
+[ext_resource type="PackedScene" uid="uid://cnapb5pbkrmt2" path="res://fpscontroller/weaponmanager/weapons/knife/knife.glb" id="6_vst25"]
+
+[resource]
+script = ExtResource("1_n17kf")
+MaxHitDist = 2.5
+MissSound = ExtResource("1_cpxfk")
+Damage = 10
+CurrentAmmo = 7
+MagazineSize = 7
+ReserveAmmo = 99
+MaxReserveAmmo = 99
+AutoFire = false
+MaxFireRateMs = 50.0
+ViewModel = ExtResource("5_ac8ht")
+WorldModel = ExtResource("6_vst25")
+ViewModelPos = Vector3(0, -0.33, 0.34)
+ViewModelRot = Vector3(0, 3.142, 0)
+ViewModelScale = Vector3(1, 1, 1)
+WorldModelPos = Vector3(-0.063, 0.182, 0.015)
+WorldModelRot = Vector3(-0.049, 2.258, 1.022)
+WorldModelScale = Vector3(0.14, 0.14, 0.14)
+ViewIdleAnim = "Idle"
+ViewEquipAnim = "Unholster"
+ViewShootAnim = "Shoot"
+ViewReloadAnim = ""
+ShootSound = ExtResource("3_yyc7o")
+UnholsterSound = ExtResource("4_oous1")
