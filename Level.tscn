@@ -1,4 +1,4 @@
-[gd_scene load_steps=56 format=4 uid="uid://deyat72y3hmc1"]
+[gd_scene load_steps=57 format=4 uid="uid://deyat72y3hmc1"]
 
 [ext_resource type="Script" path="res://ChunkManager.cs" id="1_0ir14"]
 [ext_resource type="Script" path="res://BlockManager.cs" id="1_1vhrc"]
@@ -259,6 +259,10 @@ albedo_color = Color(0, 0, 0, 1)
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_i34ip"]
 points = PackedVector3Array(-0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
 
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_p7qpi"]
+friction = 0.5
+bounce = 0.18
+
 [sub_resource type="GDScript" id="GDScript_mtdub"]
 script/source = "extends RigidBody3D
 
@@ -402,7 +406,7 @@ material = SubResource("StandardMaterial3D_1dgdr")
 
 [node name="RigidBody3D" type="RigidBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.659, 3.47894)
-mass = 100.0
+mass = 5.0
 physics_material_override = SubResource("PhysicsMaterial_u3mn0")
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="RigidBody3D"]
@@ -415,7 +419,8 @@ shape = SubResource("ConvexPolygonShape3D_i34ip")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.04, 9.48616, 7.53483)
 
 [node name="RigidBody3D2" type="RigidBody3D" parent="Node3D"]
-mass = 100.0
+mass = 5.0
+physics_material_override = SubResource("PhysicsMaterial_p7qpi")
 script = SubResource("GDScript_mtdub")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Node3D/RigidBody3D2"]

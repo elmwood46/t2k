@@ -1,0 +1,30 @@
+[gd_resource type="Resource" load_steps=4 format=3 uid="uid://qhax17vsxm8v"]
+
+[ext_resource type="PackedScene" uid="uid://ld1sunbdbpbt" path="res://fpscontroller/weaponmanager/weapons/rpg/rocket.tscn" id="1_0ly76"]
+[ext_resource type="Script" path="res://fpscontroller/weaponmanager/ProjectileWeaponResource.cs" id="1_nsrch"]
+[ext_resource type="PackedScene" uid="uid://ualtb5j6bg2n" path="res://fpscontroller/weaponmanager/weapons/rpg/rocket-launcher.glb" id="3_kb014"]
+
+[resource]
+script = ExtResource("1_nsrch")
+Projectile = ExtResource("1_0ly76")
+ProjectileRelativeVelocity = Vector3(0, 0, -15)
+ProjectileRelativeSpawnPos = Vector3(0, 0, -3)
+ProjectileRelativeSpawnRot = Vector3(0, 0, 0)
+Damage = 100
+CurrentAmmo = 111
+MagazineSize = 111
+ReserveAmmo = 10
+MaxReserveAmmo = 10
+AutoFire = false
+MaxFireRateMs = 750.0
+ViewModel = ExtResource("3_kb014")
+ViewModelPos = Vector3(0.645, -0.503, -0.631)
+ViewModelRot = Vector3(0, 1.571, 0)
+ViewModelScale = Vector3(0.19, 0.19, 0.19)
+WorldModelPos = Vector3(0, 0, 0)
+WorldModelRot = Vector3(0, 0, 0)
+WorldModelScale = Vector3(1, 1, 1)
+ViewIdleAnim = ""
+ViewEquipAnim = ""
+ViewShootAnim = ""
+ViewReloadAnim = ""

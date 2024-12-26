@@ -4,72 +4,93 @@ using Godot;
 public partial class Explosion : Node3D
 {
 	[Export] public float ExplosionRadius {get;set;} = 3.0f;
+	public const float DEFAULT_CHAR_BODY_MASS = 10.0f;
 	[Export] public float Damage {get;set;} = 10.0f;
-	[Export] public float Knockback {get;set;} = 10.0f;
+	[Export] public float ExplosionForce {get;set;} = 100.0f;
 	[Export] public GpuParticles3D ExplosionParticles;
 	[Export] public AudioStreamPlayer3D ExplosionSound;
 	[Export] public AnimationPlayer ExplosionAnimation;
 	[Export] public Node3D ExplosionAnimationMeshes;
 	[Export] public Area3D ExplosionCollisionArea;
 
-	private Godot.Collections.Array<Node3D> _colliding_nodes = new();
-
 	// Called when the node enters the scene tree for the first time.
-	public override void _Ready()
+	public override async void _Ready()
 	{
         CollisionShape3D collisionShape = new()
         {
             Shape = new SphereShape3D { Radius = ExplosionRadius }
         };
         ExplosionCollisionArea.AddChild(collisionShape);
-		DebugManager.Log($"Monitoring collision for {ExplosionCollisionArea}: {ExplosionCollisionArea.Monitoring }");
 		ExplosionAnimationMeshes.Visible = false;
 
+		// wait for 2 physics frames to finish
+		// so overlapping bodies are calculated
+		
+        await ToSignal(GetTree(), "physics_frame");
+		await ToSignal(GetTree(), "physics_frame");
+
+		PushAwayObjects();
+
+		Explode();
+
+		
 		// Delay collision checking by a frame
+		/*
 		GetTree().CreateTimer(0.05f).Timeout += () => {
-			_colliding_nodes = ExplosionCollisionArea.GetOverlappingBodies();
+			PushAwayObjects();
 			Explode();
-		};
+		};*/
 	}
 
-	private void Explode() {
-		_colliding_nodes = ExplosionCollisionArea.GetOverlappingBodies();
-		DebugManager.Log($"Colliding Nodes {_colliding_nodes}");
+	public void PushAwayObjects() {
+		Godot.Collections.Array<Node3D> _colliding_nodes = ExplosionCollisionArea.GetOverlappingBodies();
+
+		foreach (Node3D node in _colliding_nodes) {
+			GD.Print("body found: " + node.Name);
+			var body_position = node.GlobalPosition;
+			
+			// calculate mass of objects
+			var mass = 1.0f;
+			if (node is CharacterBody3D) {
+				body_position.Y += 1.0f;
+				mass = DEFAULT_CHAR_BODY_MASS; // characterBody3D has no mass so we set it here
+			}
+			else if (node is RigidBody3D rb) {
+				GD.Print(node.Name + " mass: " + rb.Mass);
+				mass = Mathf.Max(0.01f,rb.Mass);
+			}
+
+			var force_dir = GlobalPosition.DirectionTo(body_position);
+			var bodyDist = body_position.DistanceTo(GlobalPosition);
+			var knockbackFromRadius = ExplosionForce
+				* (1f - Mathf.Min(bodyDist/ExplosionRadius,1f))
+				/ mass
+				* force_dir;
+
+			if (node is CharacterBody3D c) {
+				GD.Print("PLAYER applying impulse: ", knockbackFromRadius);
+				GD.Print("PLAYER body dist: ", bodyDist);
+				GD.Print("PLAYER force dir: ", force_dir);
+				c.Velocity += knockbackFromRadius;
+			}
+			else if (node is RigidBody3D rb) {
+				GD.Print("RBODY applying impulse: ", knockbackFromRadius);
+				GD.Print("RBODY body dist: ", bodyDist);
+				GD.Print("RBODY force dir: ", force_dir);
+				rb.ApplyImpulse(knockbackFromRadius);
+			}
+
+			if (node.HasMethod("TakeDamage")) {
+				node.Call("TakeDamage", CalculateDamage(body_position));
+			}
+		}
+	}
+
+	public void Explode() {
 		ExplosionAnimationMeshes.Visible = true;
 		ExplosionAnimation.Play("explode");
 		ExplosionSound.Play();
 		ExplosionParticles.Emitting = true;
-		
-		DebugManager.Log($"Calculating collision for {_colliding_nodes.Count} nodes");
-		foreach (Node3D node in _colliding_nodes) {
-			if (node is Chunk) {
-				Chunk c = node as Chunk;
-
-				Dictionary<Vector3I,int> blockDamages = new();
-				int r = Mathf.CeilToInt(ExplosionRadius);
-
-				for (int x = -r; x <= r; x++)
-				{
-					for (int y = -r; y <= r; y++)
-					{
-						for (int z = -r; z <= r; z++)
-						{
-							Vector3I blockPosition = (Vector3I)GlobalPosition + new Vector3I(x, y, z);
-
-							// Check if the block is within the sphere
-							float dist = ((Vector3I)GlobalPosition).DistanceTo(blockPosition);
-							if (dist <= r)
-							{
-
-								blockDamages[blockPosition] = (int)(Damage*(1.0-(dist/r)));
-							}
-						}
-					}
-				}
-
-				ChunkManager.Instance.DamageBlocks(blockDamages);
-			}
-		}
 
 		// timer to destroy explosion after animation
         Timer _animation_timer = new()
@@ -85,14 +106,9 @@ public partial class Explosion : Node3D
 		_animation_timer.Start();
 	}
 
-	private int CalculateDamage(Vector3 point) {
-		float distance = GlobalTransform.Origin.DistanceTo(point);
-		return Mathf.RoundToInt(Damage * (1.0f - (distance / ExplosionRadius)));
-	}
-
-	private Vector3 CalculateKnockback(Vector3 point) {
-		Vector3 _k = GlobalPosition.DirectionTo(point).Normalized();
-		float distance = GlobalPosition.DistanceTo(point);
-		return Knockback * (1.0f - (distance / ExplosionRadius)) * _k;
+	private int CalculateDamage(Vector3 bodyGlobalPosition) {
+		var dist = GlobalPosition.DistanceTo(bodyGlobalPosition);
+		var lerpdamage = Damage * (1f - Mathf.Min(dist/ExplosionRadius,1f));
+		return Mathf.RoundToInt(lerpdamage);
 	}
 }

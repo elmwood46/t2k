@@ -39,8 +39,11 @@ public partial class WeaponManager : Node3D
 	public static WeaponManager Instance { get; private set; }
 
 	private void UpdateWeaponModel() {
+		GD.Print("Updating weapon model");
 		if (CurrentWeapon == null) return;
+		GD.Print("Current weapon: " + CurrentWeapon);
 		if (ViewModelContainer != null && CurrentWeapon.ViewModel != null) {
+			GD.Print("View model container: " + ViewModelContainer.Name);
 			_current_weapon_view_model = (Node3D)CurrentWeapon.ViewModel.Instantiate();
 			_current_weapon_muzzle = FindNode3DRecursive(_current_weapon_view_model, "Muzzle");
 			ViewModelContainer.AddChild(_current_weapon_view_model);
@@ -55,13 +58,17 @@ public partial class WeaponManager : Node3D
 			_current_weapon_world_model.Scale = CurrentWeapon.WorldModelScale;
 		}
 		if (WorldModelContainer != null && CurrentWeapon.WorldModel != null) {
+			GD.Print("World model container: " + WorldModelContainer.Name);
 			_current_weapon_world_model = (Node3D)CurrentWeapon.WorldModel.Instantiate();
 			WorldModelContainer.AddChild(_current_weapon_world_model);
 		}
+		GD.Print("Weapon model updated");
 		CurrentWeapon.IsEquipped = true;
+		GD.Print("Weapon equipped");
 		if (Player.Instance.HasMethod("UpdateViewAndWorldModelMasks")) {
 			Player.Instance.UpdateViewAndWorldModelMasks();
 		}
+		GD.Print("View and world model masks updated");
 	}
 
     private static Node3D FindNode3DRecursive(Node node, string nameToFind)

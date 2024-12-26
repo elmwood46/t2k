@@ -31,12 +31,12 @@ public partial class WeaponResource : Resource
     [Export] public AudioStream ReloadSound;
     [Export] public AudioStream UnholsterSound;
 
-    private float _rigidBodyPushForce = 5f;
+    protected float _rigidBodyPushForce = 5f;
 
-	const float RAYCAST_DIST = 9999f;
+	public const float RAYCAST_DIST = 9999f;
 
-    private int _num_shots_fired = 0;
-    private ulong _last_fire_time = 0UL;
+    protected int _num_shots_fired = 0;
+    protected ulong _last_fire_time = 0UL;
 
     // weapon logic
     public bool IsEquipped
@@ -58,7 +58,7 @@ public partial class WeaponResource : Resource
             }
         }
     }
-    private bool _isEquipped = false;
+    protected bool _isEquipped = false;
 
     // weapon functions
     public bool TriggerDown
@@ -76,7 +76,7 @@ public partial class WeaponResource : Resource
             }
         }
     }
-    private bool _triggerDown = false;
+    protected bool _triggerDown = false;
 
     public void OnProcess(float delta)
     {
@@ -88,13 +88,14 @@ public partial class WeaponResource : Resource
     }
 
 
-    private void OnTriggerDown() {
-        if (Time.GetTicksMsec() - _last_fire_time > MaxFireRateMs && CurrentAmmo > 0)
-            FireShot();
+    protected void OnTriggerDown() {
+        bool canFireTime = _last_fire_time == 0ul || Time.GetTicksMsec() - _last_fire_time > MaxFireRateMs;
+        if (canFireTime && CurrentAmmo > 0)
+            Call(nameof(FireShot));
         //else if (CurrentAmmo == 0) ReloadPressed(); // play some kind of reload sound
     }
 
-    private void OnTriggerUp() {
+    protected void OnTriggerUp() {
         throw new NotImplementedException();
     }
 
@@ -120,24 +121,24 @@ public partial class WeaponResource : Resource
         }
     }
 
-    private int GetReloadAmount() {
+    protected int GetReloadAmount() {
         var wishreload = MagazineSize - CurrentAmmo;
         return Math.Min(wishreload, ReserveAmmo);
     }
 
 
-    private void OnUnequip()
+    protected void OnUnequip()
     {
         throw new NotImplementedException();
     }
 
-    private void OnEquip()
+    protected void OnEquip()
     {
         WeaponManager.Instance.PlayAnim(ViewEquipAnim);
         WeaponManager.Instance.PlayAnim(ViewIdleAnim);
     }
 
-    private void FireShot() {
+    protected void FireShot() {
         WeaponManager.Instance.PlayAnim(ViewShootAnim);
         WeaponManager.Instance.PlaySound(ShootSound);
         WeaponManager.Instance.QueueAnim(ViewIdleAnim);

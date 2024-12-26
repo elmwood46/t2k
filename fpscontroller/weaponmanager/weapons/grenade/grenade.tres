@@ -1,0 +1,30 @@
+[gd_resource type="Resource" load_steps=4 format=3 uid="uid://b3rl16usattjg"]
+
+[ext_resource type="Script" path="res://fpscontroller/weaponmanager/ProjectileWeaponResource.cs" id="1_8pbhl"]
+[ext_resource type="PackedScene" uid="uid://cwdnyyqsa4qsi" path="res://fpscontroller/weaponmanager/weapons/grenade/grenade_projectile.tscn" id="1_q8cdr"]
+[ext_resource type="PackedScene" uid="uid://cylyt34ibs5gx" path="res://fpscontroller/weaponmanager/weapons/grenade/grenade.glb" id="3_f6won"]
+
+[resource]
+script = ExtResource("1_8pbhl")
+Projectile = ExtResource("1_q8cdr")
+ProjectileRelativeVelocity = Vector3(0, 0, -15)
+ProjectileRelativeSpawnPos = Vector3(0, 0, -2)
+ProjectileRelativeSpawnRot = Vector3(0, 0, 0)
+Damage = 10
+CurrentAmmo = 5
+MagazineSize = 0
+ReserveAmmo = 0
+MaxReserveAmmo = 0
+AutoFire = true
+MaxFireRateMs = 750.0
+ViewModel = ExtResource("3_f6won")
+ViewModelPos = Vector3(0.55, -0.538, -0.906)
+ViewModelRot = Vector3(0, 1.245, 0)
+ViewModelScale = Vector3(0.234, 0.234, 0.234)
+WorldModelPos = Vector3(0, 0, 0)
+WorldModelRot = Vector3(0, 0, 0)
+WorldModelScale = Vector3(1, 1, 1)
+ViewIdleAnim = ""
+ViewEquipAnim = ""
+ViewShootAnim = ""
+ViewReloadAnim = ""

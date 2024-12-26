@@ -1,6 +1,8 @@
 using Godot;
 using System;
 
+#nullable enable
+
 public partial class Player : CharacterBody3D
 {
     public void AddRecoil(float pitch, float yaw) {
@@ -46,14 +48,14 @@ public partial class Player : CharacterBody3D
         if (Input.IsActionPressed("Sprint")) return SprintSpeed;
         return WalkSpeed;
     }
-	public InteractableComponent GetInteractableComponentAtShapecast() {
+	public InteractableComponent? GetInteractableComponentAtShapecast() {
 		// confirms the first collider is the player character body; if not, something is wrong 
 		if (ShapeCast.GetCollisionCount() > 0 && ShapeCast.GetCollider(0) != this)
 			return null;
 
 		for (int i = 0; i < ShapeCast.GetCollisionCount(); i++) {
 			var collider = ShapeCast.GetCollider(i) as Node;
-			if (collider.GetNodeOrNull("InteractableComponent") is InteractableComponent interactable)
+			if (collider?.GetNodeOrNull("InteractableComponent") is InteractableComponent interactable)
 				return interactable;
 		}
 		return null;

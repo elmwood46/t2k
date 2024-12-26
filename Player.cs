@@ -101,7 +101,7 @@ public partial class Player : CharacterBody3D
 
 	public override void _Process(double delta)
 	{
-		var interactable = GetInteractableComponentAtShapecast();
+		InteractableComponent interactable = GetInteractableComponentAtShapecast();
 		if (interactable != null) {
 			interactable.HoverCursor(this);
 			if (Input.IsActionJustPressed("Interact")) {
