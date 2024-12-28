@@ -65,6 +65,8 @@ public partial class Player : CharacterBody3D
 	{
 		Instance = this;
 
+		BlockHighlight.Scale = new Vector3(Chunk.VOXEL_SIZE + 0.05f,Chunk.VOXEL_SIZE + 0.05f,Chunk.VOXEL_SIZE + 0.05f);
+
 		_animationTree = GetNode<AnimationTree>("WorldModel/AnimationTree");
 		_stateMachinePlayback = (AnimationNodeStateMachinePlayback)_animationTree.Get("parameters/playback");
 
@@ -74,10 +76,10 @@ public partial class Player : CharacterBody3D
         _movespeed = WalkSpeed;
 		if (SaveManager.Instance.SaveFileExists())
 		{
-			Position = SaveManager.Instance.LoadPlayerPosition();
+			//Position = SaveManager.Instance.LoadPlayerPosition();
 			Head.RotateY(SaveManager.Instance.State.Data.HeadRotation);
 		} else {
-			Position = new Vector3(0, 10, 0);
+			//Position = new Vector3(0, 10, 0);
 		}
 
 		Input.MouseMode = Input.MouseModeEnum.Captured;
@@ -113,18 +115,20 @@ public partial class Player : CharacterBody3D
 		if (RayCast.IsColliding() && RayCast.GetCollider() is Chunk chunk)
 		{
 			BlockHighlight.Visible = true;
+			var inv_vox_size = 1/Chunk.VOXEL_SIZE;
 
-			var blockPosition = RayCast.GetCollisionPoint() - 0.5f * RayCast.GetCollisionNormal();
+			var blockPosition = RayCast.GetCollisionPoint() - 0.5f * Chunk.VOXEL_SIZE * RayCast.GetCollisionNormal();
+			blockPosition *= inv_vox_size;
 			var intBlockPosition = new Vector3I(
 				Mathf.FloorToInt(blockPosition.X),
-				Mathf.FloorToInt(blockPosition.Y*2),
+				Mathf.FloorToInt(blockPosition.Y),
 				Mathf.FloorToInt(blockPosition.Z));
 			BlockHighlight.GlobalPosition = new Vector3(
-					Mathf.FloorToInt(blockPosition.X),
-					Mathf.FloorToInt(blockPosition.Y*2)/2.0f,
-					Mathf.FloorToInt(blockPosition.Z)
+					Mathf.FloorToInt(blockPosition.X)*Chunk.VOXEL_SIZE,
+					Mathf.FloorToInt(blockPosition.Y)*Chunk.VOXEL_SIZE,
+					Mathf.FloorToInt(blockPosition.Z)*Chunk.VOXEL_SIZE
 				)
-				+ new Vector3(0.5f, 0.25f, 0.5f);
+				+ new Vector3(0.5f, 0.5f, 0.5f)*Chunk.VOXEL_SIZE;
 			//intBlockPosition.X = Math.Clamp(intBlockPosition.X, 0, Chunk.Dimensions.X);
 			//intBlockPosition.Y = Math.Clamp(intBlockPosition.Y, 0, Chunk.Dimensions.Y);
 			//intBlockPosition.Z = Math.Clamp(intBlockPosition.Z, 0, Chunk.Dimensions.Z);
@@ -132,7 +136,7 @@ public partial class Player : CharacterBody3D
 			if (Input.IsActionJustPressed("Break"))
 			{
 				// can't break lava
-				Block b = chunk.GetBlock((Vector3I)(intBlockPosition - chunk.GlobalPosition));
+				Block b = chunk.GetBlock((Vector3I)(intBlockPosition - chunk.GlobalPosition*inv_vox_size));
 
 				if (b != BlockManager.Instance.Lava) {
 					//ChunkManager.Instance.DamageBlocks(new Vector3I[] {(Vector3I)(intBlockPosition - chunk.GlobalPosition)}, 5);

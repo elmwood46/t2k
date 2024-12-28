@@ -11,18 +11,20 @@ public partial class Chunk : StaticBody3D
 	[Export]
 	public MeshInstance3D MeshInstance { get; set; }
 
+	public const float VOXEL_SIZE = 0.25f;
+
 	public static Vector3I Dimensions = new Vector3I(16, 64, 16);
 
 	private static readonly Vector3[] _vertices = new Vector3[]
 	{
 		new Vector3(0, 0, 0),
 		new Vector3(1f, 0, 0),
-		new Vector3(0, 0.5f, 0),
-		new Vector3(1f, 0.5f, 0),
+		new Vector3(0, 1f, 0),
+		new Vector3(1f, 1f, 0),
 		new Vector3(0, 0, 1f),
 		new Vector3(1f, 0, 1f),
-		new Vector3(0, 0.5f, 1f),
-		new Vector3(1f, 0.5f, 1f)
+		new Vector3(0, 1f, 1f),
+		new Vector3(1f, 1f, 1f)
 	};
 
 	private static readonly int[] _top = new int[] { 2, 3, 7, 6 };
@@ -52,10 +54,14 @@ public partial class Chunk : StaticBody3D
 	{
 		ChunkManager.Instance.UpdateChunkPosition(this, position, ChunkPosition);
 		ChunkPosition = position;
-		CallDeferred(Node3D.MethodName.SetGlobalPosition, new Vector3(ChunkPosition.X * Dimensions.X, 0, ChunkPosition.Y * Dimensions.Z));
+		CallDeferred(Node3D.MethodName.SetGlobalPosition, new Vector3(VOXEL_SIZE* ChunkPosition.X * Dimensions.X, 0, VOXEL_SIZE * ChunkPosition.Y * Dimensions.Z));
 
 		Generate();
 		Update();
+	}
+
+	public override void _Ready() {
+		Scale = new Vector3(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
 	}
 
 	public void Generate()
@@ -88,12 +94,11 @@ public partial class Chunk : StaticBody3D
 					Block block;
 
 					var globalBlockPosition = ChunkPosition * new Vector2I(Dimensions.X, Dimensions.Z) + new Vector2I(x, z);
-					var groundHeight = (int)(0.05f * Dimensions.Y + 4f*((Noise.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Y) + 1f) / 2f));
+					var groundHeight = (int)(0.05f * Dimensions.Y + 4f*(Noise.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Y) + 1f));
 
 					// generating origin chunk - set player spawn positon
 					if (chunkId == Vector2I.Zero && y==groundHeight && x==Dimensions.X/2 && z==Dimensions.Z/2) {
 						genWalls = false;
-						CallDeferred(nameof(SetPlayerSpawnY), (float)(groundHeight+2));
 					}
 
 					if (y == 0) {
@@ -192,10 +197,6 @@ public partial class Chunk : StaticBody3D
 		}
 		Update();
 	}
-	
-	private void SetPlayerSpawnY(float y) {
-		Player.Instance.Position = new Vector3(0, y, 0);
-	}
 
 	public void Update()
 	{
@@ -242,7 +243,7 @@ public partial class Chunk : StaticBody3D
 
 		SurfaceTool currentSurfaceTool = block == BlockManager.Instance.Lava ? _lavaSurfaceTool : _regularSurfaceTool;
 
-		Vector3 facepos = new Vector3(blockPosition.X, blockPosition.Y*0.5f, blockPosition.Z);
+		Vector3 facepos = new Vector3(blockPosition.X, blockPosition.Y, blockPosition.Z);
 
 		if (CheckTransparent(blockPosition + Vector3I.Up))
 		{
@@ -283,7 +284,7 @@ public partial class Chunk : StaticBody3D
 
 		// get texture pos and move down rows for damage
 		var texturePosition = BlockManager.Instance.GetTextureAtlasPosition(texture);
-		int blockHealth = _blockHealth[(int)blockPosition.X, (int)(blockPosition.Y*2.0f), (int)blockPosition.Z];
+		int blockHealth = _blockHealth[(int)blockPosition.X, (int)blockPosition.Y, (int)blockPosition.Z];
 		texturePosition += new Vector2I(0, Mathf.FloorToInt((1.0f-(blockHealth/(float)block.maxhealth))*BlockManager.DamageTiers)); // crack texture with damage
 		var textureAtlasSize = BlockManager.Instance.TextureAtlasSize;
 

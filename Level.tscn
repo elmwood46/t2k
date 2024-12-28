@@ -1,4 +1,4 @@
-[gd_scene load_steps=57 format=4 uid="uid://deyat72y3hmc1"]
+[gd_scene load_steps=58 format=4 uid="uid://deyat72y3hmc1"]
 
 [ext_resource type="Script" path="res://ChunkManager.cs" id="1_0ir14"]
 [ext_resource type="Script" path="res://BlockManager.cs" id="1_1vhrc"]
@@ -17,6 +17,13 @@
 [ext_resource type="PackedScene" uid="uid://dvt10rp16ksw8" path="res://Player.tscn" id="15_72lf1"]
 [ext_resource type="PackedScene" uid="uid://b1ovqgjwms7u4" path="res://props/ladder.tscn" id="16_usagc"]
 [ext_resource type="PackedScene" uid="uid://bj06w0107prkf" path="res://props/interactable_component.tscn" id="17_hbyi5"]
+
+[sub_resource type="GDScript" id="GDScript_fd3ji"]
+script/source = "extends Node3D
+
+func _process(_delta: float) -> void:
+	$Label.text = \"FPS: \" + str(Engine.get_frames_per_second())
+"
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_2uccx"]
 
@@ -287,6 +294,7 @@ points = PackedVector3Array(-0.125207, -0.532801, -0.480507, 0.0227831, 0.47607,
 font_names = PackedStringArray("Broadway")
 
 [node name="Level" type="Node3D"]
+script = SubResource("GDScript_fd3ji")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_oic5h")
@@ -308,7 +316,7 @@ script = ExtResource("1_0ir14")
 ChunkScene = ExtResource("1_peckr")
 
 [node name="Player" parent="." instance=ExtResource("15_72lf1")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.66351, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 34.5618, 0)
 
 [node name="Ladder" parent="." groups=["ladder_area3d"] instance=ExtResource("16_usagc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10.522, -7)
@@ -434,6 +442,13 @@ transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.2
 text = "HP: 100"
 font = SubResource("SystemFont_cibc6")
 font_size = 80
+
+[node name="Label" type="Label" parent="."]
+offset_left = 2.0
+offset_top = 34.0
+offset_right = 42.0
+offset_bottom = 57.0
+text = "FPS: "
 
 [connection signal="Interacted" from="AnimatableBody3D/InteractableComponent" to="AnimatableBody3D" method="toggle_open"]
 [connection signal="Interacted" from="StaticBody3D/InteractableComponent" to="AnimatableBody3D" method="toggle_open"]

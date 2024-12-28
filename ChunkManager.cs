@@ -140,8 +140,8 @@ public partial class ChunkManager : Node
 			int playerChunkX, playerChunkZ;
 			lock(_playerPositionLock)
 			{
-				playerChunkX = Mathf.FloorToInt(_playerPosition.X / Chunk.Dimensions.X);
-				playerChunkZ = Mathf.FloorToInt(_playerPosition.Z / Chunk.Dimensions.Z);
+				playerChunkX = Mathf.FloorToInt(_playerPosition.X / (Chunk.Dimensions.X*Chunk.VOXEL_SIZE));
+				playerChunkZ = Mathf.FloorToInt(_playerPosition.Z / (Chunk.Dimensions.Z*Chunk.VOXEL_SIZE));
 			}
 
 			foreach (var chunk in _chunks)
@@ -151,8 +151,8 @@ public partial class ChunkManager : Node
 				var chunkX = chunkPosition.X;
 				var chunkZ = chunkPosition.Y;
 
-				var newChunkX = (int)(Mathf.PosMod(chunkX - playerChunkX + _width / 2, _width) + playerChunkX - _width / 2);
-				var newChunkZ = (int)(Mathf.PosMod(chunkZ - playerChunkZ + _width / 2, _width) + playerChunkZ - _width / 2);
+				var newChunkX = Mathf.PosMod(chunkX - playerChunkX + _width / 2, _width) + playerChunkX - _width / 2;
+				var newChunkZ = Mathf.PosMod(chunkZ - playerChunkZ + _width / 2, _width) + playerChunkZ - _width / 2;
 
 				if (newChunkX != chunkX || newChunkZ != chunkZ)
 				{
