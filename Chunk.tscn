@@ -15,6 +15,7 @@ fractal_weighted_strength = 1.0
 domain_warp_type = 1
 
 [node name="Chunk" type="StaticBody3D" node_paths=PackedStringArray("CollisionShape", "MeshInstance")]
+transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0, 0)
 script = ExtResource("1_02ktv")
 CollisionShape = NodePath("CollisionShape3D")
 MeshInstance = NodePath("MeshInstance3D")

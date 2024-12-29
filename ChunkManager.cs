@@ -29,19 +29,19 @@ public partial class ChunkManager : Node
 
 		_chunks = new List<Chunk>(_width * _width);
 		//_chunks =  GetParent().GetChildren().Where(child => child is Chunk).Select(child => child as Chunk).ToList()
-
+		
 		for (int i = 0; i < _width * _width; i++)
 		{
 			var chunk = ChunkScene.Instantiate<Chunk>();
 			GetParent().CallDeferred(Node.MethodName.AddChild, chunk);
 			_chunks.Add(chunk);
 		}
-/*
 
-		Vector2I playerChunk;
-		playerChunk = !SaveManager.Instance.SaveFileExists() ? new Vector2I(0,0)
-		 = new Vector2I(Mathf.FloorToInt(Player.Instance.Position.X),Mathf.FloorToInt(Player.Instance.Position.Z));
-*/
+
+		//Vector2I playerChunk;
+		//playerChunk = !SaveManager.Instance.SaveFileExists() ? new Vector2I(0,0)
+		// = new Vector2I(Mathf.FloorToInt(Player.Instance.Position.X),Mathf.FloorToInt(Player.Instance.Position.Z));
+
 
 		for (int x = 0; x < _width; x++)
 		{
@@ -55,7 +55,7 @@ public partial class ChunkManager : Node
 
 		if (!Engine.IsEditorHint())
 		{
-			new Thread(new ThreadStart(ThreadProcess)).Start();
+			//new Thread(new ThreadStart(ThreadProcess)).Start();
 		}
 	}
 
