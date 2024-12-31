@@ -226,13 +226,17 @@ public partial class Player : CharacterBody3D
 		// apply gravity
 		if (!(IsOnFloor() || _snappedToStairsLastFrame))
 		{
-			velocity.Y -= _gravity * (float)delta;
+			//velocity.Y -= _gravity * (float)delta;
 		}
 
 		// jump
-		if (Input.IsActionJustPressed("Jump") && (IsOnFloor() || _snappedToStairsLastFrame))
+		if (Input.IsActionJustPressed("Jump"))// && (IsOnFloor() || _snappedToStairsLastFrame))
 		{
-			velocity.Y = JumpVelocity;
+			GlobalPosition += Vector3.Up*3f; //velocity.Y = JumpVelocity;
+		}
+
+		if (Input.IsActionJustPressed("FlyDown")) {
+			GlobalPosition += Vector3.Down*3f;
 		}
 
         // set direction
@@ -253,7 +257,7 @@ public partial class Player : CharacterBody3D
         } else {
             _movespeed = WalkSpeed;
         }
-
+	
         // lerp velocity
         if (IsOnFloor() || _snappedToStairsLastFrame) {
             if (direction.Length() > 0.1) {

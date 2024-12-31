@@ -1,8 +1,11 @@
-[gd_scene load_steps=20 format=4 uid="uid://bxg7e3u4aaraq"]
+[gd_scene load_steps=24 format=4 uid="uid://bxg7e3u4aaraq"]
 
 [ext_resource type="PackedScene" uid="uid://dvt10rp16ksw8" path="res://Player.tscn" id="1_24pm8"]
+[ext_resource type="Script" path="res://GreedyMeshTest.cs" id="1_vma6d"]
 [ext_resource type="PackedScene" uid="uid://bj06w0107prkf" path="res://props/interactable_component.tscn" id="2_lei15"]
 [ext_resource type="Script" path="res://ThreadDemo.cs" id="3_sah0w"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_8lbaa"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_jxwqi"]
 
@@ -119,7 +122,25 @@ _data = {
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_k3hrh"]
 points = PackedVector3Array(0.926405, 0.972894, -0.274749, -0.961145, -0.975717, -0.214574, -0.926589, -0.971616, -0.27443, 0.87325, -0.981417, 0.458891, -0.35642, 0.990293, 0.9276, -0.0464974, 0.982015, -0.983073, 0.630367, -0.985185, -0.770526, -0.35642, -0.990293, 0.9276, -0.965156, 0.979792, -0.0622207, 0.378615, 0.971068, 0.908976, -0.631436, -0.984665, -0.770137, -0.84289, -0.98011, 0.519392, -0.631436, 0.984665, -0.770137, 0.87325, 0.981417, 0.458891, 0.378615, -0.971068, 0.908976, 0.961007, -0.977, -0.214814, 0.630367, 0.985185, -0.770526, 0.0453056, -0.982463, -0.983507, -0.84289, 0.98011, 0.519392, 0.965164, 0.981224, -0.0622652, -0.961145, 0.975717, -0.214574, 0.842276, -0.981027, 0.519907, -0.873406, -0.980018, 0.458005, 0.0453056, 0.982463, -0.983507, -0.0464974, -0.982015, -0.983073, -0.965156, -0.979792, -0.0622207, 0.965164, -0.981224, -0.0622652, 0.842276, 0.981027, 0.519907, -0.873406, 0.980018, 0.458005, 0.659183, -0.982297, -0.737622, -0.659718, 0.981007, -0.736695, 0.961007, 0.977, -0.214814)
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sctgr"]
+albedo_color = Color(1, 0, 0, 1)
+
+[sub_resource type="PrismMesh" id="PrismMesh_vkfus"]
+material = SubResource("StandardMaterial3D_sctgr")
+
 [node name="TestRoom" type="Node3D"]
+
+[node name="Greedy Mesh Test" type="StaticBody3D" parent="." node_paths=PackedStringArray("MeshInstance", "CollisionShape")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -24)
+script = ExtResource("1_vma6d")
+Noise = SubResource("FastNoiseLite_8lbaa")
+MeshInstance = NodePath("MeshInstance3D")
+CollisionShape = NodePath("CollisionShape3D")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Greedy Mesh Test"]
+skeleton = NodePath("../..")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Greedy Mesh Test"]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_31ety")
@@ -189,5 +210,11 @@ shape = SubResource("ConvexPolygonShape3D_k3hrh")
 
 [node name="Node" type="Node" parent="."]
 script = ExtResource("3_sah0w")
+
+[node name="Node3D2" type="Node3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, -6.55006, 1.55367, -5.65057)
+mesh = SubResource("PrismMesh_vkfus")
 
 [connection signal="Interacted" from="Node3D/StaticBody3D/InteractableComponent" to="Node3D/StaticBody3D/button/AnimationPlayer" method="play" binds= ["ButtonPress"]]
