@@ -15,9 +15,11 @@ layout(set=0, binding = 1, std430) restrict buffer VertexBuffer {
 } vertex_buffer;
 
 // voxel constants
-#define DIMX 16
-#define DIMY 64
-#define DIMZ 16
+#define CHUNK_SIZE 30 // the chunk size is 30, padded chunk size is 32, // must match size in compute shader
+#define CHUNKSQ  CHUNK_SIZE*CHUNK_SIZE
+#define CSP CHUNK_SIZE+2
+#define CSP2 CSP*CSP // squared padded chunk size
+#define CSP3 CSP2*CSP // cubed padded chunk size
 #define NOBLOCK 0
 
 const ivec3 CUBE_VERTS[8] = 
@@ -41,12 +43,12 @@ const int BACK[4] = int[4](7, 5, 4, 6);
 
 // check if a voxel is empty
 bool check_empty(int x, int y, int z) {
-    if (x < 0 || x >= DIMX) return true;
-    if (y < 0 || y >= DIMY) return true;
-    if (z < 0 || z >= DIMZ) return true;
+    if (x < 0 || x >= CHUNK_SIZE) return true;
+    if (y < 0 || y >= CHUNK_SIZE) return true;
+    if (z < 0 || z >= CHUNK_SIZE) return true;
 
     // we use zero or one to check for voxel, you will need to calculate voxel type here in future
-    return voxels.voxeldata[x + z * DIMX + y * DIMX * DIMZ] == NOBLOCK;
+    return voxels.voxeldata[x + z * CHUNK_SIZE + y * CHUNK_SIZE * CHUNK_SIZE] == NOBLOCK;
 }
 
 void create_face_mesh(int[4] face, ivec3 block_pos) {
@@ -73,7 +75,7 @@ void create_face_mesh(int[4] face, ivec3 block_pos) {
     else if (face == BACK) faceoffset = 5;
 
     // 4 verts + 1 normals per face = 5 vec3 = 15 floats per face per block = set aside 90 floats per block, 15 floats per face
-    int vertIdx = 90*(block_pos.x+ block_pos.z* DIMX + block_pos.y * DIMX * DIMZ)+faceoffset*15;
+    int vertIdx = 90*(block_pos.x+ block_pos.z* CHUNK_SIZE + block_pos.y * CHUNK_SIZE * CHUNK_SIZE)+faceoffset*15;
     
     // indexes 0-11 are vertex data, 12-14 are normals
     for (int i = 0; i < 4; i++) {
@@ -91,7 +93,7 @@ void create_block_mesh(ivec3 block_pos) {
     int x = block_pos.x, y = block_pos.y, z = block_pos.z;
 
     // skip if block is empty
-    if (voxels.voxeldata[x + z * DIMX + y * DIMX * DIMZ] == NOBLOCK) return;
+    if (voxels.voxeldata[x + z * CHUNK_SIZE + y * CHUNK_SIZE * CHUNK_SIZE] == NOBLOCK) return;
     
     // create face mesh for each exposed face
     // note -z is forward in godot so we reverse the order of the front/back faces

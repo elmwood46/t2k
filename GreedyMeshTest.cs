@@ -191,8 +191,8 @@ public partial class GreedyMeshTest : StaticBody3D
                     {
                         // row, col -> axis
                         0 or 1 => new Vector3I(quad.delta_col, 0, quad.delta_row),  // down, up    (xz -> y axis)
-                        2 or 3 => new Vector3I(0, quad.delta_row, quad.delta_col), // right, left (zy -> x axis)
-                        _ => new Vector3I(quad.delta_col, quad.delta_row, 0),  // back, front (xy -> z axis)
+                        2 or 3 => new Vector3I(0, quad.delta_row, quad.delta_col),  // right, left (zy -> x axis)
+                        _ => new Vector3I(quad.delta_col, quad.delta_row, 0),       // back, front (xy -> z axis)
                     };
                     Godot.Vector3[] verts = new Godot.Vector3[4];
                     for (int i=0; i<4; i++) {

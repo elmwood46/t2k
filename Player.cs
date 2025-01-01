@@ -65,7 +65,7 @@ public partial class Player : CharacterBody3D
 	{
 		Instance = this;
 
-		BlockHighlight.Scale = new Vector3(Chunk.VOXEL_SIZE + 0.05f,Chunk.VOXEL_SIZE + 0.05f,Chunk.VOXEL_SIZE + 0.05f);
+		BlockHighlight.Scale = new Vector3(Chunk.VOXEL_SCALE + 0.05f,Chunk.VOXEL_SCALE + 0.05f,Chunk.VOXEL_SCALE + 0.05f);
 
 		_animationTree = GetNode<AnimationTree>("WorldModel/AnimationTree");
 		_stateMachinePlayback = (AnimationNodeStateMachinePlayback)_animationTree.Get("parameters/playback");
@@ -115,20 +115,20 @@ public partial class Player : CharacterBody3D
 		if (RayCast.IsColliding() && RayCast.GetCollider() is Chunk chunk)
 		{
 			BlockHighlight.Visible = true;
-			var inv_vox_size = 1/Chunk.VOXEL_SIZE;
+			var inv_vox_size = 1/Chunk.VOXEL_SCALE;
 
-			var blockPosition = RayCast.GetCollisionPoint() - 0.5f * Chunk.VOXEL_SIZE * RayCast.GetCollisionNormal();
+			var blockPosition = RayCast.GetCollisionPoint() - 0.5f * Chunk.VOXEL_SCALE * RayCast.GetCollisionNormal();
 			blockPosition *= inv_vox_size;
 			var intBlockPosition = new Vector3I(
 				Mathf.FloorToInt(blockPosition.X),
 				Mathf.FloorToInt(blockPosition.Y),
 				Mathf.FloorToInt(blockPosition.Z));
 			BlockHighlight.GlobalPosition = new Vector3(
-					Mathf.FloorToInt(blockPosition.X)*Chunk.VOXEL_SIZE,
-					Mathf.FloorToInt(blockPosition.Y)*Chunk.VOXEL_SIZE,
-					Mathf.FloorToInt(blockPosition.Z)*Chunk.VOXEL_SIZE
+					Mathf.FloorToInt(blockPosition.X)*Chunk.VOXEL_SCALE,
+					Mathf.FloorToInt(blockPosition.Y)*Chunk.VOXEL_SCALE,
+					Mathf.FloorToInt(blockPosition.Z)*Chunk.VOXEL_SCALE
 				)
-				+ new Vector3(0.5f, 0.5f, 0.5f)*Chunk.VOXEL_SIZE;
+				+ new Vector3(0.5f, 0.5f, 0.5f)*Chunk.VOXEL_SCALE;
 			//intBlockPosition.X = Math.Clamp(intBlockPosition.X, 0, Chunk.Dimensions.X);
 			//intBlockPosition.Y = Math.Clamp(intBlockPosition.Y, 0, Chunk.Dimensions.Y);
 			//intBlockPosition.Z = Math.Clamp(intBlockPosition.Z, 0, Chunk.Dimensions.Z);
@@ -193,6 +193,16 @@ public partial class Player : CharacterBody3D
 			{
 				GetTree().ReloadCurrentScene();
 			}
+
+			if (Input.IsActionJustReleased("ToggleWireframe")) {
+				if (GetViewport().DebugDraw==Viewport.DebugDrawEnum.Wireframe) {
+					RenderingServer.SetDebugGenerateWireframes(false);
+					GetViewport().DebugDraw=Viewport.DebugDrawEnum.Disabled;
+				} else {
+					RenderingServer.SetDebugGenerateWireframes(true);
+					GetViewport().DebugDraw=Viewport.DebugDrawEnum.Wireframe;
+				}
+			}
 		}
 		else
 		{
@@ -226,17 +236,13 @@ public partial class Player : CharacterBody3D
 		// apply gravity
 		if (!(IsOnFloor() || _snappedToStairsLastFrame))
 		{
-			//velocity.Y -= _gravity * (float)delta;
+			velocity.Y -= _gravity * (float)delta;
 		}
 
 		// jump
 		if (Input.IsActionJustPressed("Jump"))// && (IsOnFloor() || _snappedToStairsLastFrame))
 		{
-			GlobalPosition += Vector3.Up*3f; //velocity.Y = JumpVelocity;
-		}
-
-		if (Input.IsActionJustPressed("FlyDown")) {
-			GlobalPosition += Vector3.Down*3f;
+			velocity.Y = JumpVelocity;
 		}
 
         // set direction

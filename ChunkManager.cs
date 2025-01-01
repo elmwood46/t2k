@@ -55,7 +55,7 @@ public partial class ChunkManager : Node
 
 		if (!Engine.IsEditorHint())
 		{
-			//new Thread(new ThreadStart(ThreadProcess)).Start();
+			new Thread(new ThreadStart(ThreadProcess)).Start();
 		}
 	}
 
@@ -140,8 +140,8 @@ public partial class ChunkManager : Node
 			int playerChunkX, playerChunkZ;
 			lock(_playerPositionLock)
 			{
-				playerChunkX = Mathf.FloorToInt(_playerPosition.X / (Chunk.Dimensions.X*Chunk.VOXEL_SIZE));
-				playerChunkZ = Mathf.FloorToInt(_playerPosition.Z / (Chunk.Dimensions.Z*Chunk.VOXEL_SIZE));
+				playerChunkX = Mathf.FloorToInt(_playerPosition.X / (Chunk.Dimensions.X*Chunk.VOXEL_SCALE));
+				playerChunkZ = Mathf.FloorToInt(_playerPosition.Z / (Chunk.Dimensions.Z*Chunk.VOXEL_SCALE));
 			}
 
 			foreach (var chunk in _chunks)
