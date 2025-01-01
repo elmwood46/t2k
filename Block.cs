@@ -12,29 +12,33 @@ public partial class Block : Resource
 	// block ID is a unique number between 0-1024
 	[Export] public string Name { get; set; }
 	[Export] public byte MaxHealth { get; set; }
-	[Export] public Texture2D MidTexture { get; set; }	
-	[Export] public Texture2D BottomTexture { get; set; }
-	[Export] public Texture2D TopTexture { get; set; }
+	[Export] public Texture2D MidTexture { get => _midTexture; set {_midTexture = value; SetTextures();} }
+	private Texture2D _midTexture;
+	[Export] public Texture2D BottomTexture { get => _bottomTexture; set {_bottomTexture = value; SetTextures();} }
+	private Texture2D _bottomTexture;
+	[Export] public Texture2D TopTexture { get => _topTexture; set {_topTexture = value; SetTextures();} }
+	private Texture2D _topTexture;
 
 	[ExportCategory("Face Textures")]
-	[Export] public Texture2D LeftTexture { get; set; }
-	[Export] public Texture2D RightTexture { get; set; }
-	[Export] public Texture2D BackTexture { get; set; }
-	[Export] public Texture2D FrontTexture { get; set; }
-	
-	public Texture2D[] Textures {
-		get => _textures;
-		set {
-			if (MidTexture!= null && BottomTexture!= null && TopTexture!=null) {
-				_textures = new Texture2D[] { BottomTexture,TopTexture,MidTexture,MidTexture,MidTexture,MidTexture };
-			}
-			else if (MidTexture!= null) {
-				_textures = new Texture2D[] { MidTexture,MidTexture,MidTexture,MidTexture,MidTexture,MidTexture };
-			}
-			else {
-				_textures = new Texture2D[] { BottomTexture,TopTexture,LeftTexture,RightTexture,BackTexture,FrontTexture };
-			}
+	[Export] public Texture2D LeftTexture { get => _leftTexture; set {_leftTexture = value; SetTextures();} }
+	private Texture2D _leftTexture;
+	[Export] public Texture2D RightTexture { get => _rightTexture; set {_rightTexture = value; SetTextures();} }
+	private Texture2D _rightTexture;
+	[Export] public Texture2D BackTexture { get => _backTexture; set {_backTexture = value; SetTextures();} }
+	private Texture2D _backTexture;
+	[Export] public Texture2D FrontTexture { get => _frontTexture; set {_frontTexture = value; SetTextures();} }
+	private Texture2D _frontTexture;
+	public Texture2D[] Textures {get => _textures; private set {_textures = value;}}
+	private Texture2D[] _textures = new Texture2D[6];
+	private void SetTextures() {
+		if (MidTexture!= null && BottomTexture!= null && TopTexture!=null) {
+			Textures = new Texture2D[] { BottomTexture,TopTexture,MidTexture,MidTexture,MidTexture,MidTexture };
+		}
+		else if (MidTexture!= null) {
+			Textures = new Texture2D[] { MidTexture,MidTexture,MidTexture,MidTexture,MidTexture,MidTexture };
+		}
+		else {
+			Textures = new Texture2D[] { BottomTexture,TopTexture,LeftTexture,RightTexture,BackTexture,FrontTexture };
 		}
 	}
-	private Texture2D[] _textures;
 }

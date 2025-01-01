@@ -1,7 +1,9 @@
-[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://bd513qefbjpwd"]
+[gd_resource type="ShaderMaterial" load_steps=3 format=3 uid="uid://bd513qefbjpwd"]
 
 [ext_resource type="Shader" path="res://shaders/chunk_shader.gdshader" id="1_vpoa1"]
+[ext_resource type="Texture2D" uid="uid://cppaeip3o1gab" path="res://BlockTextures/bricks.png" id="2_epbax"]
 
 [resource]
 render_priority = 0
 shader = ExtResource("1_vpoa1")
+shader_parameter/albedo_texture = ExtResource("2_epbax")

@@ -14,6 +14,27 @@ func _process(_delta: float) -> void:
 	$Label.text = \"FPS: \" + str(Engine.get_frames_per_second())
 "
 
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_2uccx"]
+
+[sub_resource type="Sky" id="Sky_e2nrm"]
+sky_material = SubResource("ProceduralSkyMaterial_2uccx")
+
+[sub_resource type="Environment" id="Environment_oic5h"]
+background_mode = 2
+sky = SubResource("Sky_e2nrm")
+ambient_light_source = 3
+tonemap_mode = 3
+sdfgi_bounce_feedback = 1.99
+sdfgi_y_scale = 2
+sdfgi_energy = 0.5
+glow_enabled = true
+glow_strength = 1.76
+glow_bloom = 0.02
+volumetric_fog_density = 0.02
+volumetric_fog_anisotropy = 0.4
+volumetric_fog_length = 4.0
+volumetric_fog_sky_affect = 0.0
+
 [sub_resource type="BoxMesh" id="BoxMesh_5f7rv"]
 
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_7o2ry"]
@@ -226,20 +247,11 @@ points = PackedVector3Array(-0.125207, -0.532801, -0.480507, 0.0227831, 0.47607,
 [sub_resource type="SystemFont" id="SystemFont_cibc6"]
 font_names = PackedStringArray("Broadway")
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_2uccx"]
-
-[sub_resource type="Sky" id="Sky_e2nrm"]
-sky_material = SubResource("ProceduralSkyMaterial_2uccx")
-
-[sub_resource type="Environment" id="Environment_oic5h"]
-background_mode = 2
-sky = SubResource("Sky_e2nrm")
-ssao_enabled = true
-glow_enabled = true
-glow_bloom = 0.02
-
 [node name="Level" type="Node3D"]
 script = SubResource("GDScript_fd3ji")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_oic5h")
 
 [node name="BlockManager" parent="." instance=ExtResource("1_jg7ov")]
 
@@ -262,8 +274,18 @@ mesh = SubResource("BoxMesh_5f7rv")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
 shape = SubResource("ConvexPolygonShape3D_7o2ry")
 
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 15, 0, 0, 0, 1, 1.56084, 10.5799, -7.98911)
+mesh = SubResource("BoxMesh_5f7rv")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D2"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D2/StaticBody3D"]
+shape = SubResource("ConvexPolygonShape3D_7o2ry")
+
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.904552, -0.358104, 0.231402, 0, 0.542735, 0.839904, -0.426363, -0.759737, 0.490932, 0, 33.2873, 0)
+light_volumetric_fog_energy = 8.0
 shadow_enabled = true
 
 [node name="AnimatableBody3D" type="AnimatableBody3D" parent="."]
@@ -381,9 +403,6 @@ offset_top = 34.0
 offset_right = 42.0
 offset_bottom = 57.0
 text = "FPS: "
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_oic5h")
 
 [connection signal="Interacted" from="AnimatableBody3D/InteractableComponent" to="AnimatableBody3D" method="toggle_open"]
 [connection signal="Interacted" from="StaticBody3D/InteractableComponent" to="AnimatableBody3D" method="toggle_open"]
