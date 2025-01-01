@@ -1,28 +1,40 @@
 using Godot;
 using System;
 
-public enum BlockHealth {
-	Air = 0,
-	Stone = 100,
-	Dirt = 50,
-	Grass = 50,
-	Leaves = 10,
-	Trunk = 100,
-	Brick = 100,
-	Lava = 999999
-}
+
+// each block has 6 textures from 0-5
+// order: bott 
 
 [Tool]
 [GlobalClass]
 public partial class Block : Resource
 {
-	[Export] public Texture2D Texture { get; set; }	
-	[Export] public Texture2D TopTexture { get; set; }
+	// block ID is a unique number between 0-1024
+	[Export] public string Name { get; set; }
+	[Export] public byte MaxHealth { get; set; }
+	[Export] public Texture2D MidTexture { get; set; }	
 	[Export] public Texture2D BottomTexture { get; set; }
+	[Export] public Texture2D TopTexture { get; set; }
 
-	public Texture2D[] Textures => new Texture2D[] { Texture, TopTexture, BottomTexture };
-
-	public int maxhealth = 1;
-
-	public Block() { }
+	[ExportCategory("Face Textures")]
+	[Export] public Texture2D LeftTexture { get; set; }
+	[Export] public Texture2D RightTexture { get; set; }
+	[Export] public Texture2D BackTexture { get; set; }
+	[Export] public Texture2D FrontTexture { get; set; }
+	
+	public Texture2D[] Textures {
+		get => _textures;
+		set {
+			if (MidTexture!= null && BottomTexture!= null && TopTexture!=null) {
+				_textures = new Texture2D[] { BottomTexture,TopTexture,MidTexture,MidTexture,MidTexture,MidTexture };
+			}
+			else if (MidTexture!= null) {
+				_textures = new Texture2D[] { MidTexture,MidTexture,MidTexture,MidTexture,MidTexture,MidTexture };
+			}
+			else {
+				_textures = new Texture2D[] { BottomTexture,TopTexture,LeftTexture,RightTexture,BackTexture,FrontTexture };
+			}
+		}
+	}
+	private Texture2D[] _textures;
 }

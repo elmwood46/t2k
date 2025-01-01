@@ -138,7 +138,7 @@ public partial class Player : CharacterBody3D
 				// can't break lava
 				Block b = chunk.GetBlock((Vector3I)(intBlockPosition - chunk.GlobalPosition*inv_vox_size));
 
-				if (b != BlockManager.Instance.Lava) {
+				if (true) {
 					//ChunkManager.Instance.DamageBlocks(new Vector3I[] {(Vector3I)(intBlockPosition - chunk.GlobalPosition)}, 5);
 
 						// LINE ATTACK PATTERN
@@ -186,7 +186,7 @@ public partial class Player : CharacterBody3D
 
 			if (Input.IsActionJustPressed("Place"))
 			{
-				ChunkManager.Instance.SetBlock((Vector3I)(intBlockPosition + RayCast.GetCollisionNormal()), BlockManager.Instance.Stone);
+				ChunkManager.Instance.SetBlock((Vector3I)(intBlockPosition + RayCast.GetCollisionNormal()), new Block());
 			}
 
 			if (Input.IsActionJustPressed("debug_reload"))

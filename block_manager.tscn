@@ -1,0 +1,30 @@
+[gd_scene load_steps=9 format=3 uid="uid://ds0scgvcsglbw"]
+
+[ext_resource type="Script" path="res://BlockManager.cs" id="1_pi362"]
+[ext_resource type="Script" path="res://Block.cs" id="2_rvhry"]
+[ext_resource type="Texture2D" uid="uid://bvlycywksqrek" path="res://BlockTextures/dirt.png" id="3_54o36"]
+[ext_resource type="Texture2D" uid="uid://dinlc1868cmq6" path="res://BlockTextures/grass_side.png" id="4_u0dvg"]
+[ext_resource type="Texture2D" uid="uid://cedssbc17dwdy" path="res://BlockTextures/grass.png" id="5_ewhxt"]
+
+[sub_resource type="Resource" id="Resource_jx0ag"]
+script = ExtResource("2_rvhry")
+Name = "Air"
+MaxHealth = 0
+
+[sub_resource type="Resource" id="Resource_acfbf"]
+script = ExtResource("2_rvhry")
+Name = "Dirt"
+MaxHealth = 10
+MidTexture = ExtResource("3_54o36")
+
+[sub_resource type="Resource" id="Resource_2jh7v"]
+script = ExtResource("2_rvhry")
+Name = "Grass"
+MaxHealth = 10
+MidTexture = ExtResource("4_u0dvg")
+BottomTexture = ExtResource("3_54o36")
+TopTexture = ExtResource("5_ewhxt")
+
+[node name="BlockManager" type="Node"]
+script = ExtResource("1_pi362")
+Blocks = Array[Object]([SubResource("Resource_jx0ag"), SubResource("Resource_acfbf"), SubResource("Resource_2jh7v")])

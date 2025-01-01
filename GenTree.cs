@@ -31,7 +31,7 @@ public partial class GenTree : Node3D
                 {
                     if (x * x + z * z <= _trunkRadius * _trunkRadius)
                     {
-                        _blocks[(x, y, z)] = BlockManager.Instance.Trunk;
+                        _blocks[(x, y, z)] = new Block();
                     }
                 }
             }
@@ -46,7 +46,7 @@ public partial class GenTree : Node3D
                 {
                     if (x * x + z * z + (y - _trunkHeight) * (y - _trunkHeight) <= _leafClusterSize * _leafClusterSize)
                     {
-                        _blocks[(x, y, z)] = BlockManager.Instance.Leaves;
+                        _blocks[(x, y, z)] = new Block();
                     }
                 }
             }
@@ -63,7 +63,7 @@ public partial class GenTree : Node3D
             for (int j = 0; j < _branchLength; j++)
             {
                 Vector3I branchPos = branchStart + new Vector3I(rand.Next(0, 2)==0 ? -1 : 1,1,rand.Next(0, 2)==0 ? -1 : 1);
-                _blocks[(branchPos.X,branchPos.Y,branchPos.Z)] = BlockManager.Instance.Trunk;
+                _blocks[(branchPos.X,branchPos.Y,branchPos.Z)] = new Block();
             }
         }
 

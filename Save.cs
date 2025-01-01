@@ -5,19 +5,6 @@ using System.Linq;
 using MessagePack;
 using MessagePack.Resolvers;
 
-// block id
-public enum BID
-{
-    Air,
-    Stone,
-    Dirt,
-    Grass,
-    Leaves,
-    Trunk,
-    Brick,
-    Lava
-}
-
 public partial class Save
 {
 
@@ -46,6 +33,7 @@ public partial class Save
     public const string SavePath = "user://save.dat";
 
     private int ParseBlockToInt(Block block) {
+        return BlockManager.BlockID("Air");/*
         if (block == BlockManager.Instance.Air) return (int)BID.Air;
         else if (block == BlockManager.Instance.Stone) return (int)BID.Stone;
         else if (block == BlockManager.Instance.Dirt) return (int)BID.Dirt;
@@ -54,10 +42,12 @@ public partial class Save
         else if (block == BlockManager.Instance.Trunk) return (int)BID.Trunk;
         else if (block == BlockManager.Instance.Brick) return (int)BID.Brick;
         else if (block == BlockManager.Instance.Lava) return (int)BID.Lava;
-        else throw new Exception($"Block {block} not found in BlockManager.");
+        else throw new Exception($"Block {block} not found in BlockManager.");*/
     }
 
     private Block ParseIntToBlock(int i) {
+        return new Block();
+        /*
         if (i == (int)BID.Air) return BlockManager.Instance.Air;
         else if (i == (int)BID.Stone) return BlockManager.Instance.Stone;
         else if (i == (int)BID.Dirt) return BlockManager.Instance.Dirt;
@@ -66,7 +56,7 @@ public partial class Save
         else if (i == (int)BID.Trunk) return BlockManager.Instance.Trunk;
         else if (i == (int)BID.Brick) return BlockManager.Instance.Brick;
         else if (i == (int)BID.Lava) return BlockManager.Instance.Lava;
-        else throw new Exception($"Block {i} not found in BlockManager.");
+        else throw new Exception($"Block {i} not found in BlockManager.");*/
     }
 
     public bool SaveFileExists() => Godot.FileAccess.FileExists(SavePath);

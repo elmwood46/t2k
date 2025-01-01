@@ -236,7 +236,9 @@ public partial class Chunk : StaticBody3D
                 }
             }
         }
-        return _st.Commit();
+        var arrayMesh = _st.Commit();
+        arrayMesh.SurfaceSetMaterial(0, BlockManager.Instance.ChunkMaterial);
+        return arrayMesh;
     }
 
     // greedy quad for a 32 x 32 binary plane (assuming data length is 32) // CHANGED THIS TO 64 CHUNK SIZE
@@ -278,7 +280,7 @@ public partial class Chunk : StaticBody3D
 			_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] -= blockdamage.Item2;
 			if (_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] <= 0)
 			{
-				_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] = (int)BlockHealth.Air;
+				_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] = 0;
 				//_blocks[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] = BlockManager.Instance.Air;
 				_blocks[blockdamage.Item1.X + blockdamage.Item1.Z * Dimensions.X + blockdamage.Item1.Y * Dimensions.X * Dimensions.Z] = false;
 			}
@@ -290,7 +292,7 @@ public partial class Chunk : StaticBody3D
 	{
         var idx = blockPosition.X + blockPosition.Z * CHUNK_SIZE + blockPosition.Y * CHUNKSQ;
 		//_blocks[blockPosition.X, blockPosition.Y, blockPosition.Z] = block;
-        if (block == BlockManager.Instance.Air) _blocks[idx] = false;
+        if (block == new Block()) _blocks[idx] = false; // TODO -  if block is air
         else _blocks[idx] = true;
 		Update();
 	}
