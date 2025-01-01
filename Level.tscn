@@ -25,17 +25,6 @@ func _process(_delta: float) -> void:
 	$Label.text = \"FPS: \" + str(Engine.get_frames_per_second())
 "
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_2uccx"]
-
-[sub_resource type="Sky" id="Sky_e2nrm"]
-sky_material = SubResource("ProceduralSkyMaterial_2uccx")
-
-[sub_resource type="Environment" id="Environment_oic5h"]
-background_mode = 2
-sky = SubResource("Sky_e2nrm")
-glow_enabled = true
-glow_bloom = 0.02
-
 [sub_resource type="Resource" id="Resource_xxcol"]
 script = ExtResource("2_7x5ym")
 
@@ -293,11 +282,20 @@ points = PackedVector3Array(-0.125207, -0.532801, -0.480507, 0.0227831, 0.47607,
 [sub_resource type="SystemFont" id="SystemFont_cibc6"]
 font_names = PackedStringArray("Broadway")
 
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_2uccx"]
+
+[sub_resource type="Sky" id="Sky_e2nrm"]
+sky_material = SubResource("ProceduralSkyMaterial_2uccx")
+
+[sub_resource type="Environment" id="Environment_oic5h"]
+background_mode = 2
+sky = SubResource("Sky_e2nrm")
+ssao_enabled = true
+glow_enabled = true
+glow_bloom = 0.02
+
 [node name="Level" type="Node3D"]
 script = SubResource("GDScript_fd3ji")
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_oic5h")
 
 [node name="BlockManager" type="Node" parent="."]
 script = ExtResource("1_1vhrc")
@@ -449,6 +447,9 @@ offset_top = 34.0
 offset_right = 42.0
 offset_bottom = 57.0
 text = "FPS: "
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_oic5h")
 
 [connection signal="Interacted" from="AnimatableBody3D/InteractableComponent" to="AnimatableBody3D" method="toggle_open"]
 [connection signal="Interacted" from="StaticBody3D/InteractableComponent" to="AnimatableBody3D" method="toggle_open"]
