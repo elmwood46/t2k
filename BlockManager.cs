@@ -32,6 +32,8 @@ public partial class BlockManager : Node
 
 	public ShaderMaterial LavaShader { get; private set; }
 
+	public int LavaBlockId {get; private set;}
+
 	public static int BlockID(string blockName) {
 		return Instance._blockIdLookup[blockName];
 	}
@@ -79,6 +81,7 @@ public partial class BlockManager : Node
 		// and store them in the block
 		for (int i=0;i<Blocks.Count;i++) {
 			_blockIdLookup.Add(Blocks[i].Name, i);
+			if (Blocks[i].Name == "Lava") LavaBlockId = i;
 			Instance.Blocks[i].BakedTextureArrayPositions = GetBlockTextureArrayPositions(i);
 		}
 

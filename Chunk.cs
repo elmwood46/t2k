@@ -18,22 +18,14 @@ public partial class Chunk : StaticBody3D
     public const int CSP = CHUNK_SIZE+2;
     public const int CSP2 = CSP*CSP; // squared padded chunk size
     public const int CSP3 = CSP2*CSP; // cubed padded chunk size
-
 	public static readonly Vector3I Dimensions = new(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
-
 	// obsolete
 	private int[,,] _blockHealth = new int[Dimensions.X, Dimensions.Y, Dimensions.Z];
-
     private ArrayMesh _arraymesh = new();
-
-    private int lavablockid;
-
-	private RandomNumberGenerator rng;
 	private SurfaceTool _st = new();
     private SurfaceTool _st2 = new();
-	private StandardMaterial3D _material;
 
-	    // vertices of a cube
+	// vertices of a cube
     private static readonly Vector3I[] CUBE_VERTS = 
         {
             new(0, 0, 0),
@@ -59,7 +51,9 @@ public partial class Chunk : StaticBody3D
             {7, 5, 4, 6}  // back
         };
 
-	// simple 3d binary array for holding blocks 
+	// 3d int array for holding blocks
+    // each 32bit int contains packed block info: block type (10 bits), z (5 bits), y (5 bits), x (5 bits) 
+    // this leaves 7 bits to implement block health or AO
 	private int[] _blocks = new int[CHUNKSQ*CHUNK_SIZE];
 	public Vector2I ChunkPosition { get; private set; }
 
@@ -74,7 +68,7 @@ public partial class Chunk : StaticBody3D
 		ChunkManager.Instance.UpdateChunkPosition(this, position, ChunkPosition);
 		ChunkPosition = position;
 		CallDeferred(Node3D.MethodName.SetGlobalPosition, new Godot.Vector3(
-            VOXEL_SCALE* ChunkPosition.X * Dimensions.X,
+            VOXEL_SCALE * ChunkPosition.X * Dimensions.X,
             0, VOXEL_SCALE * ChunkPosition.Y * Dimensions.Z)
         );
 
@@ -83,15 +77,7 @@ public partial class Chunk : StaticBody3D
 	}
 
 	public override void _Ready() {
-        lavablockid = BlockManager.BlockID("Lava");
 		Scale = new Godot.Vector3(VOXEL_SCALE, VOXEL_SCALE, VOXEL_SCALE);
-		rng = new RandomNumberGenerator();
-		_material  = new StandardMaterial3D {
-			AlbedoColor = new Color(rng.RandfRange(0.5f,1.0f), rng.RandfRange(0.5f,1.0f), rng.RandfRange(0.5f,1.0f))
-		};
-        
-		//_shaderfile = GD.Load<RDShaderFile>("res://chunkgen.glsl");
-		//SetChunkPosition(new Vector2I(0,0));
 	}
 
     public static int PackBlockInfo(int blockType, int x, int y, int z) {
@@ -300,7 +286,7 @@ public partial class Chunk : StaticBody3D
                         Godot.Vector2[] uvs = {uv, uv, uv};
 
                         // add the quad to the mesh
-                        if (blockType == lavablockid) {
+                        if (blockType == BlockManager.Instance.LavaBlockId) {
                             _st2.AddTriangleFan(triangle1, normals: normals);
                             _st2.AddTriangleFan(triangle2, normals: normals);
                         }

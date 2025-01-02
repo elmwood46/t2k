@@ -25,3 +25,4 @@ WallNoise = SubResource("FastNoiseLite_glksf")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+gi_mode = 2
