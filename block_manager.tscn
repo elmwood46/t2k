@@ -19,20 +19,15 @@ MidTexture = ExtResource("2_lcj64")
 script = ExtResource("2_rvhry")
 Name = "Dirt"
 MaxHealth = 10
-MidTexture = ExtResource("4_u0dvg")
-BottomTexture = ExtResource("3_54o36")
-TopTexture = ExtResource("5_ewhxt")
+MidTexture = ExtResource("3_54o36")
 
 [sub_resource type="Resource" id="Resource_2jh7v"]
 script = ExtResource("2_rvhry")
 Name = "Grass"
 MaxHealth = 10
+MidTexture = ExtResource("4_u0dvg")
 BottomTexture = ExtResource("3_54o36")
 TopTexture = ExtResource("5_ewhxt")
-LeftTexture = ExtResource("4_u0dvg")
-RightTexture = ExtResource("4_u0dvg")
-BackTexture = ExtResource("4_u0dvg")
-FrontTexture = ExtResource("4_u0dvg")
 
 [sub_resource type="Resource" id="Resource_8qynj"]
 script = ExtResource("2_rvhry")

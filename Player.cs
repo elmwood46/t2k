@@ -6,6 +6,8 @@ using System.Diagnostics;
 public partial class Player : CharacterBody3D
 {
 	[Export] public Node3D Head { get; set; }
+	[Export] public Node3D HeadCrouched { get; set; }
+	[Export] public CollisionShape3D CollisionShape { get; set; }
 	[Export] public Camera3D Camera { get; set; }
 	[Export] public Node3D CameraSmooth {get; set;}
 
@@ -14,6 +16,7 @@ public partial class Player : CharacterBody3D
 	[Export] public ShapeCast3D ShapeCast { get; set; }
     [Export] public RayCast3D StairsAheadRay { get; set; }
 	[Export] public RayCast3D StairsBelowRay { get; set; }
+
 
 	[Export] public float MouseSensitivity = 0.3f;
     [Export] public float WalkSpeed = 5.0f;
@@ -28,8 +31,8 @@ public partial class Player : CharacterBody3D
 	[Export] public float Mass = 80.0f;
 	[Export] public float PushForce = 5.0f;
 
-    private float _movespeed;
-	const float MAX_STEP_HEIGHT = 0.50f; // Raycasts length should match this. StairsAhead one should be slightly longer.
+    private float _movespeed; // used for tracking players current move speed after applying sprinting or crouching etc
+	const float MAX_STEP_HEIGHT = 0.55f; // Raycasts length should match this. StairsAhead one should be slightly longer.
 	private bool _snappedToStairsLastFrame = false;
 	private ulong _lastFrameOnFloor = 99999999999UL;
 
@@ -38,6 +41,12 @@ public partial class Player : CharacterBody3D
 	Vector3 _wish_dir = Vector3.Zero;
 	Vector3 _cam_aligned_wish_dir = Vector3.Zero;
 	
+	const float CROUCH_TRANSLATE = 0.7F;
+	const float CROUCH_JUMP_BOOST = CROUCH_TRANSLATE * 0.9f; // 0.9 makes the camera jitter when you crouch, it's tactile feedback 
+	private bool _is_crouched = false;
+	private float _crouch_speed; // crouch speed is 0.8* walk speed, set in ready method
+	private float _standing_height; // set in ready method
+
     //bob variables
     const float BOB_FREQ = 2.4f;
     const float BOB_AMP = 0.08f;
@@ -64,6 +73,8 @@ public partial class Player : CharacterBody3D
 	public override void _Ready()
 	{
 		Instance = this;
+		_crouch_speed = WalkSpeed * 0.8f;
+		_standing_height = ((CapsuleShape3D)CollisionShape.Shape).Height;
 
 		BlockHighlight.Scale = new Vector3(Chunk.VOXEL_SCALE + 0.05f,Chunk.VOXEL_SCALE + 0.05f,Chunk.VOXEL_SCALE + 0.05f);
 
@@ -254,14 +265,16 @@ public partial class Player : CharacterBody3D
 
 		// get the direction you wish to move in global space
 		// Depending on which way you have you character facing, you may have to negate the input directions
-		_wish_dir = this.GlobalTransform.Basis * new Vector3(inputDirection.X, 0f, -inputDirection.Y);
+		_wish_dir = GlobalTransform.Basis * new Vector3(inputDirection.X, 0f, -inputDirection.Y);
 		_cam_aligned_wish_dir = Camera.GlobalTransform.Basis * new Vector3(inputDirection.X, 0f, -inputDirection.Y);
 
+		HandleCrouch((float)delta);
+
         // check for sprint speed adjustment
-        if (Input.IsActionPressed("Sprint")) {
+        if (Input.IsActionPressed("Sprint") && !_is_crouched) {
             _movespeed = SprintSpeed;
         } else {
-            _movespeed = WalkSpeed;
+            _movespeed = _is_crouched ? _crouch_speed : WalkSpeed;
         }
 	
         // lerp velocity

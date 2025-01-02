@@ -5,6 +5,30 @@ using System;
 
 public partial class Player : CharacterBody3D
 {
+    public void HandleCrouch(float delta) {
+        var wasCrouched = _is_crouched;
+        if (Input.IsActionPressed("Crouch")) {
+            _is_crouched = true;
+        }
+        else if (_is_crouched && !TestMove(GlobalTransform, new Vector3(0, CROUCH_TRANSLATE, 0))) {
+            _is_crouched = false;
+        }
+
+        var tryCrouchJump = 0f;
+        if (wasCrouched != _is_crouched && !IsOnFloor() && !_snappedToStairsLastFrame) {
+            tryCrouchJump = _is_crouched ? CROUCH_JUMP_BOOST : -CROUCH_JUMP_BOOST;
+        }
+        if (tryCrouchJump != 0) {
+            var result = new KinematicCollision3D();
+            TestMove(GlobalTransform, new Vector3(0, tryCrouchJump, 0), result);
+            Position += new Vector3(0,result.GetTravel().Y,0);
+        }
+    
+        HeadCrouched.Position = _is_crouched ? new Vector3(0, -CROUCH_TRANSLATE, 0) : Vector3.Zero;
+        ((CapsuleShape3D)CollisionShape.Shape).Height = _is_crouched ? _standing_height-CROUCH_TRANSLATE : _standing_height;
+        CollisionShape.Position = new Vector3(0, ((CapsuleShape3D)CollisionShape.Shape).Height/2, 0);
+    }
+
     public void AddRecoil(float pitch, float yaw) {
         TargetRecoil.X += pitch;
         TargetRecoil.Y += yaw;
@@ -140,7 +164,7 @@ public partial class Player : CharacterBody3D
 		var downCheckResult = new KinematicCollision3D();
 		if (TestMove(stepPosWithClearance, new Vector3(0, -MAX_STEP_HEIGHT * 2, 0), downCheckResult) && (downCheckResult.GetCollider() is StaticBody3D || downCheckResult.GetCollider() is Chunk))
 		{
-			var stepHeight = ((stepPosWithClearance.Origin + downCheckResult.GetTravel()) - GlobalPosition).Y;
+			var stepHeight = (stepPosWithClearance.Origin + downCheckResult.GetTravel() - GlobalPosition).Y;
 			if (stepHeight > MAX_STEP_HEIGHT || stepHeight <= 0.01 || (downCheckResult.GetPosition() - GlobalPosition).Y> MAX_STEP_HEIGHT) return false;
 
 			StairsAheadRay.GlobalPosition = downCheckResult.GetPosition() + new Vector3(0, MAX_STEP_HEIGHT, 0) + expectedMoveMotion.Normalized() * 0.1f;

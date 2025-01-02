@@ -37,7 +37,6 @@ public partial class ChunkManager : Node
 			_chunks.Add(chunk);
 		}
 
-
 		//Vector2I playerChunk;
 		//playerChunk = !SaveManager.Instance.SaveFileExists() ? new Vector2I(0,0)
 		// = new Vector2I(Mathf.FloorToInt(Player.Instance.Position.X),Mathf.FloorToInt(Player.Instance.Position.Z));
@@ -72,7 +71,10 @@ public partial class ChunkManager : Node
 
 	public void SetBlock(Vector3I globalPosition, Block block)
 	{
-		var chunkTilePosition = new Vector2I(Mathf.FloorToInt(globalPosition.X / (float)Chunk.Dimensions.X), Mathf.FloorToInt(globalPosition.Z / (float)Chunk.Dimensions.Z));
+		var chunkTilePosition = new Vector2I(
+			Mathf.FloorToInt(globalPosition.X / (float)Chunk.Dimensions.X),
+			Mathf.FloorToInt(globalPosition.Z / (float)Chunk.Dimensions.Z)
+		);
 		lock (_positionToChunk)
 		{
 			if (_positionToChunk.TryGetValue(chunkTilePosition, out var chunk))
@@ -170,6 +172,7 @@ public partial class ChunkManager : Node
 
 						chunk.CallDeferred(nameof(Chunk.SetChunkPosition), newPosition);
 					}
+					Thread.Sleep(100);
 				}
 			}
 			Thread.Sleep(100);

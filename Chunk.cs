@@ -73,7 +73,10 @@ public partial class Chunk : StaticBody3D
 	{
 		ChunkManager.Instance.UpdateChunkPosition(this, position, ChunkPosition);
 		ChunkPosition = position;
-		CallDeferred(Node3D.MethodName.SetGlobalPosition, new Godot.Vector3(VOXEL_SCALE* ChunkPosition.X * Dimensions.X, 0, VOXEL_SCALE * ChunkPosition.Y * Dimensions.Z));
+		CallDeferred(Node3D.MethodName.SetGlobalPosition, new Godot.Vector3(
+            VOXEL_SCALE* ChunkPosition.X * Dimensions.X,
+            0, VOXEL_SCALE * ChunkPosition.Y * Dimensions.Z)
+        );
 
 		Generate();
 		Update();
@@ -144,6 +147,7 @@ public partial class Chunk : StaticBody3D
 	}
 
 	public void Update() {
+        _arraymesh.ClearSurfaces();
 		BuildChunkMesh(_blocks);
 		CollisionShape.Shape = MeshInstance.Mesh.CreateTrimeshShape();
 	}
@@ -166,11 +170,11 @@ public partial class Chunk : StaticBody3D
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
-        Dictionary<int, Dictionary<int, UInt64[]>>[] data = new Dictionary<int,Dictionary<int, UInt64[]>>[6];
+        Dictionary<int, Dictionary<int, UInt32[]>>[] data = new Dictionary<int,Dictionary<int, UInt32[]>>[6];
         for (short i=0; i<6; i++) data[i] = new(); // initialize the hash maps for each axis value
 
-        var axis_cols = new UInt64[CSP3*3];
-        var col_face_masks = new UInt64[CSP3*6];
+        var axis_cols = new UInt32[CSP3*3];
+        var col_face_masks = new UInt32[CSP3*6];
 
         // generate binary 0 1 voxel representation for each axis
         for (int x=0;x<CSP;x++) {
@@ -183,9 +187,9 @@ public partial class Chunk : StaticBody3D
                     
                     var b = chunk[chunk_idx];
                     if ((b >> 15 & 0x3ff) != 0) { // if block is solid
-                        axis_cols[x + z*CSP] |= (UInt64)1 << y;           // y axis defined by x,z
-                        axis_cols[z + y*CSP + CSP2] |= (UInt64)1 << x;    // x axis defined by z,y
-                        axis_cols[x + y*CSP + CSP2*2] |= (UInt64)1 << z;  // z axis defined by x,y
+                        axis_cols[x + z*CSP] |= (UInt32)1 << y;           // y axis defined by x,z
+                        axis_cols[z + y*CSP + CSP2] |= (UInt32)1 << x;    // x axis defined by z,y
+                        axis_cols[x + y*CSP + CSP2*2] |= (UInt32)1 << z;  // z axis defined by x,y
                     }
                 }
             }
@@ -214,7 +218,7 @@ public partial class Chunk : StaticBody3D
 
                     // removes rightmost and leftmost padded bit (it's outside the chunk)
                     var col = col_face_masks[col_idx] >> 1;
-                    col &= ~((UInt64)1 << CHUNK_SIZE);
+                    col &= ~((UInt32)1 << CHUNK_SIZE);
 
                     // now get y coord of faces (it's their bit location in the UInt64, so trailing zeroes can find it)
                     while (col != 0) {
@@ -229,15 +233,15 @@ public partial class Chunk : StaticBody3D
                                 _ => new Vector3I(i, j, k),       // back, front (xy -> z axis)
                             };
                         var blocktype = (_blocks[voxel_pos.X + voxel_pos.Z * CHUNK_SIZE + voxel_pos.Y * CHUNKSQ] >> 15) & 0x3ff;
-                        if (!data[axis].TryGetValue(blocktype, out Dictionary<int, UInt64[]> planeSet)) {
+                        if (!data[axis].TryGetValue(blocktype, out Dictionary<int, UInt32[]> planeSet)) {
                             planeSet = new(); 
                              data[axis].Add(blocktype, planeSet);
                         }
-                        if (!planeSet.TryGetValue(k, out UInt64[] data_entry)) {
-                            data_entry = new UInt64[CHUNK_SIZE];
+                        if (!planeSet.TryGetValue(k, out UInt32[] data_entry)) {
+                            data_entry = new UInt32[CHUNK_SIZE];
                             planeSet.Add(k, data_entry);
                         }
-                        data_entry[j] |= (UInt64)1 << i;     // push the "row" bit into the "column" UInt32
+                        data_entry[j] |= (UInt32)1 << i;     // push the "row" bit into the "column" UInt32
                         planeSet[k] = data_entry;
                     }
                 }
@@ -308,8 +312,7 @@ public partial class Chunk : StaticBody3D
                 }
             }
         }
-        
-        _arraymesh.ClearSurfaces();
+
         //_st.SetMaterial(BlockManager.Instance.ChunkMaterial);
         //_st2.SetMaterial(BlockManager.Instance.LavaShader);
         var a1 = _st.Commit().SurfaceGetArrays(0);
@@ -324,7 +327,7 @@ public partial class Chunk : StaticBody3D
     // greedy quad for a 32 x 32 binary plane (assuming data length is 32) // CHANGED THIS TO 64 CHUNK SIZE
     // each Uint32 in data[] is a row of 32 bits
     // offsets along this row represent columns
-    static private List<GreedyQuad> GreedyMeshBinaryPlane(UInt64[] data) { // modify this so chunks are 30 and padded 1 on each side to 32
+    static private List<GreedyQuad> GreedyMeshBinaryPlane(UInt32[] data) { // modify this so chunks are 30 and padded 1 on each side to 32
         List<GreedyQuad> greedy_quads = new();
         int data_length = data.Length;
         for (int j=0;j<data_length;j++) { // j selects a row from the data[j]
@@ -333,8 +336,8 @@ public partial class Chunk : StaticBody3D
                 i += BitOperations.TrailingZeroCount(data[j] >> i);
                 if (i>=CHUNK_SIZE) continue;
                 var h = BitOperations.TrailingZeroCount(~(data[j] >> i)); // count trailing ones from i upwards
-                UInt64 h_as_mask = 0; // create a mask of h bits
-                for (int xx=0;xx<h;xx++) h_as_mask |= (UInt64)1 << xx;
+                UInt32 h_as_mask = 0; // create a mask of h bits
+                for (int xx=0;xx<h;xx++) h_as_mask |= (UInt32)1 << xx;
                 var mask = h_as_mask << i; // a mask of h bits starting at i
                 var w = 1;
                 while (j+w < data_length) {

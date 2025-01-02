@@ -275,7 +275,7 @@ mesh = SubResource("BoxMesh_5f7rv")
 shape = SubResource("ConvexPolygonShape3D_7o2ry")
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 15, 0, 0, 0, 1, 1.56084, 10.5799, -7.98911)
+transform = Transform3D(1, 0, 0, 0, 12.8864, 0, 0, 0, 1, 1.56084, 11.1078, -7.98911)
 mesh = SubResource("BoxMesh_5f7rv")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D2"]
