@@ -2,6 +2,7 @@ using Godot;
 using Godot.Collections;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 // note each block has 6 textures from 0-5
 // order: bottom, top, left, right, back, front 
@@ -9,9 +10,12 @@ using System.Collections.Generic;
 [Tool]
 public partial class BlockManager : Node
 {
+
+	// note the code assumes that block 0 is the empty (air) block
+	// but this has to be set manually
 	[Export] public Array<Block> Blocks { get; set; }
 
-	private readonly System.Collections.Generic.Dictionary<Texture2D, Vector2I> _atlasLookup = new();
+	private readonly System.Collections.Generic.Dictionary<Texture2D, int> _texarraylookup = new();
 
 	private readonly System.Collections.Generic.Dictionary<string, int> _blockIdLookup = new();
 
@@ -26,81 +30,73 @@ public partial class BlockManager : Node
 
 	public ShaderMaterial ChunkMaterial { get; private set; }
 
+	public ShaderMaterial LavaShader { get; private set; }
+
 	public static int BlockID(string blockName) {
 		return Instance._blockIdLookup[blockName];
 	}
 
-	public static bool IsEmpty(int blockID) {
-		return blockID == Instance._blockIdLookup["Air"];
+	public static int[] BlockTextureArrayPositions(int blockID) {
+		return Instance.Blocks[blockID].BakedTextureArrayPositions;
+	}
+
+	private int[] GetBlockTextureArrayPositions(int blockID) {
+		var texarray = Instance.Blocks[blockID].Textures;
+		var result = new int[texarray.Length];
+		for (int i=0; i<texarray.Length; i++) {
+			result[i] = _texarraylookup[texarray[i]];
+			GD.Print($"Block {Blocks[blockID].Name} texture {i} is at array position {result[i]}");
+		}
+		for (int i=0; i< 6; i++) GD.Print(result[i]);
+		return result;
 	}
 
 	public override void _Ready()
 	{
 		Instance = this;
-		if (Blocks == null) throw new Exception("Blockmanager failed to create texture atlas: blocks array is null.");
-		_atlas_height = Blocks.Count;
-		GD.Print($"Creating texture atlas for {_atlas_height} blocks");
-		GD.Print(Blocks[0].Name);
-		GD.Print(Blocks[0].Textures);
-		var image = Image.CreateEmpty(ATLAS_WIDTH * BlockTextureSize.X, _atlas_height * BlockTextureSize.Y, false, Image.Format.Rgba8);
 
-		//init block id lookup
-		var textureCount = 0;
-		for (int i = 0; i < Blocks.Count; i++) {
-			GD.Print($"Block {Blocks[i].Name} has {Blocks[i].Textures.Length} textures");
-			_blockIdLookup.Add(Blocks[i].Name, i);
-			var textures = Blocks[i].Textures;
-			GD.Print($"Block {Blocks[i].Name} has {textures.Length} textures");
-			if (textures == null || textures.Length != 6) throw new Exception($"Block {Blocks[i].Name} has a wrongly sized texture array ({textures.Length}).");
-			for (int j = 0; j < textures.Length; j++) {
-				Texture2D texture = textures[j];
-				if (texture != null) {
-					_atlasLookup.TryAdd(texture, new Vector2I(j, i));
-					textureCount++;
-				}
-				var imgIndex = i + j * ATLAS_WIDTH;
-				if (imgIndex >= Blocks.Count) continue;
-				var currentImage = texture?.GetImage();
-				if (currentImage != null) {
-					currentImage.Convert(Image.Format.Rgba8);
-					image.BlitRect(currentImage, new Rect2I(Vector2I.Zero, BlockTextureSize), new Vector2I(j, i) * BlockTextureSize);
-				}
-			}
+		LavaShader = GD.Load("res://shaders/LavaShader.tres") as ShaderMaterial;
+
+		if (Blocks[0].Name != "Air") throw new Exception("Blockmanager blocks array was set up incorrectly: block 0 must be the air block.");	
+		var enumerable = Blocks.Select(block => {block.SetTextures(); return block;}).SelectMany(block => block.Textures).Where(texture => texture != null).Distinct();
+		var blockTextures = enumerable.ToArray();
+        var blockImages = new Array<Image> (enumerable.Select(texture =>
+				{
+					var image = texture.GetImage(); // Create an Image object from the texture
+					return image;
+				})
+			);
+
+		var tex_array = new Texture2DArray();
+		for (int i = 0; i < blockTextures.Length; i++)
+		{
+			var texture = blockTextures[i];
+			_texarraylookup.Add(texture, i);    // map texture to position in texture array
 		}
+		tex_array.CreateFromImages(blockImages);
 
-		// fetch block textures
-		var textureAtlas = ImageTexture.CreateFromImage(image);
+		// get the ordered texture array positions for each block's texture
+		// and store them in the block
+		for (int i=0;i<Blocks.Count;i++) {
+			_blockIdLookup.Add(Blocks[i].Name, i);
+			Instance.Blocks[i].BakedTextureArrayPositions = GetBlockTextureArrayPositions(i);
+		}
 
 		ChunkMaterial = GD.Load("res://shaders/chunk_shader.tres") as ShaderMaterial;
-		//ChunkMaterial.SetShaderParameter("albedo_texture", GD.Load("res://BlockTextures/bricks.png") as Texture2D);
-/*
-		var ChunkMaterial = new()
-		{
-			AlbedoTexture = textureAtlas,
-			TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest
-		};*/
-
-		TextureAtlasSize = new Vector2(ATLAS_WIDTH, _atlas_height);
+		ChunkMaterial.SetShaderParameter("albedo_texture", tex_array);
 
 		 // Save the image to a file (PNG format)
-		 /*
-        string path = "user://example_image.png";
-        var error = image.SavePng(path);
-		if (error == Error.Ok) GD.Print($"Image saved successfully to {path}");
-        else  GD.PrintErr($"Failed to save image: {error}");*/
         
-		GD.Print($"Done loading {textureCount} images to make {ATLAS_WIDTH} x {_atlas_height} atlas");
-	}
-
-	public Vector2I GetTextureAtlasPosition(Texture2D texture)
-	{
-		if (texture == null)
-		{
-			return Vector2I.Zero;
-		}
-		else
-		{
-			return _atlasLookup[texture];
-		}
+		GD.Print($"Block textures: {blockTextures.Length}");
+		GD.Print($"Block images: {blockImages.Count}");
+		GD.Print($"Texture array size: {tex_array.GetLayers()}");
+		GD.Print($"Done loading {blockTextures.Length} images to make {tex_array.GetLayers()} sized texture array");
+		/*for (int i=0; i< tex_array.GetLayers(); i++) {
+			GD.Print(tex_array.GetLayerData(i));
+			string path = $"user://texture_for_array_layer_{i}.png";
+			var error = tex_array.GetLayerData(i).SavePng(path);
+			if (error == Error.Ok) GD.Print($"Image saved successfully to {path}");
+			else  GD.PrintErr($"Failed to save image: {error}");
+		}*/
 	}
 }

@@ -23,13 +23,13 @@ sky_material = SubResource("ProceduralSkyMaterial_2uccx")
 background_mode = 2
 sky = SubResource("Sky_e2nrm")
 ambient_light_source = 3
+ambient_light_sky_contribution = 0.85
+ambient_light_energy = 8.5
 tonemap_mode = 3
-sdfgi_bounce_feedback = 1.99
-sdfgi_y_scale = 2
-sdfgi_energy = 0.5
+sdfgi_enabled = true
+sdfgi_min_cell_size = 0.8
 glow_enabled = true
-glow_strength = 1.76
-glow_bloom = 0.02
+glow_bloom = 0.04
 volumetric_fog_density = 0.02
 volumetric_fog_anisotropy = 0.4
 volumetric_fog_length = 4.0
@@ -367,7 +367,7 @@ height = 0.807669
 material = SubResource("StandardMaterial3D_1dgdr")
 
 [node name="RigidBody3D" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 19.7972, 3.47894)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.7972, 3.47894)
 mass = 5.0
 physics_material_override = SubResource("PhysicsMaterial_u3mn0")
 

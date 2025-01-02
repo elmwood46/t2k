@@ -30,12 +30,16 @@ public partial class Block : Resource
 	private Texture2D _frontTexture;
 	public Texture2D[] Textures {get => _textures; private set {_textures = value;}}
 	private Texture2D[] _textures = new Texture2D[6];
-	private void SetTextures() {
+
+	public int[] BakedTextureArrayPositions {get => _bakedTextureArrayPositions; set {_bakedTextureArrayPositions = value;}}
+	private int[] _bakedTextureArrayPositions = new int[6];
+
+	public void SetTextures() {
 		if (MidTexture!= null && BottomTexture!= null && TopTexture!=null) {
 			Textures = new Texture2D[] { BottomTexture,TopTexture,MidTexture,MidTexture,MidTexture,MidTexture };
 		}
 		else if (MidTexture!= null) {
-			Textures = new Texture2D[] { MidTexture,MidTexture,MidTexture,MidTexture,MidTexture,MidTexture };
+			Textures = new Texture2D[] { MidTexture,MidTexture,MidTexture,MidTexture,MidTexture,MidTexture};
 		}
 		else {
 			Textures = new Texture2D[] { BottomTexture,TopTexture,LeftTexture,RightTexture,BackTexture,FrontTexture };

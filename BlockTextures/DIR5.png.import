@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b2l14qu6ygspc"
-path="res://.godot/imported/lava.png-4b75ac1a6fb72151600c67e15f9ab6db.ctex"
+uid="uid://d1t5s7l5jsbji"
+path="res://.godot/imported/DIR5.png-572500c36d864cf2eebf459b81553666.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://BlockTextures/lava.png"
-dest_files=["res://.godot/imported/lava.png-4b75ac1a6fb72151600c67e15f9ab6db.ctex"]
+source_file="res://BlockTextures/DIR5.png"
+dest_files=["res://.godot/imported/DIR5.png-572500c36d864cf2eebf459b81553666.ctex"]
 
 [params]
 

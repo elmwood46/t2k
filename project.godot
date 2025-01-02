@@ -109,3 +109,7 @@ ToggleWireframe={
 [physics]
 
 3d/physics_engine="JoltPhysics3D"
+
+[rendering]
+
+global_illumination/sdfgi/probe_ray_count=2
