@@ -22,8 +22,13 @@ public partial class Chunk : StaticBody3D
 	// obsolete
 	private int[,,] _blockHealth = new int[Dimensions.X, Dimensions.Y, Dimensions.Z];
     private ArrayMesh _arraymesh = new();
-	private SurfaceTool _st = new();
-    private SurfaceTool _st2 = new();
+	private static readonly SurfaceTool _st = new();
+    private static readonly SurfaceTool _st2 = new();
+
+    private readonly Area3D _chunk_area = new() {Position = new Godot.Vector3(Dimensions.X,0,Dimensions.Z)*0.5f};
+    private readonly CollisionShape3D _chunk_bounding_box = new() {
+            Shape = new BoxShape3D { Size = new Godot.Vector3(Dimensions.X, Dimensions.Y, Dimensions.Z) }
+        };
 
 	// vertices of a cube
     private static readonly Vector3I[] CUBE_VERTS = 
@@ -78,6 +83,8 @@ public partial class Chunk : StaticBody3D
 
 	public override void _Ready() {
 		Scale = new Godot.Vector3(VOXEL_SCALE, VOXEL_SCALE, VOXEL_SCALE);
+        _chunk_area.AddChild(_chunk_bounding_box);
+        AddChild(_chunk_area);
 	}
 
     public static int PackBlockInfo(int blockType, int x, int y, int z) {
@@ -136,6 +143,13 @@ public partial class Chunk : StaticBody3D
         _arraymesh.ClearSurfaces();
 		BuildChunkMesh(_blocks);
 		CollisionShape.Shape = MeshInstance.Mesh.CreateTrimeshShape();
+
+        foreach (Node3D child in _chunk_area.GetOverlappingBodies()) {
+            if (child is RigidBody3D rb) {
+                GD.Print("updating rigid body ", rb);
+                rb.MoveAndCollide(Godot.Vector3.Zero);
+            }
+        }
 	}
 
     public struct GreedyQuad {

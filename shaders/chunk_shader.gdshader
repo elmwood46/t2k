@@ -20,8 +20,8 @@ bool equals(vec3 v1, vec3 v2) {
 void fragment() {
 	vec3 normal = local_norm;
 	vec3 position = local_vert;
-	
-	int face = int(UV.x); 
+
+	int face = int(UV.x);
 	// we are shading voxels
 	if (equals(normal,vec3(0,-1,0))) {face = 0;}
 	else if (equals(normal,vec3(0,1,0))) {face = 1;}
@@ -41,6 +41,6 @@ void fragment() {
 
 	//sample_uv *= inv_voxel_size;
 	sample_uv = fract(sample_uv);
-	
+
 	ALBEDO = texture(albedo_texture,vec3(sample_uv.x,-sample_uv.y,texture_frame)).rgb;
 }

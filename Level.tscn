@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://ChunkManager.cs" id="1_0ir14"]
 [ext_resource type="PackedScene" uid="uid://ds0scgvcsglbw" path="res://block_manager.tscn" id="1_jg7ov"]
 [ext_resource type="PackedScene" uid="uid://da5ax8fx3rml2" path="res://Chunk.tscn" id="1_peckr"]
-[ext_resource type="Environment" uid="uid://c4et05ttt0t55" path="res://sdfgi_env.tres" id="1_sjmhg"]
+[ext_resource type="Environment" uid="uid://cki687xoyy0pq" path="res://sdfgi_env_haze.tres" id="1_qgltg"]
 [ext_resource type="PackedScene" uid="uid://dvt10rp16ksw8" path="res://Player.tscn" id="15_72lf1"]
 [ext_resource type="PackedScene" uid="uid://b1ovqgjwms7u4" path="res://props/ladder.tscn" id="16_usagc"]
 [ext_resource type="PackedScene" uid="uid://bj06w0107prkf" path="res://props/interactable_component.tscn" id="17_hbyi5"]
@@ -231,7 +231,7 @@ font_names = PackedStringArray("Broadway")
 script = SubResource("GDScript_fd3ji")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = ExtResource("1_sjmhg")
+environment = ExtResource("1_qgltg")
 
 [node name="BlockManager" parent="." instance=ExtResource("1_jg7ov")]
 
