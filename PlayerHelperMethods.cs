@@ -159,10 +159,10 @@ public partial class Player : CharacterBody3D
 		if (Velocity.Y > 0 || (Velocity * new Vector3(1,0,1)).Length() == 0) return false;
 
 		var expectedMoveMotion = Velocity * new Vector3(1, 0, 1) * delta;
-		var stepPosWithClearance = GlobalTransform.Translated(expectedMoveMotion + new Vector3(0, MAX_STEP_HEIGHT * 2, 0));
+		var stepPosWithClearance = GlobalTransform.Translated(expectedMoveMotion + new Vector3(0, MAX_STEP_HEIGHT * 1.2f, 0));
 
 		var downCheckResult = new KinematicCollision3D();
-		if (TestMove(stepPosWithClearance, new Vector3(0, -MAX_STEP_HEIGHT * 2, 0), downCheckResult) && (downCheckResult.GetCollider() is StaticBody3D || downCheckResult.GetCollider() is Chunk))
+		if (TestMove(stepPosWithClearance, new Vector3(0, -MAX_STEP_HEIGHT * 1.2f, 0), downCheckResult) && (downCheckResult.GetCollider() is StaticBody3D || downCheckResult.GetCollider() is Chunk))
 		{
 			var stepHeight = (stepPosWithClearance.Origin + downCheckResult.GetTravel() - GlobalPosition).Y;
 			if (stepHeight > MAX_STEP_HEIGHT || stepHeight <= 0.01 || (downCheckResult.GetPosition() - GlobalPosition).Y> MAX_STEP_HEIGHT) return false;

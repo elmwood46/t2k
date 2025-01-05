@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://guip7bwy1pyu"]
+
+[ext_resource type="Script" path="res://effects/RigidBreak.cs" id="1_cxnqb"]
+
+[node name="RigidBreak" type="Node3D" node_paths=PackedStringArray("ExplosionCentre")]
+script = ExtResource("1_cxnqb")
+ExplosionCentre = NodePath("Node3D")
+
+[node name="Node3D" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2, 2)

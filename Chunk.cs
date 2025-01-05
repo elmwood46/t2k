@@ -1,18 +1,18 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Numerics;
 
 [Tool]
 public partial class Chunk : StaticBody3D
 {
-	[Export]
-	public CollisionShape3D CollisionShape { get; set; }
+	[Export] public CollisionShape3D CollisionShape { get; set; }
 
-	[Export]
-	public MeshInstance3D MeshInstance { get; set; }
-
+	[Export] public MeshInstance3D MeshInstance { get; set; }
 	public const float VOXEL_SCALE = 0.5f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
+
+    // chunk size is 30, padded chunk size is 32. Can't be increased easily because it uses binary UINT32 to do face culling
 	public const int CHUNK_SIZE = 30; // the chunk size is 62, padded chunk size is 64, // must match size in compute shader
     public const int CHUNKSQ = CHUNK_SIZE*CHUNK_SIZE;
     public const int CSP = CHUNK_SIZE+2;
@@ -24,6 +24,12 @@ public partial class Chunk : StaticBody3D
     private ArrayMesh _arraymesh = new();
 	private static readonly SurfaceTool _st = new();
     private static readonly SurfaceTool _st2 = new();
+
+    private readonly List<GpuParticlesCollisionBox3D> _partcolls = new();
+
+    private static readonly PackedScene _block_break_particles = GD.Load<PackedScene>("res://effects/break_block.tscn");
+
+    private static readonly PackedScene _rigid_break = GD.Load<PackedScene>("res://effects/rigid_break2.tscn");
 
     private readonly Area3D _chunk_area = new() {Position = new Godot.Vector3(Dimensions.X,0,Dimensions.Z)*0.5f};
     private readonly CollisionShape3D _chunk_bounding_box = new() {
@@ -355,6 +361,9 @@ public partial class Chunk : StaticBody3D
 
 	public void DamageBlocks(List<(Vector3I, int)> blockDamages)
 	{ // array of tuples with block global position as Item1 and damage as Item2
+        var blockCount = blockDamages.Count;
+        var particle_spawn_list = new Godot.Collections.Dictionary<Vector3I,Texture2D>();
+
 		foreach ((Vector3I,int) blockdamage in blockDamages)
 		{
 			if (blockdamage.Item1.X < 0 || blockdamage.Item1.X >= Dimensions.X) continue;
@@ -365,11 +374,139 @@ public partial class Chunk : StaticBody3D
 			{
 				_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] = 0;
 				//_blocks[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] = BlockManager.Instance.Air;
-				_blocks[blockdamage.Item1.X + blockdamage.Item1.Z * Dimensions.X + blockdamage.Item1.Y * Dimensions.X * Dimensions.Z] &= ~0x3ff<<15; // set block to air
-			}
+                int blockid = (_blocks[blockdamage.Item1.X
+                    + blockdamage.Item1.Z * Dimensions.X
+                    + blockdamage.Item1.Y * Dimensions.X * Dimensions.Z] >> 15) & 0x3ff;
+				_blocks[blockdamage.Item1.X
+                    + blockdamage.Item1.Z * Dimensions.X
+                    + blockdamage.Item1.Y * Dimensions.X * Dimensions.Z] &= ~0x3ff<<15; // set block to air
+
+                if (blockid != 0)
+                    particle_spawn_list[blockdamage.Item1] = BlockManager.Instance.Blocks[blockid].Textures[0];
+            }
 		}
 		Update();
+        SpawnBlockParticles(particle_spawn_list);
+
+        //CallDeferred(nameof(SpawnBlockParticles), particle_spawn_list);
 	}
+
+    public void SpawnBlockParticles(Godot.Collections.Dictionary<Vector3I, Texture2D> positionsAndTextures) {
+        var blockCount = 0;
+
+        var globalChunkPos = new Godot.Vector3 (ChunkPosition.X * Dimensions.X, 0, ChunkPosition.Y*Dimensions.Z);  
+        // sort dictionary by distance to player
+        var sortedByMagnitude = positionsAndTextures.ToImmutableSortedDictionary(
+            pos => pos.Key,
+            tex => tex.Value,
+            Comparer<Godot.Vector3>.Create((a, b) => 
+                (
+                    (globalChunkPos + a-Player.Instance.GlobalPosition).LengthSquared() > (globalChunkPos + b-Player.Instance.GlobalPosition).LengthSquared()
+                ) ? 1 :  
+                (
+                    (globalChunkPos + a-Player.Instance.GlobalPosition).LengthSquared() == (globalChunkPos + b-Player.Instance.GlobalPosition).LengthSquared() ? 0 : -1
+                )
+            )
+        );
+        foreach (var (pos, tex) in sortedByMagnitude) {
+            var partcount = GetTree().GetNodesInGroup("RigidBreak").Count;
+            var is_block_above = false;
+            var block_above_idx = Mathf.FloorToInt(pos.X)
+            + Mathf.FloorToInt(pos.Z) * Dimensions.X
+            + Mathf.FloorToInt(pos.Y+1) * Dimensions.X * Dimensions.Z;
+            if (block_above_idx <=_blocks.Length) {
+                var blockid = (_blocks[block_above_idx] >> 15) & 0x3ff;
+                if (blockid != 0) is_block_above = true;
+            }
+            if (is_block_above) GD.Print("block above");
+
+        
+            var particles = _rigid_break.Instantiate() as RigidBreak;
+
+
+            // for 4x4 fragments
+            /*
+            particles.MaskHalves = partcount > 4 || blockCount > 3;
+            particles.HalfStrength = partcount > 8  || blockCount > 6;               
+            particles.QuarterStrength = partcount > 10 || blockCount > 8;
+            particles.EighthStrength = partcount > 12 || blockCount > 9;
+            particles.OnlyOneParticle = partcount > 14 || blockCount > 11;
+            */
+
+            // for 3x3 fragments
+            /*
+            if (partcount > 10 || blockCount > 5)
+                particles.DecayTime = Mathf.Max(0.5f, 3.0f - (partcount + blockCount) * 0.3f);
+            particles.MaskHalves = partcount > 12 || blockCount > 10;
+            particles.HalfStrength = partcount > 15  || blockCount > 13;
+            particles.QuarterStrength = partcount > 20 || blockCount > 16;*/
+            /*
+            particles.MaskHalves = partcount > 8 || blockCount > 9;
+            if (particles.MaskHalves) particles.DecayTime = 2.0f;
+            particles.HalfStrength = partcount > 12  || blockCount > 12;
+            if (particles.HalfStrength) particles.DecayTime = 0.5f;
+            particles.QuarterStrength = partcount > 15 || blockCount > 14;
+            if (particles.QuarterStrength) particles.DecayTime = 0.25f;
+            particles.EighthStrength = partcount > 16 || blockCount > 15;
+            //particles.OnlyOneParticle = partcount > 17 || blockCount > 16;*/
+
+            // for 2x2 fragments
+            var mult = 2.0f;
+
+            if (blockCount > 1) {
+                if (partcount + blockCount < 2) particles.BlockDivisions = 3;
+                if (partcount + blockCount < 1) particles.BlockDivisions = 4;
+            } else {
+                if (partcount + blockCount < 15) particles.BlockDivisions = 3;
+                if (partcount + blockCount < 5) particles.BlockDivisions = 4; // default 2
+                //if (partcount + blockCount < 1) particles.BlockDivisions = 4;
+            }           
+
+            if (partcount > 10*mult || blockCount > 5*mult)
+                particles.DecayTime = Mathf.Max(0.5f, 2.0f - (partcount + blockCount) * 0.1f);
+            particles.MaskHalves = partcount > 4*mult || blockCount > 3*mult;
+            particles.HalfStrength = partcount > 8*mult  || blockCount > 6*mult;               
+            particles.QuarterStrength = partcount > 10*mult || blockCount > 8*mult;
+            particles.EighthStrength = partcount > 12*mult || blockCount > 9*mult;
+            particles.OnlyOneParticle = partcount > 14*mult || blockCount > 11*mult;
+
+            particles.Position = pos + Godot.Vector3.One*(1/particles.BlockDivisions) - Godot.Vector3.Up*0.0625f; // add 0.5 to center the particles in the grid
+
+            if (is_block_above) particles.NoUpwardsImpulse = true;
+
+
+            var partmat = new StandardMaterial3D
+            {
+                AlbedoTexture = tex,
+                TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest
+            };
+            particles.BlockMaterial = partmat;
+            
+            particles.AddToGroup("RigidBreak");
+            AddChild(particles);
+                        var impulse_pos = (particles.GlobalTransform.Origin - Player.Instance.GlobalTransform.Origin).Normalized() * 100.0f; 
+particles.StartingImpulse = impulse_pos;
+            blockCount++;
+            /*
+            
+            var particles = _block_break_particles.Instantiate() as GpuParticles3D;
+            if (blockCount > 5) {
+                //particles.Amount = Math.Max(1, 256 - blockCount * 10); // spawn less particles per block, the more blocks you break
+                //GD.Print("spawned ", particles.Amount, " particles");
+            }
+            var partmat =  particles.DrawPass1.SurfaceGetMaterial(0) as StandardMaterial3D;
+            partmat.AlbedoTexture = tex;
+            partmat.TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest;
+            particles.DrawPass1.SurfaceSetMaterial(0, partmat);
+            particles.Position = pos + Godot.Vector3.One*0.5f; // add 0.5 to center the particles in the grid
+            AddChild(particles);
+            var t = new Timer {WaitTime = particles.Lifetime};
+            t.Timeout += () => {particles.QueueFree(); t.QueueFree();};
+            AddChild(t);
+            t.Start();
+            particles.Emitting = true;*/
+        }
+    }
 
 	public void SetBlock(Vector3I blockPosition, Block block)
 	{
@@ -380,8 +517,9 @@ public partial class Chunk : StaticBody3D
 		Update();
 	}
 
-	public Block GetBlock(Vector3I blockPosition)
+	public int GetBlockIDFromPosition(Vector3I blockPosition)
 	{
-		return new Block();//_blocks[blockPosition.X, blockPosition.Y, blockPosition.Z];
+        if (blockPosition.X + blockPosition.Z * CHUNK_SIZE + blockPosition.Y * CHUNKSQ >= _blocks.Length) return -1;
+		return (_blocks[blockPosition.X + blockPosition.Z * CHUNK_SIZE + blockPosition.Y * CHUNKSQ] >> 15) & 0x3ff;
 	}
 }
