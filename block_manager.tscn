@@ -1,13 +1,17 @@
-[gd_scene load_steps=14 format=3 uid="uid://ds0scgvcsglbw"]
+[gd_scene load_steps=18 format=3 uid="uid://ds0scgvcsglbw"]
 
 [ext_resource type="Script" path="res://BlockManager.cs" id="1_pi362"]
 [ext_resource type="Texture2D" uid="uid://lfcjwjt4uvta" path="res://BlockTextures/EMPTY_TEXTURE.png" id="2_lcj64"]
 [ext_resource type="Script" path="res://Block.cs" id="2_rvhry"]
 [ext_resource type="Texture2D" uid="uid://bvlycywksqrek" path="res://BlockTextures/dirt.png" id="3_54o36"]
-[ext_resource type="Texture2D" uid="uid://dinlc1868cmq6" path="res://BlockTextures/grass_side.png" id="4_u0dvg"]
-[ext_resource type="Texture2D" uid="uid://cedssbc17dwdy" path="res://BlockTextures/grass.png" id="5_ewhxt"]
+[ext_resource type="Texture2D" uid="uid://dmph41b5t1n4k" path="res://BlockTextures/DIR4.png" id="5_ex0jf"]
+[ext_resource type="Texture2D" uid="uid://qqm5veel8p5q" path="res://BlockTextures/DIR0.png" id="6_n2c53"]
+[ext_resource type="Texture2D" uid="uid://d1t5s7l5jsbji" path="res://BlockTextures/DIR5.png" id="7_3lsfr"]
 [ext_resource type="Texture2D" uid="uid://cboj7dieehlc7" path="res://BlockTextures/stone.png" id="7_204jl"]
 [ext_resource type="Texture2D" uid="uid://b2l14qu6ygspc" path="res://BlockTextures/lava.png" id="8_uc2tj"]
+[ext_resource type="Texture2D" uid="uid://bl8yvwntdy1np" path="res://BlockTextures/DIR2.png" id="8_y7dbe"]
+[ext_resource type="Texture2D" uid="uid://bb3ojl1muux38" path="res://BlockTextures/DIR3.png" id="9_4b7qs"]
+[ext_resource type="Texture2D" uid="uid://cosa1rsx5mw38" path="res://BlockTextures/DIR1.png" id="10_enf0n"]
 
 [sub_resource type="Resource" id="Resource_jx0ag"]
 script = ExtResource("2_rvhry")
@@ -25,9 +29,12 @@ MidTexture = ExtResource("3_54o36")
 script = ExtResource("2_rvhry")
 Name = "Grass"
 MaxHealth = 10
-MidTexture = ExtResource("4_u0dvg")
-BottomTexture = ExtResource("3_54o36")
-TopTexture = ExtResource("5_ewhxt")
+BottomTexture = ExtResource("6_n2c53")
+TopTexture = ExtResource("10_enf0n")
+LeftTexture = ExtResource("8_y7dbe")
+RightTexture = ExtResource("9_4b7qs")
+BackTexture = ExtResource("5_ex0jf")
+FrontTexture = ExtResource("7_3lsfr")
 
 [sub_resource type="Resource" id="Resource_8qynj"]
 script = ExtResource("2_rvhry")

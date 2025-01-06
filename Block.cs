@@ -3,7 +3,10 @@ using System;
 
 
 // each block has 6 textures from 0-5
-// order: bott 
+// order: bottom, top, left, right, back, front 
+// NOTE that the "back" texture faces in the -z direction (which is "forward" in Godot's physics)
+// the "front" texture faces in the +z direction (which is "back" in Godot's physics)
+// this is because we construct the blocks in "chunk space" and don't transform the texture map to godot's physics space
 
 [Tool]
 [GlobalClass]
@@ -32,7 +35,7 @@ public partial class Block : Resource
 	private Texture2D[] _textures = new Texture2D[6];
 
 	public int[] BakedTextureArrayPositions {get => _bakedTextureArrayPositions; set {_bakedTextureArrayPositions = value;}}
-	private int[] _bakedTextureArrayPositions = new int[6];
+	private int[] _bakedTextureArrayPositions;
 
 	public void SetTextures() {
 		if (MidTexture!= null && BottomTexture!= null && TopTexture!=null) {

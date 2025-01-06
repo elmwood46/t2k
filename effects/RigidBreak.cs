@@ -10,6 +10,7 @@ public partial class RigidBreak : Node3D
 
     public int BlockDivisions = 2;
 
+    public readonly ShaderMaterial Shader = (ShaderMaterial)ResourceLoader.Load("res://shaders/broken_block_shader.tres").Duplicate();
 
     public float DecayTime { get; set; } = 2.0f;
     public bool MaskHalves { get; set; } = false;
@@ -26,6 +27,8 @@ public partial class RigidBreak : Node3D
     public RandomNumberGenerator rng = new();
     public StandardMaterial3D BlockMaterial { get; set; }
 
+    public int[] BlockTextures { get; set; }
+
     public bool NoUpwardsImpulse = false;
 
     public static readonly PhysicsMaterial physmat = new() {
@@ -35,6 +38,11 @@ public partial class RigidBreak : Node3D
 
     public override void _Ready()
     {
+        AddToGroup("RigidBreak");
+        // pass uniform to shader
+        Shader.SetShaderParameter("albedo_texture", BlockManager.Instance.TextureArray);
+        Shader.SetShaderParameter("tex_array_idx", BlockTextures);
+
         Scale = Vector3.One *  (1f/BlockDivisions);
         t = new Timer
         {
@@ -56,10 +64,9 @@ public partial class RigidBreak : Node3D
             };
             var mesh = new MeshInstance3D
             {
-
                 Mesh = new BoxMesh { Size = Vector3.One },
-                MaterialOverride = BlockMaterial
-
+                MaterialOverride = Shader,
+                GIMode = GeometryInstance3D.GIModeEnum.Dynamic
             };
             var col = new CollisionShape3D
             {
@@ -117,8 +124,8 @@ public partial class RigidBreak : Node3D
                         {
 
                             Mesh = new BoxMesh { Size = Vector3.One },
-                            MaterialOverride = BlockMaterial
-
+                            MaterialOverride = Shader,
+                            GIMode = GeometryInstance3D.GIModeEnum.Dynamic
                         };
                         var col = new CollisionShape3D
                         {

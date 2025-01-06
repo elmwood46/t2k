@@ -6,6 +6,9 @@ using System.Linq;
 
 // note each block has 6 textures from 0-5
 // order: bottom, top, left, right, back, front 
+// NOTE that the "back" texture faces in the -z direction (which is "forward" in Godot's physics)
+// the "front" texture faces in the +z direction (which is "back" in Godot's physics)
+// this is because we construct the blocks in "chunk space" and don't transform the textures to godot's physics space
 
 [Tool]
 public partial class BlockManager : Node
@@ -32,10 +35,16 @@ public partial class BlockManager : Node
 
 	public ShaderMaterial LavaShader { get; private set; }
 
+	public Texture2DArray TextureArray = new();
+
 	public int LavaBlockId {get; private set;}
 
 	public static int BlockID(string blockName) {
 		return Instance._blockIdLookup[blockName];
+	}
+
+	public static string BlockName(int blockID) {
+		return Instance.Blocks[blockID].Name;
 	}
 
 	public static int[] BlockTextureArrayPositions(int blockID) {
@@ -69,13 +78,13 @@ public partial class BlockManager : Node
 				})
 			);
 
-		var tex_array = new Texture2DArray();
+		//var tex_array = new Texture2DArray();
 		for (int i = 0; i < blockTextures.Length; i++)
 		{
 			var texture = blockTextures[i];
 			_texarraylookup.Add(texture, i);    // map texture to position in texture array
 		}
-		tex_array.CreateFromImages(blockImages);
+		TextureArray.CreateFromImages(blockImages);
 
 		// get the ordered texture array positions for each block's texture
 		// and store them in the block
@@ -86,14 +95,14 @@ public partial class BlockManager : Node
 		}
 
 		ChunkMaterial = GD.Load("res://shaders/chunk_shader.tres") as ShaderMaterial;
-		ChunkMaterial.SetShaderParameter("albedo_texture", tex_array);
+		ChunkMaterial.SetShaderParameter("albedo_texture", TextureArray);
 
 		 // Save the image to a file (PNG format)
         
 		GD.Print($"Block textures: {blockTextures.Length}");
 		GD.Print($"Block images: {blockImages.Count}");
-		GD.Print($"Texture array size: {tex_array.GetLayers()}");
-		GD.Print($"Done loading {blockTextures.Length} images to make {tex_array.GetLayers()} sized texture array");
+		GD.Print($"Texture array size: {TextureArray.GetLayers()}");
+		GD.Print($"Done loading {blockTextures.Length} images to make {TextureArray.GetLayers()} sized texture array");
 		/*for (int i=0; i< tex_array.GetLayers(); i++) {
 			GD.Print(tex_array.GetLayerData(i));
 			string path = $"user://texture_for_array_layer_{i}.png";

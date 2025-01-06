@@ -6,7 +6,6 @@ varying vec3 local_vert;
 varying vec3 local_norm;
 varying vec2 local_uv;
 
-
 void vertex() {
 	local_vert = VERTEX;
 	local_norm = NORMAL;
@@ -27,18 +26,15 @@ void fragment() {
 	else if (equals(normal,vec3(0,1,0))) {face = 1;}
 	if (equals(normal,vec3(-1,0,0))) {face = 2;}
 	else if (equals(normal,vec3(1,0,0))) {face = 3;}
-	if (equals(normal,vec3(0,0,1))) {face = 4;}
-	else if (equals(normal,vec3(0,0,-1))) {face = 5;}
+	if (equals(normal,vec3(0,0,-1))) {face = 4;}
+	else if (equals(normal,vec3(0,0,1))) {face = 5;}
 
 	float texture_frame = UV.y;
-	vec2 sample_uv;
-	if (face == 0) sample_uv = position.xz;
-	else if (face == 1) sample_uv = position.xz;
-	else if (face == 2) sample_uv = position.zy;
-	else if (face == 3)sample_uv = position.zy;
-	else if (face == 4) sample_uv = position.xy;
-	else sample_uv = position.xy;
-
+	vec2 sample_uv = position.xz;
+	if (face == 0 || face == 1) sample_uv = position.xz;
+	if (face == 2 || face == 3) sample_uv = position.zy;
+	if (face == 4 || face == 5) sample_uv = position.xy;
+	
 	//sample_uv *= inv_voxel_size;
 	sample_uv = fract(sample_uv);
 

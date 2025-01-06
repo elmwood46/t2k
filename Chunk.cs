@@ -113,9 +113,31 @@ public partial class Chunk : StaticBody3D
         };
     }
 
-    public static bool IsBlockEmpty(int blockInfo) {
-        return (blockInfo >> 15 & 0x3ff) == 0;
+    public static int GetBlockID(int blockInfo) {
+        return (blockInfo >> 15) & 0x3ff;
     }
+
+    public void SetBlock(int blockIndex, int blockType) {
+        _blocks[blockIndex] = (_blocks[blockIndex] & ~(0x3ff << 15)) | blockType << 15;
+    }
+
+    public void SetBlockToAir(int blockIndex) {
+        _blocks[blockIndex] &= ~0x3ff<<15;
+    }
+
+    public static bool IsBlockEmpty(int blockInfo) {
+        return GetBlockID(blockInfo) == 0;
+    }
+
+    public static bool IsBlockInvincible(int blockInfo) {
+        return IsBlockEmpty(blockInfo) || (GetBlockID(blockInfo) == BlockManager.Instance.LavaBlockId);
+    }
+
+	public int GetBlockInfoFromPosition(Vector3I blockPosition)
+	{
+        if (blockPosition.X + blockPosition.Z * CHUNK_SIZE + blockPosition.Y * CHUNKSQ >= _blocks.Length) return -1;
+		return _blocks[blockPosition.X + blockPosition.Z * CHUNK_SIZE + blockPosition.Y * CHUNKSQ];
+	}
 
 	public void Generate()
 	{
@@ -152,7 +174,7 @@ public partial class Chunk : StaticBody3D
 
         foreach (Node3D child in _chunk_area.GetOverlappingBodies()) {
             if (child is RigidBody3D rb) {
-                GD.Print("updating rigid body ", rb);
+                //GD.Print("updating rigid body ", rb);
                 rb.MoveAndCollide(Godot.Vector3.Zero);
             }
         }
@@ -172,7 +194,7 @@ public partial class Chunk : StaticBody3D
         }
     }
 
-    private void BuildChunkMesh(int[] chunk) {
+    private void BuildChunkMesh(int[] chunk_blocks) {
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
@@ -191,8 +213,8 @@ public partial class Chunk : StaticBody3D
                     if (pos.X<0||pos.X>=CHUNK_SIZE||pos.Y<0||pos.Y>=CHUNK_SIZE||pos.Z<0||pos.Z>=CHUNK_SIZE) continue; 
                     var chunk_idx = pos.X + pos.Z*CHUNK_SIZE + pos.Y*CHUNKSQ;
                     
-                    var b = chunk[chunk_idx];
-                    if ((b >> 15 & 0x3ff) != 0) { // if block is solid
+                    var b = chunk_blocks[chunk_idx];
+                    if (!IsBlockEmpty(b)) { // if block is solid
                         axis_cols[x + z*CSP] |= (UInt32)1 << y;           // y axis defined by x,z
                         axis_cols[z + y*CSP + CSP2] |= (UInt32)1 << x;    // x axis defined by z,y
                         axis_cols[x + y*CSP + CSP2*2] |= (UInt32)1 << z;  // z axis defined by x,y
@@ -238,7 +260,7 @@ public partial class Chunk : StaticBody3D
                                 2 or 3 => new Vector3I(k, j, i),  // right, left (zy -> x axis)
                                 _ => new Vector3I(i, j, k),       // back, front (xy -> z axis)
                             };
-                        var blocktype = (_blocks[voxel_pos.X + voxel_pos.Z * CHUNK_SIZE + voxel_pos.Y * CHUNKSQ] >> 15) & 0x3ff;
+                        var blocktype = GetBlockID(_blocks[voxel_pos.X + voxel_pos.Z * CHUNK_SIZE + voxel_pos.Y * CHUNKSQ]);
                         if (!data[axis].TryGetValue(blocktype, out Dictionary<int, UInt32[]> planeSet)) {
                             planeSet = new(); 
                              data[axis].Add(blocktype, planeSet);
@@ -290,12 +312,12 @@ public partial class Chunk : StaticBody3D
                         Godot.Vector3[] triangle2 = {verts[0], verts[2], verts[3]};
                         Godot.Vector3 normal = axis switch
                         {
-                            0 => Godot.Vector3.Down,
-                            1 => Godot.Vector3.Up,
-                            2 => Godot.Vector3.Left,
-                            3 => Godot.Vector3.Right,
-                            4 => Godot.Vector3.Back, // -z is forward in godot
-                            _ => Godot.Vector3.Forward
+                            0 => Godot.Vector3.Down, // -y
+                            1 => Godot.Vector3.Up,   // +y
+                            2 => Godot.Vector3.Left, // -x
+                            3 => Godot.Vector3.Right, // +x
+                            4 => Godot.Vector3.Forward, // -z is forward in godot
+                            _ => Godot.Vector3.Back     // +z
                         };
                         Godot.Vector3[] normals = {normal, normal, normal};
                         
@@ -360,66 +382,76 @@ public partial class Chunk : StaticBody3D
     }
 
 	public void DamageBlocks(List<(Vector3I, int)> blockDamages)
-	{ // array of tuples with block global position as Item1 and damage as Item2
-        var blockCount = blockDamages.Count;
-        var particle_spawn_list = new Godot.Collections.Dictionary<Vector3I,Texture2D>();
+	{ 
+        // output dictionary of block positions where particles need to be spawned (for destroyed blocks) and textures for spawned particles
+        var particle_spawn_list = new Godot.Collections.Dictionary<Vector3I,int[]>();
 
+        // array of tuples with block global position as Item1 and damage as Item2
 		foreach ((Vector3I,int) blockdamage in blockDamages)
 		{
 			if (blockdamage.Item1.X < 0 || blockdamage.Item1.X >= Dimensions.X) continue;
 			if (blockdamage.Item1.Y < 0 || blockdamage.Item1.Y >= Dimensions.Y) continue;
 			if (blockdamage.Item1.Z < 0 || blockdamage.Item1.Z >= Dimensions.Z) continue;
+
+            var block_idx = blockdamage.Item1.X
+                + blockdamage.Item1.Z * Dimensions.X
+                + blockdamage.Item1.Y * Dimensions.X * Dimensions.Z;
+
+            var blockid = GetBlockID(_blocks[block_idx]);
+
+            //GD.Print("checking if block empty: ", BlockManager.BlockName(blockid));
+
+            if (IsBlockEmpty(_blocks[block_idx])) continue; // dont damage air blocks
+
+            //GD.Print("damaging block: ", BlockManager.Instance.Blocks[blockid].Name);
+
 			_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] -= blockdamage.Item2;
 			if (_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] <= 0)
 			{
 				_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] = 0;
-				//_blocks[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] = BlockManager.Instance.Air;
-                int blockid = (_blocks[blockdamage.Item1.X
-                    + blockdamage.Item1.Z * Dimensions.X
-                    + blockdamage.Item1.Y * Dimensions.X * Dimensions.Z] >> 15) & 0x3ff;
-				_blocks[blockdamage.Item1.X
-                    + blockdamage.Item1.Z * Dimensions.X
-                    + blockdamage.Item1.Y * Dimensions.X * Dimensions.Z] &= ~0x3ff<<15; // set block to air
 
-                if (blockid != 0)
-                    particle_spawn_list[blockdamage.Item1] = BlockManager.Instance.Blocks[blockid].Textures[0];
+                particle_spawn_list[blockdamage.Item1] = BlockManager.BlockTextureArrayPositions(blockid);
+                
+                SetBlockToAir(block_idx);
             }
 		}
+
 		Update();
         SpawnBlockParticles(particle_spawn_list);
-
-        //CallDeferred(nameof(SpawnBlockParticles), particle_spawn_list);
 	}
 
-    public void SpawnBlockParticles(Godot.Collections.Dictionary<Vector3I, Texture2D> positionsAndTextures) {
-        var blockCount = 0;
-
+    public void SpawnBlockParticles(Godot.Collections.Dictionary<Vector3I, int[]> positionsAndTextures) {
         var globalChunkPos = new Godot.Vector3 (ChunkPosition.X * Dimensions.X, 0, ChunkPosition.Y*Dimensions.Z);  
+
         // sort dictionary by distance to player
         var sortedByMagnitude = positionsAndTextures.ToImmutableSortedDictionary(
             pos => pos.Key,
             tex => tex.Value,
-            Comparer<Godot.Vector3>.Create((a, b) => 
+            Comparer<Vector3I>.Create((a, b) => 
                 (
-                    (globalChunkPos + a-Player.Instance.GlobalPosition).LengthSquared() > (globalChunkPos + b-Player.Instance.GlobalPosition).LengthSquared()
-                ) ? 1 :  
-                (
-                    (globalChunkPos + a-Player.Instance.GlobalPosition).LengthSquared() == (globalChunkPos + b-Player.Instance.GlobalPosition).LengthSquared() ? 0 : -1
+                    Math.Sign(
+                        ((globalChunkPos + new Godot.Vector3(a.X,a.Y,a.Z)) - Player.Instance.GlobalPosition).LengthSquared()
+                        - ((globalChunkPos + new Godot.Vector3(b.X,b.Y,b.Z)) - Player.Instance.GlobalPosition).LengthSquared()
+                    )
                 )
             )
         );
+
+        // spawn particles from closest to fartherest from player
+        // the particles spawned first have more detail and more expensive collisions
+        var blockCount = 0;
+        var partcount = GetTree().GetNodesInGroup("RigidBreak").Count;
         foreach (var (pos, tex) in sortedByMagnitude) {
-            var partcount = GetTree().GetNodesInGroup("RigidBreak").Count;
             var is_block_above = false;
-            var block_above_idx = Mathf.FloorToInt(pos.X)
-            + Mathf.FloorToInt(pos.Z) * Dimensions.X
-            + Mathf.FloorToInt(pos.Y+1) * Dimensions.X * Dimensions.Z;
+            var block_idx = Mathf.FloorToInt(pos.X)
+            + Mathf.FloorToInt(pos.Z) * CHUNK_SIZE
+            + Mathf.FloorToInt(pos.Y) * CHUNKSQ;
+            var block_above_idx = block_idx + CHUNKSQ;
             if (block_above_idx <=_blocks.Length) {
-                var blockid = (_blocks[block_above_idx] >> 15) & 0x3ff;
-                if (blockid != 0) is_block_above = true;
+                var block_above_id = GetBlockID(_blocks[block_above_idx]);
+                if (block_above_id != 0) is_block_above = true;
             }
             if (is_block_above) GD.Print("block above");
-
         
             var particles = _rigid_break.Instantiate() as RigidBreak;
 
@@ -450,12 +482,14 @@ public partial class Chunk : StaticBody3D
             particles.EighthStrength = partcount > 16 || blockCount > 15;
             //particles.OnlyOneParticle = partcount > 17 || blockCount > 16;*/
 
+
+            // optimize particles to avoid framerate drop
             // for 2x2 fragments
             var mult = 2.0f;
 
             if (blockCount > 1) {
-                if (partcount + blockCount < 2) particles.BlockDivisions = 3;
-                if (partcount + blockCount < 1) particles.BlockDivisions = 4;
+                if (partcount + blockCount < 4) particles.BlockDivisions = 3;
+                if (partcount + blockCount < 2) particles.BlockDivisions = 4;
             } else {
                 if (partcount + blockCount < 15) particles.BlockDivisions = 3;
                 if (partcount + blockCount < 5) particles.BlockDivisions = 4; // default 2
@@ -470,25 +504,32 @@ public partial class Chunk : StaticBody3D
             particles.EighthStrength = partcount > 12*mult || blockCount > 9*mult;
             particles.OnlyOneParticle = partcount > 14*mult || blockCount > 11*mult;
 
-            particles.Position = pos + Godot.Vector3.One*(1/particles.BlockDivisions) - Godot.Vector3.Up*0.0625f; // add 0.5 to center the particles in the grid
+            // set particles position
+            // add 1/BLockDivisions to center the particles in the grid (since pos is floored block position)
+            // and subtract a small amount to avoid z-fighting with top particles as well as keep them in their block
+            particles.Position = pos + Godot.Vector3.One*(1/particles.BlockDivisions) - Godot.Vector3.Up*0.0625f; 
 
             if (is_block_above) particles.NoUpwardsImpulse = true;
 
-
+            // set particle matertial
+            //var texarray = BlockManager.Instance.Blocks[block_id].BakedTextureArrayPositions;
+            particles.BlockTextures = tex;
+            // [obsolete] particles has a standardmaterial3d
             var partmat = new StandardMaterial3D
             {
-                AlbedoTexture = tex,
+                AlbedoTexture = BlockManager.Instance.Blocks[0].Textures[0], // just use the air texture for now
                 TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest
             };
             particles.BlockMaterial = partmat;
             
-            particles.AddToGroup("RigidBreak");
             AddChild(particles);
-                        var impulse_pos = (particles.GlobalTransform.Origin - Player.Instance.GlobalTransform.Origin).Normalized() * 100.0f; 
-particles.StartingImpulse = impulse_pos;
+            var impulse_pos = (particles.GlobalTransform.Origin - Player.Instance.GlobalTransform.Origin).Normalized() * 100.0f; 
+            particles.StartingImpulse = impulse_pos;
             blockCount++;
-            /*
+            partcount++;
             
+            /*
+            // HPU PARTICLES INSTEAD OF RIGID BODIES
             var particles = _block_break_particles.Instantiate() as GpuParticles3D;
             if (blockCount > 5) {
                 //particles.Amount = Math.Max(1, 256 - blockCount * 10); // spawn less particles per block, the more blocks you break
@@ -508,18 +549,5 @@ particles.StartingImpulse = impulse_pos;
         }
     }
 
-	public void SetBlock(Vector3I blockPosition, Block block)
-	{
-        var idx = blockPosition.X + blockPosition.Z * CHUNK_SIZE + blockPosition.Y * CHUNKSQ;
-		//_blocks[blockPosition.X, blockPosition.Y, blockPosition.Z] = block;
-        if (block == new Block()) _blocks[idx] &= ~0x3ff<<15; // set block to air
-        else _blocks[idx] = _blocks[idx] &= BlockManager.BlockID("Stone")<<15;
-		Update();
-	}
 
-	public int GetBlockIDFromPosition(Vector3I blockPosition)
-	{
-        if (blockPosition.X + blockPosition.Z * CHUNK_SIZE + blockPosition.Y * CHUNKSQ >= _blocks.Length) return -1;
-		return (_blocks[blockPosition.X + blockPosition.Z * CHUNK_SIZE + blockPosition.Y * CHUNKSQ] >> 15) & 0x3ff;
-	}
 }

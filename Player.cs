@@ -146,18 +146,16 @@ public partial class Player : CharacterBody3D
 
 			if (Input.IsActionJustPressed("Break"))
 			{
-				// can't break lava or air
-				
-				int b = chunk.GetBlockIDFromPosition((Vector3I)(intBlockPosition - chunk.GlobalPosition*inv_vox_size));
-				if (b != 0 && b != BlockManager.Instance.LavaBlockId) {
+				int b = chunk.GetBlockInfoFromPosition((Vector3I)(intBlockPosition - chunk.GlobalPosition*inv_vox_size));
+				if (!Chunk.IsBlockInvincible(b)) {
 					Dictionary<Vector3I,int> d = new()
 					{
-						[intBlockPosition] = 5
+						[intBlockPosition] = 5000
 					};
 					ChunkManager.Instance.DamageBlocks(d);
 				}
 
-				if (false) {
+				if (true) {
 					//ChunkManager.Instance.DamageBlocks(new Vector3I[] {(Vector3I)(intBlockPosition - chunk.GlobalPosition)}, 5);
 
 						// LINE ATTACK PATTERN
@@ -205,7 +203,7 @@ public partial class Player : CharacterBody3D
 
 			if (Input.IsActionJustPressed("Place"))
 			{
-				ChunkManager.Instance.SetBlock((Vector3I)(intBlockPosition + RayCast.GetCollisionNormal()), new Block());
+				ChunkManager.Instance.SetBlock((Vector3I)(intBlockPosition + RayCast.GetCollisionNormal()), BlockManager.BlockID("Stone"));
 			}
 
 			if (Input.IsActionJustPressed("debug_reload"))

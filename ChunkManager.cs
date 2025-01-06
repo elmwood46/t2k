@@ -69,7 +69,7 @@ public partial class ChunkManager : Node
 		_positionToChunk[currentPosition] = chunk;
 	}
 
-	public void SetBlock(Vector3I globalPosition, Block block)
+	public void SetBlock(Vector3I globalPosition, int block_type)
 	{
 		var chunkTilePosition = new Vector2I(
 			Mathf.FloorToInt(globalPosition.X / (float)Chunk.Dimensions.X),
@@ -79,7 +79,9 @@ public partial class ChunkManager : Node
 		{
 			if (_positionToChunk.TryGetValue(chunkTilePosition, out var chunk))
 			{
-				chunk.SetBlock((Vector3I)(globalPosition - chunk.GlobalPosition), block);
+				var v = (Vector3I)(globalPosition - chunk.GlobalPosition);
+				var blockidx = v.X + v.Z * Chunk.Dimensions.X + v.Y * Chunk.Dimensions.X * Chunk.Dimensions.Z;
+				chunk.SetBlock(blockidx, block_type);
 			}
 		}
 	}

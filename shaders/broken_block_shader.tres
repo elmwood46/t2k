@@ -1,0 +1,12 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=3 uid="uid://bla4vejfaat5a"]
+
+[ext_resource type="Shader" path="res://shaders/broken_block_shader.gdshader" id="1_ouydr"]
+[ext_resource type="CompressedTexture2DArray" uid="uid://c5ayi0kyfpta5" path="res://shaders/sampletexturearray.png" id="2_db5je"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_ouydr")
+shader_parameter/parent_face = null
+shader_parameter/parent_face_slice = null
+shader_parameter/tex_array_idx = null
+shader_parameter/albedo_texture = ExtResource("2_db5je")
