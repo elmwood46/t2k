@@ -508,18 +508,11 @@ public partial class Chunk : StaticBody3D
             // and subtract a small amount to avoid z-fighting with top particles as well as keep them in their block
             particles.Position = pos + Godot.Vector3.One*(1/particles.BlockDivisions) - Godot.Vector3.Up*0.0625f; 
 
+
             if (is_block_above) particles.NoUpwardsImpulse = true;
 
-            // set particle matertial
-            //var texarray = BlockManager.Instance.Blocks[block_id].BakedTextureArrayPositions;
             particles.BlockTextures = tex;
-            // [obsolete] particles has a standardmaterial3d
-            var partmat = new StandardMaterial3D
-            {
-                AlbedoTexture = BlockManager.Instance.Blocks[0].Textures[0], // just use the air texture for now
-                TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest
-            };
-            particles.BlockMaterial = partmat;
+
             
             AddChild(particles);
             var impulse_pos = (particles.GlobalTransform.Origin - Player.Instance.GlobalTransform.Origin).Normalized() * 100.0f; 

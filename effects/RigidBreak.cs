@@ -2,6 +2,9 @@ using Godot;
 using System;
 using System.Collections;
 
+
+
+
 public partial class RigidBreak : Node3D
 {
     public float frames = 0f;
@@ -10,7 +13,7 @@ public partial class RigidBreak : Node3D
 
     public int BlockDivisions = 2;
 
-    private ShaderMaterial _shader;
+    private readonly ShaderMaterial _shader = (ShaderMaterial)ResourceLoader.Load("res://shaders/broken_block_shader_wholeblock.tres").Duplicate();
 
     public float DecayTime { get; set; } = 2.0f;
     public bool MaskHalves { get; set; } = false;
@@ -25,8 +28,6 @@ public partial class RigidBreak : Node3D
     [Export] public Node3D ExplosionCentre { get; set; }
 
     public RandomNumberGenerator rng = new();
-    public StandardMaterial3D BlockMaterial { get; set; }
-
     public int[] BlockTextures { get; set; }
 
     public bool NoUpwardsImpulse = false;
@@ -39,12 +40,6 @@ public partial class RigidBreak : Node3D
     public override void _Ready()
     {
         AddToGroup("RigidBreak");
-
-        if (OnlyOneParticle || QuarterStrength || EighthStrength) {
-            _shader = (ShaderMaterial)ResourceLoader.Load("res://shaders/broken_block_shader_wholeblock.tres").Duplicate();
-        } else {
-            _shader = (ShaderMaterial)ResourceLoader.Load("res://shaders/broken_block_shader.tres").Duplicate();
-        }
 
         // pass uniform to shader
         _shader.SetShaderParameter("albedo_texture", BlockManager.Instance.TextureArray);
@@ -127,6 +122,23 @@ public partial class RigidBreak : Node3D
                         {
                             Position = new Vector3(x, y, z) + Vector3.One*0.5f
                         };
+
+                        /*
+                        var parentface = 0;
+                        var nineslice = 0;
+                        if (y == 0) parentface = 0;
+                        else if (y == BlockDivisions - 1) parentface = 1;
+                        else if (x == 0) parentface = 2;
+                        else if (x == BlockDivisions - 1) parentface = 3;
+                        else if (z == 0) parentface = 4;
+                        else if (z == BlockDivisions - 1) parentface = 5;
+
+                        nineslice = parentface switch {
+                            0  or 1 => CalcNineSlice(x,z,BlockDivisions),
+                            2 or 3 => CalcNineSlice(y,z,BlockDivisions),
+                            _ => CalcNineSlice(x,y,BlockDivisions),
+                        };*/
+
                         var mesh = new MeshInstance3D
                         {
 
@@ -154,6 +166,25 @@ public partial class RigidBreak : Node3D
             }
             GD.Print($"created {i} particles");
         }
+    }
+
+    private static int CalcNineSlice(int i, int j, int subdivisions) {
+        if (j == 0) {
+            if (i == 0) return 0;
+            if (i == subdivisions-1) return 2;
+            return 1;
+        }
+        else if (j < subdivisions-1) {
+            if (i == 0) return 3;
+            if (i == subdivisions-1) return 5;
+            return 4;
+        }
+        else if (j == subdivisions-1) {
+            if (i == 0) return 6;
+            if (i == subdivisions-1) return 8;
+            return 7;
+        }
+        return -1;
     }
 
     public override void _PhysicsProcess(double delta)

@@ -41,7 +41,7 @@ void fragment() {
 	int idx = int(floor(facex) + floor(facey)*3.0);
 	// transform the boxmesh index to the indexing style of our blocks
 	// (looking from +y, boxmesh starts at +z and wraps around anticlockwise (so +z, +x, -z, -x) before doing top then bottom)
-	// (our blocks go bottom,top,left,right,front,back)
+	// (our blocks go bottom,top,left,right,back,front)
 	switch (idx) {
 		case 0: idx = 5; break;
 		case 1: idx = 3; break;
