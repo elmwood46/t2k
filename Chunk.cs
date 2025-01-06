@@ -439,6 +439,7 @@ public partial class Chunk : StaticBody3D
 
         // spawn particles from closest to fartherest from player
         // the particles spawned first have more detail and more expensive collisions
+        var blocks_being_destroyed = positionsAndTextures.Count;
         var blockCount = 0;
         var partcount = GetTree().GetNodesInGroup("RigidBreak").Count;
         foreach (var (pos, tex) in sortedByMagnitude) {
@@ -455,7 +456,7 @@ public partial class Chunk : StaticBody3D
         
             var particles = _rigid_break.Instantiate() as RigidBreak;
 
-
+            // optimize particles to avoid framerate drop
             // for 4x4 fragments
             /*
             particles.MaskHalves = partcount > 4 || blockCount > 3;
@@ -465,6 +466,7 @@ public partial class Chunk : StaticBody3D
             particles.OnlyOneParticle = partcount > 14 || blockCount > 11;
             */
 
+            // optimize particles to avoid framerate drop     
             // for 3x3 fragments
             /*
             if (partcount > 10 || blockCount > 5)
@@ -483,19 +485,16 @@ public partial class Chunk : StaticBody3D
             //particles.OnlyOneParticle = partcount > 17 || blockCount > 16;*/
 
 
-            // optimize particles to avoid framerate drop
-            // for 2x2 fragments
-            var mult = 2.0f;
-
-            if (blockCount > 1) {
-                if (partcount + blockCount < 4) particles.BlockDivisions = 3;
-                if (partcount + blockCount < 2) particles.BlockDivisions = 4;
+            // optimize particles to avoid framerate drop         
+            if (blocks_being_destroyed > 1) { // destroying more than one block at once
+                if (partcount + blockCount < 3) particles.BlockDivisions = 3;
+                if (partcount + blockCount < 1) particles.BlockDivisions = 4;
             } else {
                 if (partcount + blockCount < 15) particles.BlockDivisions = 3;
-                if (partcount + blockCount < 5) particles.BlockDivisions = 4; // default 2
-                //if (partcount + blockCount < 1) particles.BlockDivisions = 4;
-            }           
+                if (partcount + blockCount < 5) particles.BlockDivisions = 4;
+            }
 
+            var mult = 3.0f;
             if (partcount > 10*mult || blockCount > 5*mult)
                 particles.DecayTime = Mathf.Max(0.5f, 2.0f - (partcount + blockCount) * 0.1f);
             particles.MaskHalves = partcount > 4*mult || blockCount > 3*mult;
@@ -526,7 +525,7 @@ public partial class Chunk : StaticBody3D
             var impulse_pos = (particles.GlobalTransform.Origin - Player.Instance.GlobalTransform.Origin).Normalized() * 100.0f; 
             particles.StartingImpulse = impulse_pos;
             blockCount++;
-            partcount++;
+            //partcount++;
             
             /*
             // HPU PARTICLES INSTEAD OF RIGID BODIES

@@ -10,7 +10,7 @@ public partial class RigidBreak : Node3D
 
     public int BlockDivisions = 2;
 
-    public readonly ShaderMaterial Shader = (ShaderMaterial)ResourceLoader.Load("res://shaders/broken_block_shader.tres").Duplicate();
+    private ShaderMaterial _shader;
 
     public float DecayTime { get; set; } = 2.0f;
     public bool MaskHalves { get; set; } = false;
@@ -39,9 +39,16 @@ public partial class RigidBreak : Node3D
     public override void _Ready()
     {
         AddToGroup("RigidBreak");
+
+        if (OnlyOneParticle || QuarterStrength || EighthStrength) {
+            _shader = (ShaderMaterial)ResourceLoader.Load("res://shaders/broken_block_shader_wholeblock.tres").Duplicate();
+        } else {
+            _shader = (ShaderMaterial)ResourceLoader.Load("res://shaders/broken_block_shader.tres").Duplicate();
+        }
+
         // pass uniform to shader
-        Shader.SetShaderParameter("albedo_texture", BlockManager.Instance.TextureArray);
-        Shader.SetShaderParameter("tex_array_idx", BlockTextures);
+        _shader.SetShaderParameter("albedo_texture", BlockManager.Instance.TextureArray);
+        _shader.SetShaderParameter("tex_array_idx", BlockTextures);
 
         Scale = Vector3.One *  (1f/BlockDivisions);
         t = new Timer
@@ -65,7 +72,7 @@ public partial class RigidBreak : Node3D
             var mesh = new MeshInstance3D
             {
                 Mesh = new BoxMesh { Size = Vector3.One },
-                MaterialOverride = Shader,
+                MaterialOverride = _shader,
                 GIMode = GeometryInstance3D.GIModeEnum.Dynamic
             };
             var col = new CollisionShape3D
@@ -124,7 +131,7 @@ public partial class RigidBreak : Node3D
                         {
 
                             Mesh = new BoxMesh { Size = Vector3.One },
-                            MaterialOverride = Shader,
+                            MaterialOverride = _shader,
                             GIMode = GeometryInstance3D.GIModeEnum.Dynamic
                         };
                         var col = new CollisionShape3D
