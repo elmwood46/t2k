@@ -34,7 +34,7 @@ void fragment() {
 	if (face == 0 || face == 1) sample_uv = position.xz;
 	if (face == 2 || face == 3) sample_uv = position.zy;
 	if (face == 4 || face == 5) sample_uv = position.xy;
-	
+
 	//sample_uv *= inv_voxel_size;
 	sample_uv = fract(sample_uv);
 

@@ -56,7 +56,7 @@ public partial class BlockManager : Node
 		var result = new int[texarray.Length];
 		for (int i=0; i<texarray.Length; i++) {
 			result[i] = _texarraylookup[texarray[i]];
-			GD.Print($"Block {Blocks[blockID].Name} texture {i} is at array position {result[i]}");
+			//GD.Print($"Block {Blocks[blockID].Name} texture {i} is at array position {result[i]}");
 		}
 		for (int i=0; i< 6; i++) GD.Print(result[i]);
 		return result;
@@ -98,11 +98,13 @@ public partial class BlockManager : Node
 		ChunkMaterial.SetShaderParameter("albedo_texture", TextureArray);
 
 		 // Save the image to a file (PNG format)
-        
+        /*
 		GD.Print($"Block textures: {blockTextures.Length}");
 		GD.Print($"Block images: {blockImages.Count}");
 		GD.Print($"Texture array size: {TextureArray.GetLayers()}");
 		GD.Print($"Done loading {blockTextures.Length} images to make {TextureArray.GetLayers()} sized texture array");
+		*/
+		
 		/*for (int i=0; i< tex_array.GetLayers(); i++) {
 			GD.Print(tex_array.GetLayerData(i));
 			string path = $"user://texture_for_array_layer_{i}.png";

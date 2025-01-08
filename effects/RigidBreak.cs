@@ -112,7 +112,6 @@ public partial class RigidBreak : Node3D
                                 if (y < 4) continue;
                             }
                         }
-                        if (NoUpwardsImpulse && y > BlockDivisions-2) continue;
 
                         if (halfStrengthSkip>1 && i%2==0) continue;
                         if (QuarterStrengthSkip>1 && i%3==0) continue;
@@ -122,6 +121,8 @@ public partial class RigidBreak : Node3D
                         {
                             Position = new Vector3(x, y, z) + Vector3.One*0.5f
                         };
+
+                        if (NoUpwardsImpulse && y > BlockDivisions-2) rb.Scale = Vector3.One * 0.5f;
 
                         /*
                         var parentface = 0;

@@ -147,13 +147,12 @@ public partial class Player : CharacterBody3D
 			if (Input.IsActionJustPressed("Break"))
 			{
 				int b = chunk.GetBlockInfoFromPosition((Vector3I)(intBlockPosition - chunk.GlobalPosition*inv_vox_size));
-				if (!Chunk.IsBlockInvincible(b)) {
-					Dictionary<Vector3I,int> d = new()
-					{
-						[intBlockPosition] = 5000
-					};
-					ChunkManager.Instance.DamageBlocks(d);
-				}
+				Dictionary<Vector3I,int> d = new()
+				{
+					[intBlockPosition] = 5000
+				};
+				ChunkManager.Instance.DamageBlocks(d);
+			
 
 				if (true) {
 					//ChunkManager.Instance.DamageBlocks(new Vector3I[] {(Vector3I)(intBlockPosition - chunk.GlobalPosition)}, 5);

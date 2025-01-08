@@ -19,9 +19,12 @@ public partial class Chunk : StaticBody3D
     public const int CSP2 = CSP*CSP; // squared padded chunk size
     public const int CSP3 = CSP2*CSP; // cubed padded chunk size
 	public static readonly Vector3I Dimensions = new(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
+
+    public const int SUBCHUNKS = 1; // each one is an extra 32x32 chunk in the vertical y direction
+
 	// obsolete
 	private int[,,] _blockHealth = new int[Dimensions.X, Dimensions.Y, Dimensions.Z];
-    private ArrayMesh _arraymesh = new();
+
 	private static readonly SurfaceTool _st = new();
     private static readonly SurfaceTool _st2 = new();
 
@@ -66,25 +69,31 @@ public partial class Chunk : StaticBody3D
     // each 32bit int contains packed block info: block type (10 bits), z (5 bits), y (5 bits), x (5 bits) 
     // this leaves 7 bits to implement block health or AO
 	private int[] _blocks = new int[CHUNKSQ*CHUNK_SIZE];
-	public Vector2I ChunkPosition { get; private set; }
+	public Vector3I ChunkPosition { get; private set; }
 
-	[Export]
-	public FastNoiseLite Noise { get; set; }
+	public static readonly Noise Noise = new FastNoiseLite();
 
 	[Export]
 	public FastNoiseLite WallNoise { get; set; }
 
-	public void SetChunkPosition(Vector2I position)
+	public void SetChunkPosition(Vector3I position, int[] setblocks = null, ArrayMesh mesh = null, ConcavePolygonShape3D collisionHull = null)
 	{
 		ChunkManager.Instance.UpdateChunkPosition(this, position, ChunkPosition);
 		ChunkPosition = position;
 		CallDeferred(Node3D.MethodName.SetGlobalPosition, new Godot.Vector3(
             VOXEL_SCALE * ChunkPosition.X * Dimensions.X,
-            0, VOXEL_SCALE * ChunkPosition.Y * Dimensions.Z)
+            VOXEL_SCALE * ChunkPosition.Y * Dimensions.Y * SUBCHUNKS,
+            VOXEL_SCALE * ChunkPosition.Z * Dimensions.Z)
         );
 
-		Generate();
-		Update();
+
+
+		if (setblocks == null) {
+            GD.Print("generating blocks locally....");
+            _blocks = Generate(position);
+        }
+        else _blocks = setblocks;
+		Update(mesh, collisionHull);
 	}
 
 	public override void _Ready() {
@@ -139,38 +148,44 @@ public partial class Chunk : StaticBody3D
 		return _blocks[blockPosition.X + blockPosition.Z * CHUNK_SIZE + blockPosition.Y * CHUNKSQ];
 	}
 
-	public void Generate()
+	public static int[] Generate(Vector3I chunkPosition)
 	{
-		if (Engine.IsEditorHint()) return;
+		if (Engine.IsEditorHint()) return null;
+
+        var result = new int[CHUNKSQ*CHUNK_SIZE];
 
         for (int x=0;x<CHUNK_SIZE;x++) {
             for (int y=0;y<CHUNK_SIZE;y++) {
                 for (int z=0;z<CHUNK_SIZE;z++) {
 					//Block block;
 					int block_idx = x + y * CHUNKSQ + z * CHUNK_SIZE;
-                    if (block_idx >= _blocks.Length) continue;  
+                    if (block_idx >= result.Length) continue;  
 
-                    var globalBlockPosition = ChunkPosition * new Vector2I(Dimensions.X, Dimensions.Z) + new Vector2I(x, z);                 
-					var groundHeight = (int)(0.1f * CHUNK_SIZE + 4f*(Noise.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Y) + 1f));
+                    var globalBlockPosition = chunkPosition * new Vector3I(Dimensions.X, Dimensions.Y*SUBCHUNKS, Dimensions.Z) + new Vector3I(x, y, z);                 
 
-                    int blockType;
-                    if (y==0) blockType = BlockManager.BlockID("Lava");
-                    else if (y<groundHeight/2) blockType = BlockManager.BlockID("Stone");
-                    else if (y<groundHeight) blockType = BlockManager.BlockID("Dirt");
-                    else if (y==groundHeight) blockType = BlockManager.BlockID("Grass");
-					else blockType = BlockManager.BlockID("Air");
-                   
+                    int blockType = 0;
+                    var noise = Noise.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y, globalBlockPosition.Z);
+                    var noiseabove = Noise.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y+1, globalBlockPosition.Z);
+                    var noisebelow = Noise.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y-1, globalBlockPosition.Z);
+                    if (noise >= 0.2f) {
+                        if (noiseabove < 0.2f) blockType = BlockManager.BlockID("Grass");
+                        else if (noisebelow < noise) blockType = BlockManager.BlockID("Stone");
+                        else blockType = BlockManager.BlockID("Dirt");
+                    } 
                    int blockinfo = blockType<<15 | z<<10 | y<<5 | x;
-                   _blocks[block_idx] = blockinfo;
+                   result[block_idx] = blockinfo;
                 }
             }
         }
+
+        return result;
 	}
 
-	public void Update() {
-        _arraymesh.ClearSurfaces();
-		BuildChunkMesh(_blocks);
-		CollisionShape.Shape = MeshInstance.Mesh.CreateTrimeshShape();
+	public void Update(ArrayMesh mesh = null, ConcavePolygonShape3D collisionHull = null) {
+		if (mesh == null) MeshInstance.Mesh = BuildChunkMesh(_blocks);
+        else MeshInstance.Mesh = mesh;
+		if (collisionHull == null) CollisionShape.Shape = MeshInstance.Mesh.CreateTrimeshShape();
+        else CollisionShape.Shape = collisionHull;
 
         foreach (Node3D child in _chunk_area.GetOverlappingBodies()) {
             if (child is RigidBody3D rb) {
@@ -194,7 +209,7 @@ public partial class Chunk : StaticBody3D
         }
     }
 
-    private void BuildChunkMesh(int[] chunk_blocks) {
+    public static ArrayMesh BuildChunkMesh(int[] chunk_blocks) {
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
@@ -260,7 +275,7 @@ public partial class Chunk : StaticBody3D
                                 2 or 3 => new Vector3I(k, j, i),  // right, left (zy -> x axis)
                                 _ => new Vector3I(i, j, k),       // back, front (xy -> z axis)
                             };
-                        var blocktype = GetBlockID(_blocks[voxel_pos.X + voxel_pos.Z * CHUNK_SIZE + voxel_pos.Y * CHUNKSQ]);
+                        var blocktype = GetBlockID(chunk_blocks[voxel_pos.X + voxel_pos.Z * CHUNK_SIZE + voxel_pos.Y * CHUNKSQ]);
                         if (!data[axis].TryGetValue(blocktype, out Dictionary<int, UInt32[]> planeSet)) {
                             planeSet = new(); 
                              data[axis].Add(blocktype, planeSet);
@@ -343,13 +358,14 @@ public partial class Chunk : StaticBody3D
 
         //_st.SetMaterial(BlockManager.Instance.ChunkMaterial);
         //_st2.SetMaterial(BlockManager.Instance.LavaShader);
-        var a1 = _st.Commit().SurfaceGetArrays(0);
-        var a2 = _st2.Commit().SurfaceGetArrays(0);
-        _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a1);
-        _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a2);
-        _arraymesh.SurfaceSetMaterial(0, BlockManager.Instance.ChunkMaterial);
-        _arraymesh.SurfaceSetMaterial(1, BlockManager.Instance.LavaShader);
-        MeshInstance.Mesh = _arraymesh;
+        var _arraymesh = new ArrayMesh();
+        var a1 = _st.Commit();
+        var a2 = _st2.Commit();
+        if (a1.GetSurfaceCount() > 0) _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a1.SurfaceGetArrays(0));
+        if (a2.GetSurfaceCount() > 0) _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a2.SurfaceGetArrays(0));
+        if (_arraymesh.GetSurfaceCount() > 0) _arraymesh.SurfaceSetMaterial(0, BlockManager.Instance.ChunkMaterial);
+        if (_arraymesh.GetSurfaceCount() > 1) _arraymesh.SurfaceSetMaterial(1, BlockManager.Instance.LavaShader);
+        return _arraymesh;
     }
 
     // greedy quad for a 32 x 32 binary plane (assuming data length is 32) // CHANGED THIS TO 64 CHUNK SIZE
@@ -401,7 +417,7 @@ public partial class Chunk : StaticBody3D
 
             //GD.Print("checking if block empty: ", BlockManager.BlockName(blockid));
 
-            if (IsBlockEmpty(_blocks[block_idx])) continue; // dont damage air blocks
+            if (IsBlockInvincible(_blocks[block_idx])) continue; // dont damage air blocks or invincible blocks
 
             //GD.Print("damaging block: ", BlockManager.Instance.Blocks[blockid].Name);
 
@@ -438,7 +454,9 @@ public partial class Chunk : StaticBody3D
         );
 
         // spawn particles from closest to fartherest from player
-        // the particles spawned first have more detail and more expensive collisions
+        // the particles spawned first have more detail and more expensive collisions\
+                
+        var partlist = new List<RigidBreak>();
         var blocks_being_destroyed = positionsAndTextures.Count;
         var blockCount = 0;
         var partcount = GetTree().GetNodesInGroup("RigidBreak").Count;
@@ -452,7 +470,7 @@ public partial class Chunk : StaticBody3D
                 var block_above_id = GetBlockID(_blocks[block_above_idx]);
                 if (block_above_id != 0) is_block_above = true;
             }
-            if (is_block_above) GD.Print("block above");
+            //if (is_block_above) GD.Print("block above");
         
             var particles = _rigid_break.Instantiate() as RigidBreak;
 
@@ -487,7 +505,7 @@ public partial class Chunk : StaticBody3D
 
             // optimize particles to avoid framerate drop         
             if (blocks_being_destroyed > 1) { // destroying more than one block at once
-                if (partcount + blockCount < 3) particles.BlockDivisions = 3;
+                if (partcount + blockCount < 2) particles.BlockDivisions = 3;
                 if (partcount + blockCount < 1) particles.BlockDivisions = 4;
             } else {
                 if (partcount + blockCount < 15) particles.BlockDivisions = 3;
@@ -497,7 +515,7 @@ public partial class Chunk : StaticBody3D
             var mult = 3.0f;
             if (partcount > 10*mult || blockCount > 5*mult)
                 particles.DecayTime = Mathf.Max(0.5f, 2.0f - (partcount + blockCount) * 0.1f);
-            particles.MaskHalves = partcount > 4*mult || blockCount > 3*mult;
+            particles.MaskHalves = partcount >= 5 || blockCount > 5*mult;
             particles.HalfStrength = partcount > 8*mult  || blockCount > 6*mult;               
             particles.QuarterStrength = partcount > 10*mult || blockCount > 8*mult;
             particles.EighthStrength = partcount > 12*mult || blockCount > 9*mult;
@@ -539,6 +557,7 @@ public partial class Chunk : StaticBody3D
             t.Start();
             particles.Emitting = true;*/
         }
+
     }
 
 
