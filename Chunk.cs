@@ -10,7 +10,7 @@ public partial class Chunk : StaticBody3D
 	[Export] public CollisionShape3D CollisionShape { get; set; }
 
 	[Export] public MeshInstance3D MeshInstance { get; set; }
-	public const float VOXEL_SCALE = 0.5f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
+	public const float VOXEL_SCALE = 1f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
 
     // chunk size is 30, padded chunk size is 32. Can't be increased easily because it uses binary UINT32 to do face culling
 	public const int CHUNK_SIZE = 30; // the chunk size is 62, padded chunk size is 64, // must match size in compute shader
@@ -20,7 +20,7 @@ public partial class Chunk : StaticBody3D
     public const int CSP3 = CSP2*CSP; // cubed padded chunk size
 	public static readonly Vector3I Dimensions = new(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
 
-    public const int SUBCHUNKS = 1; // each one is an extra 32x32 chunk in the vertical y direction
+    public const int SUBCHUNKS = 4; // each one is an extra 32x32 chunk in the vertical y direction
 
 	// obsolete
 	private int[,,] _blockHealth = new int[Dimensions.X, Dimensions.Y, Dimensions.Z];
@@ -68,7 +68,7 @@ public partial class Chunk : StaticBody3D
 	// 3d int array for holding blocks
     // each 32bit int contains packed block info: block type (10 bits), z (5 bits), y (5 bits), x (5 bits) 
     // this leaves 7 bits to implement block health or AO
-	private int[] _blocks = new int[CHUNKSQ*CHUNK_SIZE];
+	private int[] _blocks = new int[CHUNKSQ*CHUNK_SIZE*SUBCHUNKS];
 	public Vector3I ChunkPosition { get; private set; }
 
 	public static readonly Noise Noise = new FastNoiseLite();
@@ -85,8 +85,6 @@ public partial class Chunk : StaticBody3D
             VOXEL_SCALE * ChunkPosition.Y * Dimensions.Y * SUBCHUNKS,
             VOXEL_SCALE * ChunkPosition.Z * Dimensions.Z)
         );
-
-
 
 		if (setblocks == null) {
             GD.Print("generating blocks locally....");
@@ -152,28 +150,31 @@ public partial class Chunk : StaticBody3D
 	{
 		if (Engine.IsEditorHint()) return null;
 
-        var result = new int[CHUNKSQ*CHUNK_SIZE];
+        var result = new int[CHUNKSQ*CHUNK_SIZE*SUBCHUNKS];
+        
+        for (int subchunk = 0; subchunk < SUBCHUNKS; subchunk++) {
+            for (int x=0;x<CHUNK_SIZE;x++) {
+                for (int y=0;y<CHUNK_SIZE;y++) {
+                    for (int z=0;z<CHUNK_SIZE;z++) {
+                        //Block block;
+                        int block_idx = x + y * CHUNKSQ + z * CHUNK_SIZE + subchunk*CHUNKSQ*CHUNK_SIZE;
+                        if (block_idx >= result.Length) continue;  
 
-        for (int x=0;x<CHUNK_SIZE;x++) {
-            for (int y=0;y<CHUNK_SIZE;y++) {
-                for (int z=0;z<CHUNK_SIZE;z++) {
-					//Block block;
-					int block_idx = x + y * CHUNKSQ + z * CHUNK_SIZE;
-                    if (block_idx >= result.Length) continue;  
+                        var globalBlockPosition = chunkPosition * new Vector3I(Dimensions.X, Dimensions.Y*SUBCHUNKS, Dimensions.Z)
+                            + new Vector3I(x, y + Dimensions.Y*subchunk, z);                 
 
-                    var globalBlockPosition = chunkPosition * new Vector3I(Dimensions.X, Dimensions.Y*SUBCHUNKS, Dimensions.Z) + new Vector3I(x, y, z);                 
-
-                    int blockType = 0;
-                    var noise = Noise.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y, globalBlockPosition.Z);
-                    var noiseabove = Noise.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y+1, globalBlockPosition.Z);
-                    var noisebelow = Noise.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y-1, globalBlockPosition.Z);
-                    if (noise >= 0.2f) {
-                        if (noiseabove < 0.2f) blockType = BlockManager.BlockID("Grass");
-                        else if (noisebelow < noise) blockType = BlockManager.BlockID("Stone");
-                        else blockType = BlockManager.BlockID("Dirt");
-                    } 
-                   int blockinfo = blockType<<15 | z<<10 | y<<5 | x;
-                   result[block_idx] = blockinfo;
+                        int blockType = 0;
+                        var noise = Noise.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y, globalBlockPosition.Z);
+                        var noiseabove = Noise.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y+1, globalBlockPosition.Z);
+                        var noisebelow = Noise.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y-1, globalBlockPosition.Z);
+                        if (noise >= 0.2f) {
+                            if (noiseabove < 0.2f) blockType = BlockManager.BlockID("Grass");
+                            else if (noisebelow < noise) blockType = BlockManager.BlockID("Stone");
+                            else blockType = BlockManager.BlockID("Dirt");
+                        } 
+                    int blockinfo = blockType<<15 | z<<10 | y<<5 | x;
+                    result[block_idx] = blockinfo;
+                    }
                 }
             }
         }
@@ -209,13 +210,7 @@ public partial class Chunk : StaticBody3D
         }
     }
 
-    public static ArrayMesh BuildChunkMesh(int[] chunk_blocks) {
-        // data is an array of dictionaries, one for each axis
-        // each dictionary is a hash map of block types to a set binary planes
-        // we need to group by block type like this so we can batch the meshing and texture blocks correctly
-        Dictionary<int, Dictionary<int, UInt32[]>>[] data = new Dictionary<int,Dictionary<int, UInt32[]>>[6];
-        for (short i=0; i<6; i++) data[i] = new(); // initialize the hash maps for each axis value
-
+    public static void GreedyChunkMesh(Dictionary<int, Dictionary<int, UInt32[]>>[] data, int[] chunk_blocks, int subchunk) {
         var axis_cols = new UInt32[CSP3*3];
         var col_face_masks = new UInt32[CSP3*6];
 
@@ -227,6 +222,7 @@ public partial class Chunk : StaticBody3D
                     // goofy ahh check for out of bounds
                     if (pos.X<0||pos.X>=CHUNK_SIZE||pos.Y<0||pos.Y>=CHUNK_SIZE||pos.Z<0||pos.Z>=CHUNK_SIZE) continue; 
                     var chunk_idx = pos.X + pos.Z*CHUNK_SIZE + pos.Y*CHUNKSQ;
+                    chunk_idx += subchunk*CHUNKSQ*CHUNK_SIZE; // move up one subchunk
                     
                     var b = chunk_blocks[chunk_idx];
                     if (!IsBlockEmpty(b)) { // if block is solid
@@ -275,29 +271,53 @@ public partial class Chunk : StaticBody3D
                                 2 or 3 => new Vector3I(k, j, i),  // right, left (zy -> x axis)
                                 _ => new Vector3I(i, j, k),       // back, front (xy -> z axis)
                             };
-                        var blocktype = GetBlockID(chunk_blocks[voxel_pos.X + voxel_pos.Z * CHUNK_SIZE + voxel_pos.Y * CHUNKSQ]);
+                        var blocktype = GetBlockID(
+                            chunk_blocks[
+                                voxel_pos.X
+                                + voxel_pos.Z * CHUNK_SIZE
+                                + voxel_pos.Y * CHUNKSQ
+                                + subchunk*CHUNKSQ*CHUNK_SIZE
+                            ]
+                        );
                         if (!data[axis].TryGetValue(blocktype, out Dictionary<int, UInt32[]> planeSet)) {
                             planeSet = new(); 
                              data[axis].Add(blocktype, planeSet);
                         }
-                        if (!planeSet.TryGetValue(k, out UInt32[] data_entry)) {
+
+                        var k_ymod = k+Dimensions.Y*subchunk;
+                        if (!planeSet.TryGetValue(k_ymod, out UInt32[] data_entry)) {
                             data_entry = new UInt32[CHUNK_SIZE];
-                            planeSet.Add(k, data_entry);
+                            planeSet.Add(k_ymod, data_entry);
                         }
                         data_entry[j] |= (UInt32)1 << i;     // push the "row" bit into the "column" UInt32
-                        planeSet[k] = data_entry;
+                        planeSet[k_ymod] = data_entry;
                     }
                 }
             }
         }
+    }
+
+    public static ArrayMesh BuildChunkMesh(int[] chunk_blocks) {
+        // data is an array of dictionaries, one for each axis
+        // each dictionary is a hash map of block types to a set binary planes
+        // we need to group by block type like this so we can batch the meshing and texture blocks correctly
+        Dictionary<int, Dictionary<int, UInt32[]>>[] data = new Dictionary<int,Dictionary<int, UInt32[]>>[6];
+        for (short i=0; i<6; i++) data[i] = new(); // initialize the hash maps for each axis value
+
+        // add all subchunks
+        for (int i=0; i< SUBCHUNKS; i++) GreedyChunkMesh(data, chunk_blocks, i);
 
         // construct mesh
         _st.Begin(Mesh.PrimitiveType.Triangles);
         _st2.Begin(Mesh.PrimitiveType.Triangles);
         for (int axis=0; axis<6;axis++) {
             foreach (var (blockType, planeSet) in data[axis]) {
-                foreach (var (k, binary_plane) in planeSet) {
+                foreach (var (k_chunked, binary_plane) in planeSet) {
                     var greedy_quads = GreedyMeshBinaryPlane(binary_plane);
+
+                    var k = k_chunked % Dimensions.Y;
+                    var subchunk = k_chunked/Dimensions.Y;
+
                     foreach (GreedyQuad quad in greedy_quads) {
                         Vector3I quad_offset, quad_delta; // row and col, width and height
                         quad_offset = axis switch
@@ -310,6 +330,8 @@ public partial class Chunk : StaticBody3D
                             4 => new Vector3I(quad.col, quad.row, k), // back, front (xy -> z axis)
                             _ => new Vector3I(quad.col, quad.row, k+1)  // remember -z is forward in godot, we are still in chunk space so we add 1
                         };
+                        // offset vertical subchunks
+                        quad_offset += Vector3I.Up*subchunk*Dimensions.Y;
                         quad_delta = axis switch
                         {
                             // row, col -> axis
@@ -406,9 +428,9 @@ public partial class Chunk : StaticBody3D
 		foreach ((Vector3I,int) blockdamage in blockDamages)
 		{
 			if (blockdamage.Item1.X < 0 || blockdamage.Item1.X >= Dimensions.X) continue;
-			if (blockdamage.Item1.Y < 0 || blockdamage.Item1.Y >= Dimensions.Y) continue;
+			if (blockdamage.Item1.Y < 0 || blockdamage.Item1.Y >= Dimensions.Y*SUBCHUNKS) continue;
 			if (blockdamage.Item1.Z < 0 || blockdamage.Item1.Z >= Dimensions.Z) continue;
-
+            
             var block_idx = blockdamage.Item1.X
                 + blockdamage.Item1.Z * Dimensions.X
                 + blockdamage.Item1.Y * Dimensions.X * Dimensions.Z;
@@ -421,15 +443,15 @@ public partial class Chunk : StaticBody3D
 
             //GD.Print("damaging block: ", BlockManager.Instance.Blocks[blockid].Name);
 
-			_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] -= blockdamage.Item2;
-			if (_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] <= 0)
-			{
-				_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] = 0;
+			//_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] -= blockdamage.Item2;
+			//if (_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] <= 0)
+			//{
+				//_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] = 0;
 
                 particle_spawn_list[blockdamage.Item1] = BlockManager.BlockTextureArrayPositions(blockid);
                 
                 SetBlockToAir(block_idx);
-            }
+            //}
 		}
 
 		Update();
@@ -437,7 +459,7 @@ public partial class Chunk : StaticBody3D
 	}
 
     public void SpawnBlockParticles(Godot.Collections.Dictionary<Vector3I, int[]> positionsAndTextures) {
-        var globalChunkPos = new Godot.Vector3 (ChunkPosition.X * Dimensions.X, 0, ChunkPosition.Y*Dimensions.Z);  
+        var globalChunkPos = new Godot.Vector3 (ChunkPosition.X * Dimensions.X, ChunkPosition.Y * Dimensions.Y * SUBCHUNKS, ChunkPosition.Z*Dimensions.Z);  
 
         // sort dictionary by distance to player
         var sortedByMagnitude = positionsAndTextures.ToImmutableSortedDictionary(
@@ -514,9 +536,9 @@ public partial class Chunk : StaticBody3D
 
             var mult = 3.0f;
             if (partcount > 10*mult || blockCount > 5*mult)
-                particles.DecayTime = Mathf.Max(0.5f, 2.0f - (partcount + blockCount) * 0.1f);
-            particles.MaskHalves = partcount >= 5 || blockCount > 5*mult;
-            particles.HalfStrength = partcount > 8*mult  || blockCount > 6*mult;               
+                particles.DecayTime = Mathf.Max(0.5f, 2.0f - partcount * 0.1f);
+            particles.HalfStrength = partcount > 5*mult  || blockCount > 5*mult;        
+            particles.MaskHalves = partcount >= 8 || blockCount > 6*mult;       
             particles.QuarterStrength = partcount > 10*mult || blockCount > 8*mult;
             particles.EighthStrength = partcount > 12*mult || blockCount > 9*mult;
             particles.OnlyOneParticle = partcount > 14*mult || blockCount > 11*mult;

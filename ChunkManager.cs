@@ -45,15 +45,16 @@ public partial class ChunkManager : Node
 
 		var halfWidth = Mathf.FloorToInt(_width / 2f);
 		var halfywidth = Mathf.FloorToInt(_y_width / 2f);
-		for (int y = 0; y < _y_width; y++)
-		{
-			for (int x = 0; x < _width; x++)
+
+		for (int x = 0; x < _width; x++)
 			{
-					for (int z=0; z < _width; z++) {
+				for (int z=0; z < _width; z++) {
+					for (int y = 0; y < _y_width; y++)
+					{
 						var index = x + (z * _width) + (y * _width * _width);
 						_chunks[index].SetChunkPosition(new Vector3I(x - halfWidth, y - halfywidth, z - halfWidth));
 					}
-			}
+				}
 		}
 
 		if (!Engine.IsEditorHint())
@@ -77,7 +78,7 @@ public partial class ChunkManager : Node
 	{
 		var chunkTilePosition = new Vector3I(
 			Mathf.FloorToInt(globalPosition.X / (float)Chunk.Dimensions.X),
-			Mathf.FloorToInt(globalPosition.Y / (float)Chunk.Dimensions.Y),
+			Mathf.FloorToInt(globalPosition.Y / ((float)Chunk.Dimensions.Y*Chunk.SUBCHUNKS)),
 			Mathf.FloorToInt(globalPosition.Z / (float)Chunk.Dimensions.Z)
 		);
 		lock (_positionToChunk)
@@ -99,13 +100,13 @@ public partial class ChunkManager : Node
 		{
 			var chunkTilePosition = new Vector3I(
 				Mathf.FloorToInt(globalPosition.X / (float)Chunk.Dimensions.X),
-				Mathf.FloorToInt(globalPosition.Y / (float)Chunk.Dimensions.Y),
+				Mathf.FloorToInt(globalPosition.Y / ((float)Chunk.Dimensions.Y*Chunk.SUBCHUNKS)),
 				Mathf.FloorToInt(globalPosition.Z / (float)Chunk.Dimensions.Z)
 			);
 
 			var chunkGlobalPosition = new Vector3I(
 				chunkTilePosition.X * Chunk.Dimensions.X,
-				chunkTilePosition.Y * Chunk.Dimensions.Y,
+				chunkTilePosition.Y * Chunk.Dimensions.Y*Chunk.SUBCHUNKS,
 				chunkTilePosition.Z * Chunk.Dimensions.Z
 			);
 
@@ -143,16 +144,7 @@ public partial class ChunkManager : Node
 		}
 	}
 
-	private void UpdateChunkAsync(Vector3I newPosition, Chunk chunk)
-	{
-		var blocks = Chunk.Generate(newPosition);
-		var mesh = Chunk.BuildChunkMesh(blocks);
-		var hull = mesh.CreateTrimeshShape();
-		//GD.Print($"Chunk {chunk} position set to {newPosition} on thread {Thread.CurrentThread.ManagedThreadId}");
-		chunk.CallDeferred(nameof(Chunk.SetChunkPosition), newPosition, blocks, mesh, hull);
-	}
-
-	private async void ThreadProcess()
+	private void ThreadProcess()
 	{
 		while (IsInstanceValid(this))
 		{
@@ -160,7 +152,7 @@ public partial class ChunkManager : Node
 			lock(_playerPositionLock)
 			{
 				playerChunkX = Mathf.FloorToInt(_playerPosition.X / (Chunk.Dimensions.X*Chunk.VOXEL_SCALE));
-				playerChunkY = Mathf.FloorToInt((_playerPosition.Y+Chunk.VOXEL_SCALE*Chunk.Dimensions.Y*0.5f) / (Chunk.Dimensions.Y*Chunk.SUBCHUNKS*Chunk.VOXEL_SCALE));
+				playerChunkY = Mathf.FloorToInt((_playerPosition.Y+Chunk.VOXEL_SCALE*Chunk.Dimensions.Y*Chunk.SUBCHUNKS*0.5f) / (Chunk.Dimensions.Y*Chunk.SUBCHUNKS*Chunk.VOXEL_SCALE));
 				playerChunkZ = Mathf.FloorToInt(_playerPosition.Z / (Chunk.Dimensions.Z*Chunk.VOXEL_SCALE));
 			}
 
@@ -189,8 +181,13 @@ public partial class ChunkManager : Node
 
 						_chunkToPosition[chunk] = newPosition;
 						_positionToChunk[newPosition] = chunk;
+
+						var blocks = Chunk.Generate(newPosition);
+						var mesh = Chunk.BuildChunkMesh(blocks);
+						var hull = mesh.CreateTrimeshShape();
+
+						chunk.CallDeferred(nameof(Chunk.SetChunkPosition), newPosition, blocks, mesh, hull);
 					}
-					await Task.Run(() => UpdateChunkAsync(new Vector3I(newChunkX, newChunkY, newChunkZ), chunk));
 					//Thread.Sleep(100);
 				}
 			}

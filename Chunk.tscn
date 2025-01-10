@@ -5,7 +5,6 @@
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_qcpys"]
 
 [node name="Chunk" type="StaticBody3D" node_paths=PackedStringArray("CollisionShape", "MeshInstance")]
-transform = Transform3D(0.125, 0, 0, 0, 0.125, 0, 0, 0, 0.125, 0, 0, 0)
 script = ExtResource("1_02ktv")
 CollisionShape = NodePath("CollisionShape3D")
 MeshInstance = NodePath("MeshInstance3D")
