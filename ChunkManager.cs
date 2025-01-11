@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,10 +19,40 @@ public partial class ChunkManager : Node
 	[Export] public PackedScene ChunkScene { get; set; }
 
 	// this is the number of chunks rendered in the x and z direction, centered around the player
-	private int _width = 4;
-	private int _y_width = 2;
+	private int _width = 5;
+	private int _y_width = 3;
 
-	private Vector3 _playerPosition;
+	public static readonly Noise NOISE = new FastNoiseLite();
+
+	// surface tools
+
+	// vertices of a cube
+    private static readonly Vector3I[] CUBE_VERTS = 
+        {
+            new(0, 0, 0),
+			new(1, 0, 0),
+            new(0, 1, 0),
+            new(1, 1, 0),
+            new(0, 0, 1),
+            new(1, 0, 1),
+            new(0, 1, 1),
+            new(1, 1, 1)
+        };
+
+    // vertices for a square face of the above, cube depending on axis
+    // axis has 2 entries for each coordinate - y, x, z and alternates between -/+
+    // axis 0 = down, 1 = up, 2 = right, 3 = left, 4 = front (-z is front in godot), 5 = back
+    private static readonly int[,] AXIS = 
+        {
+            {0, 4, 5, 1}, // bottom
+            {2, 3, 7, 6}, // top
+            {6, 4, 0, 2}, // left
+            {3, 1, 5, 7}, // right
+            {2, 0, 1, 3}, // front
+            {7, 5, 4, 6}  // back
+        };
+
+	private Godot.Vector3 _playerPosition;
 	private object _playerPositionLock = new();
 
 	public override void _Ready()
@@ -52,7 +83,11 @@ public partial class ChunkManager : Node
 					for (int y = 0; y < _y_width; y++)
 					{
 						var index = x + (z * _width) + (y * _width * _width);
-						_chunks[index].SetChunkPosition(new Vector3I(x - halfWidth, y - halfywidth, z - halfWidth));
+						var pos = new Vector3I(x - halfWidth, y - halfywidth, z - halfWidth);
+						//var blocks = Generate(pos);
+						//var mesh = BuildChunkMesh(blocks);
+						//var hull = mesh.CreateTrimeshShape();
+						_chunks[index].InitChunk(pos);
 					}
 				}
 		}
@@ -121,9 +156,9 @@ public partial class ChunkManager : Node
 			blockList.Add((relativePosition, damage));
 		}
 
-		lock (_positionToChunk)
+		foreach (var (chunkTilePosition, blockList) in chunkBlockMapping)
 		{
-			foreach (var (chunkTilePosition, blockList) in chunkBlockMapping)
+			lock (_positionToChunk)
 			{
 				if (_positionToChunk.TryGetValue(chunkTilePosition, out var chunk))
 				{
@@ -144,7 +179,15 @@ public partial class ChunkManager : Node
 		}
 	}
 
-	private void ThreadProcess()
+	private Task UpdateChunkPositionAsync(Vector3I newPosition, Chunk chunk) {
+							lock(_positionToChunk)
+					{
+		chunk.CallDeferred(nameof(Chunk.SetChunkPosition), newPosition);
+					}
+		return Task.CompletedTask;
+	}
+
+	private async void ThreadProcess()
 	{
 		while (IsInstanceValid(this))
 		{
@@ -152,6 +195,7 @@ public partial class ChunkManager : Node
 			lock(_playerPositionLock)
 			{
 				playerChunkX = Mathf.FloorToInt(_playerPosition.X / (Chunk.Dimensions.X*Chunk.VOXEL_SCALE));
+				//playerChunkY = Mathf.FloorToInt(_playerPosition.Y / (Chunk.Dimensions.Y*Chunk.SUBCHUNKS*Chunk.VOXEL_SCALE));
 				playerChunkY = Mathf.FloorToInt((_playerPosition.Y+Chunk.VOXEL_SCALE*Chunk.Dimensions.Y*Chunk.SUBCHUNKS*0.5f) / (Chunk.Dimensions.Y*Chunk.SUBCHUNKS*Chunk.VOXEL_SCALE));
 				playerChunkZ = Mathf.FloorToInt(_playerPosition.Z / (Chunk.Dimensions.Z*Chunk.VOXEL_SCALE));
 			}
@@ -170,26 +214,23 @@ public partial class ChunkManager : Node
 
 				if (newChunkX != chunkX || newChunkY != chunkY || newChunkZ != chunkZ)
 				{
+					var newPosition = new Vector3I(newChunkX, newChunkY, newChunkZ);
 					lock(_positionToChunk)
 					{
 						if (_positionToChunk.ContainsKey(chunkPosition))
 						{
 							_positionToChunk.Remove(chunkPosition);
 						}
-
-						var newPosition = new Vector3I(newChunkX, newChunkY, newChunkZ);
-
 						_chunkToPosition[chunk] = newPosition;
 						_positionToChunk[newPosition] = chunk;
 
-						var blocks = Chunk.Generate(newPosition);
-						var mesh = Chunk.BuildChunkMesh(blocks);
-						var hull = mesh.CreateTrimeshShape();
-
-						chunk.CallDeferred(nameof(Chunk.SetChunkPosition), newPosition, blocks, mesh, hull);
+						//var blocks = Generate(newPosition);
+						//var mesh = BuildChunkMesh(blocks);
+						//var hull = mesh.CreateTrimeshShape();
 					}
-					//Thread.Sleep(100);
+					await Task.Run(() => {UpdateChunkPositionAsync(newPosition, chunk);});
 				}
+				Thread.Sleep(1);
 			}
 			Thread.Sleep(100);
 		}

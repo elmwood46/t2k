@@ -151,7 +151,7 @@ public partial class Player : CharacterBody3D
 				{
 					[intBlockPosition] = 5000
 				};
-				ChunkManager.Instance.DamageBlocks(d);
+				//ChunkManager.Instance.DamageBlocks(d);
 			
 
 				if (true) {
