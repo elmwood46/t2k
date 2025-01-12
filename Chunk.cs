@@ -256,8 +256,7 @@ public partial class Chunk : StaticBody3D
 
             // optimize particles to avoid framerate drop         
             if (blocks_being_destroyed > 1) { // destroying more than one block at once
-                if (partcount + blockCount < 2) particles.BlockDivisions = 3;
-                if (partcount + blockCount < 1) particles.BlockDivisions = 4;
+                if (partcount + blockCount < 1) particles.BlockDivisions = 3;
             } else {
                 if (partcount + blockCount < 15) particles.BlockDivisions = 3;
                 if (partcount + blockCount < 5) particles.BlockDivisions = 4;
