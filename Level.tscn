@@ -1,10 +1,11 @@
-[gd_scene load_steps=41 format=4 uid="uid://deyat72y3hmc1"]
+[gd_scene load_steps=39 format=4 uid="uid://deyat72y3hmc1"]
 
 [ext_resource type="Script" path="res://ChunkManager.cs" id="1_0ir14"]
 [ext_resource type="PackedScene" uid="uid://ds0scgvcsglbw" path="res://block_manager.tscn" id="1_jg7ov"]
 [ext_resource type="PackedScene" uid="uid://da5ax8fx3rml2" path="res://Chunk.tscn" id="1_peckr"]
 [ext_resource type="Environment" uid="uid://cki687xoyy0pq" path="res://sdfgi_env_haze.tres" id="1_qgltg"]
 [ext_resource type="Script" path="res://FallingDeath.cs" id="8_k5ypu"]
+[ext_resource type="PackedScene" uid="uid://c4rhmia48c1pu" path="res://props/DestructibleCube.tscn" id="8_u1wsw"]
 [ext_resource type="PackedScene" uid="uid://dvt10rp16ksw8" path="res://Player.tscn" id="15_72lf1"]
 [ext_resource type="PackedScene" uid="uid://b1ovqgjwms7u4" path="res://props/ladder.tscn" id="16_usagc"]
 [ext_resource type="PackedScene" uid="uid://bj06w0107prkf" path="res://props/interactable_component.tscn" id="17_hbyi5"]
@@ -194,13 +195,6 @@ cull_mode = 1
 shading_mode = 0
 albedo_color = Color(0, 0, 0, 1)
 
-[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_u3mn0"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_r6ns0"]
-
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_i34ip"]
-points = PackedVector3Array(-0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
-
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_p7qpi"]
 friction = 0.5
 bounce = 0.18
@@ -358,19 +352,11 @@ radius = 1.14806
 height = 0.807669
 material = SubResource("StandardMaterial3D_1dgdr")
 
-[node name="RigidBody3D" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.7972, 3.47894)
-mass = 5.0
-physics_material_override = SubResource("PhysicsMaterial_u3mn0")
-
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="RigidBody3D"]
-mesh = SubResource("BoxMesh_r6ns0")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D"]
-shape = SubResource("ConvexPolygonShape3D_i34ip")
-
 [node name="Node3D" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.04, 17.6244, 7.53483)
+
+[node name="BreakableCube" parent="Node3D" instance=ExtResource("8_u1wsw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 14.3105, -3.5238)
 
 [node name="RigidBody3D2" type="RigidBody3D" parent="Node3D"]
 mass = 5.0

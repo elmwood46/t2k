@@ -114,11 +114,38 @@ public partial class Player : CharacterBody3D
 
 	public override void _Process(double delta)
 	{
+
+		// interact with objects
 		InteractableComponent interactable = GetInteractableComponentAtShapecast();
 		if (interactable != null) {
 			interactable.HoverCursor(this);
 			if (Input.IsActionJustPressed("Interact")) {
 				interactable.Interact();
+			}
+		}
+
+		// HACK debug restart
+		if (Input.IsActionJustPressed("DebugRestart"))
+		{
+			GetTree().ReloadCurrentScene();
+		}
+
+		//HACK toggle wireframe
+		if (Input.IsActionJustReleased("ToggleWireframe")) {
+			if (GetViewport().DebugDraw==Viewport.DebugDrawEnum.Wireframe) {
+				RenderingServer.SetDebugGenerateWireframes(false);
+				GetViewport().DebugDraw=Viewport.DebugDrawEnum.Disabled;
+			} else {
+				RenderingServer.SetDebugGenerateWireframes(true);
+				GetViewport().DebugDraw=Viewport.DebugDrawEnum.Wireframe;
+			}
+		}
+		
+		// do cube fragmenting stuff
+		if (RayCast.IsColliding() && RayCast.GetCollider() is RigidBody3D rb) {
+			if (Input.IsActionJustPressed("Break")) {
+				if (rb.GetParent().GetParent() is DestructibleMesh mesh)
+					mesh.Break(RayCast.GetCollisionPoint(),PushForce);
 			}
 		}
 
@@ -203,21 +230,6 @@ public partial class Player : CharacterBody3D
 			if (Input.IsActionJustPressed("Place"))
 			{
 				ChunkManager.Instance.SetBlock((Vector3I)(intBlockPosition + RayCast.GetCollisionNormal()), BlockManager.BlockID("Stone"));
-			}
-
-			if (Input.IsActionJustPressed("debug_reload"))
-			{
-				GetTree().ReloadCurrentScene();
-			}
-
-			if (Input.IsActionJustReleased("ToggleWireframe")) {
-				if (GetViewport().DebugDraw==Viewport.DebugDrawEnum.Wireframe) {
-					RenderingServer.SetDebugGenerateWireframes(false);
-					GetViewport().DebugDraw=Viewport.DebugDrawEnum.Disabled;
-				} else {
-					RenderingServer.SetDebugGenerateWireframes(true);
-					GetViewport().DebugDraw=Viewport.DebugDrawEnum.Wireframe;
-				}
 			}
 		}
 		else

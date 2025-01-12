@@ -1,9 +1,10 @@
-[gd_scene load_steps=24 format=4 uid="uid://bxg7e3u4aaraq"]
+[gd_scene load_steps=25 format=4 uid="uid://bxg7e3u4aaraq"]
 
 [ext_resource type="PackedScene" uid="uid://dvt10rp16ksw8" path="res://Player.tscn" id="1_24pm8"]
 [ext_resource type="Script" path="res://GreedyMeshTest.cs" id="1_vma6d"]
 [ext_resource type="PackedScene" uid="uid://bj06w0107prkf" path="res://props/interactable_component.tscn" id="2_lei15"]
 [ext_resource type="Script" path="res://ThreadDemo.cs" id="3_sah0w"]
+[ext_resource type="PackedScene" uid="uid://c4rhmia48c1pu" path="res://props/DestructibleCube.tscn" id="3_w6ovg"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_8lbaa"]
 
@@ -149,8 +150,20 @@ environment = SubResource("Environment_31ety")
 transform = Transform3D(0.904552, -0.358104, 0.231402, 0, 0.542735, 0.839904, -0.426363, -0.759737, 0.490932, 0, 33.2873, 0)
 shadow_enabled = true
 
+[node name="BreakableCube" parent="." instance=ExtResource("3_w6ovg")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 1.63284, 5.9114)
+
+[node name="BreakableCube4" parent="." instance=ExtResource("3_w6ovg")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 1.63284, 4.45606)
+
+[node name="BreakableCube2" parent="." instance=ExtResource("3_w6ovg")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 3.24146, 5.9114)
+
+[node name="BreakableCube3" parent="." instance=ExtResource("3_w6ovg")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 1.26877, 1.63284, 5.9114)
+
 [node name="Player" parent="." instance=ExtResource("1_24pm8")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.26856, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.73876, 0)
 
 [node name="StaticBody3D3" type="StaticBody3D" parent="."]
 
