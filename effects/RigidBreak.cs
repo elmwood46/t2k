@@ -74,7 +74,7 @@ public partial class RigidBreak : Node3D
             {
                 Shape = new BoxShape3D(){Size = Vector3.One}
             };
-            rb.Mass = 10.0f;
+            rb.Mass = 20.0f;
 
             rb.SetCollisionLayerValue(1,false);
             rb.SetCollisionLayerValue(2,true);
@@ -151,7 +151,7 @@ public partial class RigidBreak : Node3D
                         {
                             Shape = new BoxShape3D(){Size = Vector3.One}
                         };
-                        rb.Mass = 10.0f;
+                        rb.Mass = 20.0f;
 
                         rb.SetCollisionLayerValue(1,false);
                         rb.SetCollisionLayerValue(2,true);

@@ -1,9 +1,10 @@
-[gd_scene load_steps=37 format=4 uid="uid://deyat72y3hmc1"]
+[gd_scene load_steps=41 format=4 uid="uid://deyat72y3hmc1"]
 
 [ext_resource type="Script" path="res://ChunkManager.cs" id="1_0ir14"]
 [ext_resource type="PackedScene" uid="uid://ds0scgvcsglbw" path="res://block_manager.tscn" id="1_jg7ov"]
 [ext_resource type="PackedScene" uid="uid://da5ax8fx3rml2" path="res://Chunk.tscn" id="1_peckr"]
 [ext_resource type="Environment" uid="uid://cki687xoyy0pq" path="res://sdfgi_env_haze.tres" id="1_qgltg"]
+[ext_resource type="Script" path="res://FallingDeath.cs" id="8_k5ypu"]
 [ext_resource type="PackedScene" uid="uid://dvt10rp16ksw8" path="res://Player.tscn" id="15_72lf1"]
 [ext_resource type="PackedScene" uid="uid://b1ovqgjwms7u4" path="res://props/ladder.tscn" id="16_usagc"]
 [ext_resource type="PackedScene" uid="uid://bj06w0107prkf" path="res://props/interactable_component.tscn" id="17_hbyi5"]
@@ -227,6 +228,17 @@ points = PackedVector3Array(-0.125207, -0.532801, -0.480507, 0.0227831, 0.47607,
 [sub_resource type="SystemFont" id="SystemFont_cibc6"]
 font_names = PackedStringArray("Broadway")
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ivif2"]
+disable_fog = true
+albedo_color = Color(0, 0, 0, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_7dqjw"]
+material = SubResource("StandardMaterial3D_ivif2")
+size = Vector2(120, 120)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_d3bln"]
+size = Vector3(120, 1, 120)
+
 [node name="Level" type="Node3D"]
 script = SubResource("GDScript_fd3ji")
 
@@ -239,11 +251,11 @@ environment = ExtResource("1_qgltg")
 script = ExtResource("1_0ir14")
 ChunkScene = ExtResource("1_peckr")
 
-[node name="Player" parent="." instance=ExtResource("15_72lf1")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.28867, 17.02, 10.0064)
-
 [node name="Ladder" parent="." groups=["ladder_area3d"] instance=ExtResource("16_usagc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10.522, -7)
+
+[node name="Player" parent="." instance=ExtResource("15_72lf1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 32, 2.932)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 15, 0, 0, 0, 1, 0, 10.5799, -7.55022)
@@ -264,7 +276,7 @@ mesh = SubResource("BoxMesh_5f7rv")
 shape = SubResource("ConvexPolygonShape3D_7o2ry")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.904552, -0.358104, 0.231402, 0, 0.542735, 0.839904, -0.426363, -0.759737, 0.490932, 0, 33.2873, 0)
+transform = Transform3D(0.906308, -0.354438, 0.230174, 0, 0.544639, 0.838671, -0.422618, -0.760094, 0.493611, 0, 32, 0)
 light_volumetric_fog_energy = 2.0
 shadow_enabled = true
 
@@ -383,6 +395,17 @@ offset_top = 34.0
 offset_right = 42.0
 offset_bottom = 57.0
 text = "FPS: "
+
+[node name="Falling Death" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -50, 0)
+script = ExtResource("8_k5ypu")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Falling Death"]
+mesh = SubResource("PlaneMesh_7dqjw")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Falling Death"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_d3bln")
 
 [connection signal="Interacted" from="AnimatableBody3D/InteractableComponent" to="AnimatableBody3D" method="toggle_open"]
 [connection signal="Interacted" from="StaticBody3D/InteractableComponent" to="AnimatableBody3D" method="toggle_open"]

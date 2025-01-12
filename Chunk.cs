@@ -12,6 +12,7 @@ public partial class Chunk : StaticBody3D
 
 	[Export] public MeshInstance3D MeshInstance { get; set; }
 	public const float VOXEL_SCALE = 0.5f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
+    public const float INV_VOXEL_SCALE = 1/VOXEL_SCALE;
 
     // chunk size is 30, padded chunk size is 32. Can't be increased easily because it uses binary UINT32 to do face culling
 	public const int CHUNK_SIZE = 30; // the chunk size is 62, padded chunk size is 64, // must match size in compute shader
@@ -56,12 +57,12 @@ public partial class Chunk : StaticBody3D
         );
 
         _blocks = ChunkManager.Generate(ChunkPosition);
-        var mesh = ChunkManager.BuildChunkMesh(_blocks);
+        var mesh = ChunkManager.BuildChunkMesh(_blocks, ChunkPosition.Y == 0);
         var collisionHull = mesh.CreateTrimeshShape();
         Update(mesh, collisionHull);
 	}
 
-	public async void SetChunkPosition(Vector3I position)
+	public async void SetChunkPosition(Vector3I position, int[] blocks)
 	{
 		ChunkManager.Instance.UpdateChunkPosition(this, position, ChunkPosition);
 		ChunkPosition = position;
@@ -71,8 +72,8 @@ public partial class Chunk : StaticBody3D
             VOXEL_SCALE * ChunkPosition.Z * Dimensions.Z)
         );
 
-        _blocks = ChunkManager.Generate(ChunkPosition);
-        var mesh = await Task.Run(()=>{return ChunkManager.BuildChunkMesh(_blocks);});
+        _blocks = blocks;
+        var mesh = await Task.Run(()=>{return ChunkManager.BuildChunkMesh(_blocks,ChunkPosition.Y == 0);});
         var collisionHull = await Task.Run(()=>{return mesh.CreateTrimeshShape();});
         Update(mesh, collisionHull);
 	}
@@ -181,16 +182,17 @@ public partial class Chunk : StaticBody3D
 		}
 
         // update mesh and collision shape
-        var mesh = ChunkManager.BuildChunkMesh(_blocks);
+        var mesh = ChunkManager.BuildChunkMesh(_blocks,ChunkPosition.Y == 0);
         var shape = mesh.CreateTrimeshShape();
 		Update(mesh, shape);
         SpawnBlockParticles(particle_spawn_list);
 	}
 
     public void SpawnBlockParticles(Godot.Collections.Dictionary<Vector3I, int[]> positionsAndTextures) {
-        var globalChunkPos = new Godot.Vector3 (ChunkPosition.X * Dimensions.X, ChunkPosition.Y * Dimensions.Y * SUBCHUNKS, ChunkPosition.Z*Dimensions.Z);  
-
+        if (positionsAndTextures.Count == 0) return;
         // sort dictionary by distance to player
+        /*
+        var globalChunkPos = new Godot.Vector3 (ChunkPosition.X * Dimensions.X, ChunkPosition.Y * Dimensions.Y * SUBCHUNKS, ChunkPosition.Z*Dimensions.Z);  
         var sortedByMagnitude = positionsAndTextures.ToImmutableSortedDictionary(
             pos => pos.Key,
             tex => tex.Value,
@@ -202,16 +204,14 @@ public partial class Chunk : StaticBody3D
                     )
                 )
             )
-        );
+        );*/
 
         // spawn particles from closest to fartherest from player
         // the particles spawned first have more detail and more expensive collisions\
-                
-        var partlist = new List<RigidBreak>();
         var blocks_being_destroyed = positionsAndTextures.Count;
         var blockCount = 0;
         var partcount = GetTree().GetNodesInGroup("RigidBreak").Count;
-        foreach (var (pos, tex) in sortedByMagnitude) {
+        foreach (var (pos, tex) in positionsAndTextures) {
             var is_block_above = false;
             var block_idx = Mathf.FloorToInt(pos.X)
             + Mathf.FloorToInt(pos.Z) * CHUNK_SIZE

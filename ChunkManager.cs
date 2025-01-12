@@ -19,8 +19,41 @@ public partial class ChunkManager : Node
 	[Export] public PackedScene ChunkScene { get; set; }
 
 	// this is the number of chunks rendered in the x and z direction, centered around the player
-	private int _width = 5;
-	private int _y_width = 3;
+	private int _width = 8;
+	private int _y_width = 4;
+	public int Width
+	{
+		get => _width;
+		set
+		{
+			_width = value;
+		}
+	}
+	public int YWidth
+	{
+		get => _y_width;
+		set
+		{
+			_y_width = value;
+
+		}
+	}
+
+	public static readonly Noise CELLNOISE = new FastNoiseLite(){NoiseType = FastNoiseLite.NoiseTypeEnum.Cellular
+	, CellularDistanceFunction = FastNoiseLite.CellularDistanceFunctionEnum.Manhattan,
+	FractalType = FastNoiseLite.FractalTypeEnum.Fbm, CellularReturnType = FastNoiseLite.CellularReturnTypeEnum.CellValue};
+
+	
+	public static readonly Noise WHITENOISE = new FastNoiseLite(){
+		NoiseType = FastNoiseLite.NoiseTypeEnum.Cellular,
+		CellularDistanceFunction = FastNoiseLite.CellularDistanceFunctionEnum.Manhattan,
+		Frequency = 0.01f,
+		FractalOctaves = 0,
+		FractalLacunarity = 0f,
+		FractalType = FastNoiseLite.FractalTypeEnum.Ridged,
+		CellularReturnType = FastNoiseLite.CellularReturnTypeEnum.CellValue,
+		CellularJitter = 0f
+	};
 
 	public static readonly Noise NOISE = new FastNoiseLite();
 
@@ -83,7 +116,7 @@ public partial class ChunkManager : Node
 					for (int y = 0; y < _y_width; y++)
 					{
 						var index = x + (z * _width) + (y * _width * _width);
-						var pos = new Vector3I(x - halfWidth, y - halfywidth, z - halfWidth);
+						var pos = new Vector3I(x - halfWidth, y, z - halfWidth);
 						//var blocks = Generate(pos);
 						//var mesh = BuildChunkMesh(blocks);
 						//var hull = mesh.CreateTrimeshShape();
@@ -182,7 +215,8 @@ public partial class ChunkManager : Node
 	private Task UpdateChunkPositionAsync(Vector3I newPosition, Chunk chunk) {
 							lock(_positionToChunk)
 					{
-		chunk.CallDeferred(nameof(Chunk.SetChunkPosition), newPosition);
+						int[] blocks = Generate(newPosition);
+		chunk.CallDeferred(nameof(Chunk.SetChunkPosition), newPosition, blocks);
 					}
 		return Task.CompletedTask;
 	}
@@ -191,12 +225,12 @@ public partial class ChunkManager : Node
 	{
 		while (IsInstanceValid(this))
 		{
-			int playerChunkX, playerChunkY, playerChunkZ;
+			int playerChunkX, playerChunkZ; //playerChunkY
 			lock(_playerPositionLock)
 			{
 				playerChunkX = Mathf.FloorToInt(_playerPosition.X / (Chunk.Dimensions.X*Chunk.VOXEL_SCALE));
 				//playerChunkY = Mathf.FloorToInt(_playerPosition.Y / (Chunk.Dimensions.Y*Chunk.SUBCHUNKS*Chunk.VOXEL_SCALE));
-				playerChunkY = Mathf.FloorToInt((_playerPosition.Y+Chunk.VOXEL_SCALE*Chunk.Dimensions.Y*Chunk.SUBCHUNKS*0.5f) / (Chunk.Dimensions.Y*Chunk.SUBCHUNKS*Chunk.VOXEL_SCALE));
+				//playerChunkY = Mathf.FloorToInt((_playerPosition.Y+Chunk.VOXEL_SCALE*Chunk.Dimensions.Y*Chunk.SUBCHUNKS*0.5f) / (Chunk.Dimensions.Y*Chunk.SUBCHUNKS*Chunk.VOXEL_SCALE));
 				playerChunkZ = Mathf.FloorToInt(_playerPosition.Z / (Chunk.Dimensions.Z*Chunk.VOXEL_SCALE));
 			}
 
@@ -209,7 +243,7 @@ public partial class ChunkManager : Node
 				var chunkZ = chunkPosition.Z;
 
 				var newChunkX = Mathf.PosMod(chunkX - playerChunkX + _width / 2, _width) + playerChunkX - _width / 2;
-				var newChunkY = Mathf.PosMod(chunkY - playerChunkY + _y_width / 2, _y_width) + playerChunkY - _y_width / 2;
+				var newChunkY = chunkY;//Mathf.PosMod(chunkY - playerChunkY + _y_width / 2, _y_width) + playerChunkY - _y_width / 2;
 				var newChunkZ = Mathf.PosMod(chunkZ - playerChunkZ + _width / 2, _width) + playerChunkZ - _width / 2;
 
 				if (newChunkX != chunkX || newChunkY != chunkY || newChunkZ != chunkZ)

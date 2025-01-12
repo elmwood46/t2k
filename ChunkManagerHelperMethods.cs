@@ -10,6 +10,7 @@ public partial class ChunkManager : Node {
 	public static int[] Generate(Vector3I chunkPosition)
 	{
         var result = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
+        var rnd = new RandomNumberGenerator();
         
         for (int subchunk = 0; subchunk < Chunk.SUBCHUNKS; subchunk++) {
             for (int x=0;x<Chunk.CHUNK_SIZE;x++) {
@@ -22,25 +23,46 @@ public partial class ChunkManager : Node {
                         var globalBlockPosition = chunkPosition * new Vector3I(Chunk.Dimensions.X, Chunk.Dimensions.Y*Chunk.SUBCHUNKS, Chunk.Dimensions.Z)
                             + new Vector3I(x, y + Chunk.Dimensions.Y*subchunk, z);                 
 
-                        int blockType;
+                        int blockType = 0;
                         //var noise = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y, globalBlockPosition.Z);
-                        var noise = NOISE.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Z);
-                        var groundheight = (int)(0.125*Chunk.Dimensions.Y*Chunk.SUBCHUNKS*(noise+1)/2);
+                        var noise = CELLNOISE.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Z);
+                        var whitenoise = WHITENOISE.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Z);
+                        var groundheight = (int)(10*(noise+1)/2);
                         var yy = globalBlockPosition.Y;
-                        if (yy > groundheight) blockType = 0;
-                        else if (yy == groundheight) blockType = BlockManager.BlockID("Grass");
-                        else if (yy > groundheight - 3) blockType = BlockManager.BlockID("Dirt");
-                        else blockType = BlockManager.BlockID("Stone");
-                        /*
-                        var noiseabove = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y+1, globalBlockPosition.Z);
-                        var noisebelow = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y-1, globalBlockPosition.Z);
-                        if (noise >= 0.2f) {
-                            if (noiseabove < 0.2f) blockType = BlockManager.BlockID("Grass");
-                            else if (noisebelow < noise) blockType = BlockManager.BlockID("Stone");
-                            else blockType = BlockManager.BlockID("Dirt");
-                        } */
-                    int blockinfo = blockType<<15 | z<<10 | y<<5 | x;
-                    result[block_idx] = blockinfo;
+
+                        if (chunkPosition.Y == 0) {
+                            if (yy > groundheight) blockType = 0;
+                            else if (y==0) blockType = BlockManager.Instance.LavaBlockId;
+                            else if (yy == groundheight) blockType = BlockManager.BlockID("Grass");
+                            else if (yy > groundheight - 3) blockType = BlockManager.BlockID("Dirt");
+                            else blockType = BlockManager.BlockID("Stone");
+                        }
+
+                        var scale_factor = 1;//Chunk.INV_VOXEL_SCALE;
+                        var noise3d = NOISE.GetNoise3D(scale_factor*globalBlockPosition.X, scale_factor*globalBlockPosition.Y, scale_factor*globalBlockPosition.Z);
+                        var cutoff = 0.2f;
+                        //if (chunkPosition.Y == 0) cutoff = ((float)y/Chunk.CHUNK_SIZE) - 1.0f;
+                        
+                        var noiseabove = NOISE.GetNoise3D(globalBlockPosition.X*scale_factor, (globalBlockPosition.Y+1)*scale_factor, globalBlockPosition.Z*scale_factor);
+                        var noisebelow = NOISE.GetNoise3D(globalBlockPosition.X, (globalBlockPosition.Y-1)*scale_factor, globalBlockPosition.Z*scale_factor);
+                        
+                        if (chunkPosition.Y == 3) {
+                            if (y==0 && noisebelow >= cutoff && whitenoise > 0.8) {
+                                for (int i=0; i<4; i++) {
+                                    result[block_idx+i*Chunk.CHUNKSQ] = BlockManager.BlockID("Stone")<<15 | z<<10 | (y+i)<<5 | x;
+                                }
+                            }
+                        }
+                        else {
+                            if (noise3d >= cutoff) {
+                                if (noiseabove < cutoff) blockType = BlockManager.BlockID("Grass");
+                                else if (noisebelow > noise3d) blockType = BlockManager.BlockID("Stone");
+                                else blockType = BlockManager.BlockID("Dirt");
+                            } 
+                        }
+
+                        int blockinfo = blockType<<15 | z<<10 | y<<5 | x;
+                        result[block_idx] = blockinfo;
                     }
                 }
             }
@@ -151,7 +173,7 @@ public partial class ChunkManager : Node {
         }
     }
 
-    public static ArrayMesh BuildChunkMesh(int[] chunk_blocks) {
+    public static ArrayMesh BuildChunkMesh(int[] chunk_blocks, bool isLowestChunk) {
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
@@ -196,11 +218,16 @@ public partial class ChunkManager : Node {
                             _ => new Vector3I(quad.delta_col, quad.delta_row, 0),       // back, front (xy -> z axis)
                         };
 
+
                         // construct vertices and normals for mesh
                         Godot.Vector3[] verts = new Godot.Vector3[4];
                         for (int i=0; i<4; i++) {
                             verts[i] = quad_offset + (Godot.Vector3)CUBE_VERTS[AXIS[axis,i]]*quad_delta;
+                            if (isLowestChunk && verts[i].Y == 0) {
+                                verts[i] -= Godot.Vector3.Up*100f;
+                            }
                         }
+
                         Godot.Vector3[] triangle1 = {verts[0], verts[1], verts[2]};
                         Godot.Vector3[] triangle2 = {verts[0], verts[2], verts[3]};
                         Godot.Vector3 normal = axis switch

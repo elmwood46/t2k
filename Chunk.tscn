@@ -3,6 +3,13 @@
 [ext_resource type="Script" path="res://Chunk.cs" id="1_02ktv"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_qcpys"]
+noise_type = 2
+fractal_type = 2
+fractal_octaves = 1
+fractal_lacunarity = 0.0
+cellular_distance_function = 2
+cellular_jitter = 0.0
+cellular_return_type = 0
 
 [node name="Chunk" type="StaticBody3D" node_paths=PackedStringArray("CollisionShape", "MeshInstance")]
 script = ExtResource("1_02ktv")

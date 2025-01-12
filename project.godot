@@ -121,3 +121,5 @@ Crouch={
 global_illumination/sdfgi/probe_ray_count=3
 global_illumination/sdfgi/frames_to_update_lights=4
 environment/volumetric_fog/volume_size=128
+environment/volumetric_fog/volume_depth=128
+environment/volumetric_fog/use_filter=0
