@@ -123,3 +123,10 @@ global_illumination/sdfgi/frames_to_update_lights=4
 environment/volumetric_fog/volume_size=128
 environment/volumetric_fog/volume_depth=128
 environment/volumetric_fog/use_filter=0
+
+[shader_globals]
+
+border_colour={
+"type": "color",
+"value": Color(0.905882, 0, 0.905882, 1)
+}

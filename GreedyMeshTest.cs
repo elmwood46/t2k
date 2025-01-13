@@ -66,7 +66,7 @@ public partial class GreedyMeshTest : StaticBody3D
     public override void _Ready()
     {
         
-        GetViewport().DebugDraw=Viewport.DebugDrawEnum.Wireframe;
+        //GetViewport().DebugDraw=Viewport.DebugDrawEnum.Wireframe;
         rng.Randomize();
         //Regenerate();
     }

@@ -125,7 +125,7 @@ public partial class Player : CharacterBody3D
 		}
 
 		// HACK debug restart
-		if (Input.IsActionJustPressed("DebugRestart"))
+		if (Input.IsActionJustReleased("DebugRestart"))
 		{
 			GetTree().ReloadCurrentScene();
 		}
