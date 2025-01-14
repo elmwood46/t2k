@@ -51,6 +51,10 @@ public partial class BlockManager : Node
 		return Instance.Blocks[blockID].BakedTextureArrayPositions;
 	}
 
+	public static int InitBlockInfo(int blockID) {
+		return blockID << 15 | Instance.Blocks[blockID].MaxHealth;
+	}
+
 	private int[] GetBlockTextureArrayPositions(int blockID) {
 		var texarray = Instance.Blocks[blockID].Textures;
 		var result = new int[texarray.Length];
@@ -94,8 +98,8 @@ public partial class BlockManager : Node
 			Instance.Blocks[i].BakedTextureArrayPositions = GetBlockTextureArrayPositions(i);
 		}
 
-		ChunkMaterial = GD.Load("res://shaders/chunk_shader.tres") as ShaderMaterial;
-		ChunkMaterial.SetShaderParameter("albedo_texture", TextureArray);
+		ChunkMaterial = GD.Load("res://shaders/chunk_uv_shader.tres") as ShaderMaterial;
+		ChunkMaterial.SetShaderParameter("_albedo", TextureArray);
 
 		 // Save the image to a file (PNG format)
         /*

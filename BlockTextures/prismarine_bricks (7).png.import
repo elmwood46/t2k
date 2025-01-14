@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dcdq3tnauo0sb"
-path="res://.godot/imported/transparent.png-c8cee3ee75c5ea2fbd749cecbb6fbe89.ctex"
+uid="uid://crbe7ex127cio"
+path="res://.godot/imported/prismarine_bricks (7).png-1f4952aa570238234e12448b4a26af78.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://BlockTextures/transparent.png"
-dest_files=["res://.godot/imported/transparent.png-c8cee3ee75c5ea2fbd749cecbb6fbe89.ctex"]
+source_file="res://BlockTextures/prismarine_bricks (7).png"
+dest_files=["res://.godot/imported/prismarine_bricks (7).png-1f4952aa570238234e12448b4a26af78.ctex"]
 
 [params]
 

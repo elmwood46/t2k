@@ -5,7 +5,7 @@ uniform sampler2DArray albedo_texture : filter_nearest;
 // this is the shader for a mini block after
 // a "parent" block has been subdivided
 // the boxmesh has a uv layout of 3x2
-// this shader is for a boxmesh only, so we 
+// this shader is for a boxmesh only, so we
 // assume there is a boxmesh UV layout
 
 // which side of the parent block this mini block was on
@@ -36,7 +36,7 @@ void fragment() {
 	// assume boxmesh has 3x2 uv layout
 	float facex = min(UV.x,0.999999f)*3.0;
 	float facey = min(UV.y,0.999999f)*2.0;
-	
+
 	// get idx of uv wrapped around boxmesh
 	int idx = int(floor(facex) + floor(facey)*3.0);
 	// transform the boxmesh index to the indexing style of our blocks
@@ -50,9 +50,9 @@ void fragment() {
 		case 4: idx = 1; break;
 		case 5: default : idx = 0; break;
 	};
-	
+
 	float texture_frame = float(tex_array_idx[idx]);
-	
+
 	vec3 coord = vec3(fract(facex),fract(facey),texture_frame);
 	ALBEDO = texture(albedo_texture,coord).rgb;
 }
