@@ -71,13 +71,14 @@ public partial class ChunkManager : Node {
                                 else blockType = BlockManager.BlockID("Dirt");
                             }
                         }
-
-                        var blockHealth = BlockManager.Instance.Blocks[blockType].MaxHealth;
+                        var blockHealth = BlockManager.MAX_HEALTH;
 
                         // randomly damage some blocks
                         if (rnd.Randf() < 0.5)
-                            blockHealth -= (byte)rnd.RandiRange(0, blockHealth-1);
-                        int blockinfo = blockType<<15 | blockHealth;
+                            blockHealth -= rnd.RandiRange(0, blockHealth-1);
+                        
+                        // add the damage type 
+                        int blockinfo = blockType<<15 | blockHealth | 1<<6;
                         result[block_idx] = blockinfo;
                     }
                 }

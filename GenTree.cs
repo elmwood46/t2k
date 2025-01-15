@@ -50,7 +50,7 @@ public partial class GenTree : Node3D
 
         // Generate branches
 
-        /*
+        
         Random rand = new();
         for (int i = 0; i < _branchCount; i++)
         {
@@ -64,7 +64,7 @@ public partial class GenTree : Node3D
                 var blocktype = BlockManager.BlockID("Trunk");
                 _blocks[new Vector3I(branchPos.X,branchPos.Y,branchPos.Z)] = BlockManager.InitBlockInfo(blocktype);
             }
-        }*/
+        }
 
         // Generate leaves
         for  (int z = -_leafClusterSize; z <= _leafClusterSize; z++)

@@ -41,8 +41,6 @@ public partial class Chunk : StaticBody3D
 	private int[] _blocks = new int[CHUNKSQ*CHUNK_SIZE*SUBCHUNKS];
 	public Vector3I ChunkPosition { get; private set; }
 
-	
-
 	[Export]
 	public FastNoiseLite WallNoise { get; set; }
 
@@ -95,21 +93,33 @@ public partial class Chunk : StaticBody3D
         public int Z;
     }
 
-    public static BlockInfo UnpackBlockInfo(int blockInfo) {
-        return new BlockInfo {
-            BlockType = blockInfo >> 15 & 0x3ff, // 10 bit bit mask
-            Z = (blockInfo >> 10) & 0x1f, // 5 bit bit mask
-            Y = (blockInfo >> 5) & 0x1f,
-            X = blockInfo & 0x1f
-        };
-    }
-
     public static int GetBlockID(int blockInfo) {
         return (blockInfo >> 15) & 0x3ff;
     }
 
+    public static int GetBlockDamageData(int blockInfo) {
+        return blockInfo & 0xff;
+    }
+
+    public static int GetBlockDamageAmount(int blockInfo) {
+        return GetBlockDamageData(blockInfo)&0x1f;
+    }
+
+    public static int GetBlockDamageType(int blockInfo) {
+        return GetBlockDamageData(blockInfo) >> 5;
+    }
+
     public void SetBlock(int blockIndex, int blockType) {
         _blocks[blockIndex] = (_blocks[blockIndex] & ~(0x3ff << 15)) | blockType << 15;
+    }
+
+    public void SetBlockDamageType(int blockIndex, BlockDamageType damtype) {
+        int damMask = damtype switch  {
+            BlockDamageType.Physical => 1<<5,
+            BlockDamageType.Fire => 1<<6,
+            _ => 1<<7
+        };
+        _blocks[blockIndex] |= damMask;
     }
 
     public void SetBlockToAir(int blockIndex) {

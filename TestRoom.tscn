@@ -1,13 +1,16 @@
-[gd_scene load_steps=36 format=4 uid="uid://bxg7e3u4aaraq"]
+[gd_scene load_steps=42 format=4 uid="uid://bxg7e3u4aaraq"]
 
 [ext_resource type="PackedScene" uid="uid://dvt10rp16ksw8" path="res://Player.tscn" id="1_24pm8"]
 [ext_resource type="Script" path="res://GreedyMeshTest.cs" id="1_vma6d"]
 [ext_resource type="PackedScene" uid="uid://bj06w0107prkf" path="res://props/interactable_component.tscn" id="2_lei15"]
 [ext_resource type="Script" path="res://ThreadDemo.cs" id="3_sah0w"]
 [ext_resource type="PackedScene" uid="uid://c4rhmia48c1pu" path="res://props/DestructibleCube.tscn" id="3_w6ovg"]
+[ext_resource type="Shader" path="res://props/treasure/cut_b.gdshader" id="6_6iqls"]
 [ext_resource type="Shader" path="res://props/treasure/CoinShader.gdshader" id="6_be58e"]
 [ext_resource type="Texture2D" uid="uid://bicky6ugq6oog" path="res://props/treasure/coinC_2.png" id="6_eskjp"]
 [ext_resource type="Script" path="res://shaders/CutShaderTest.cs" id="6_ohgln"]
+[ext_resource type="Texture2D" uid="uid://bdoda4hoe0b1m" path="res://shaders/flame_spotnoise.tres" id="9_ppad2"]
+[ext_resource type="Material" uid="uid://bplkjq4sn3t4i" path="res://shaders/chunk_uv_shader.tres" id="11_vtkf1"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_8lbaa"]
 
@@ -138,12 +141,34 @@ fractal_type = 0
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_ebyjl"]
 noise = SubResource("FastNoiseLite_ofw3w")
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_u7nug"]
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_glyfy"]
+noise_type = 2
+frequency = 0.0095
+offset = Vector3(48.73, 0, 0)
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_insal"]
+in_3d_space = true
+noise = SubResource("FastNoiseLite_glyfy")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bttow"]
 render_priority = 0
-shader = ExtResource("6_be58e")
+shader = ExtResource("6_6iqls")
+shader_parameter/burned_colour = Color(0.20696, 0.0992783, 0.0328743, 1)
 shader_parameter/cutplane = null
+shader_parameter/_noise = SubResource("NoiseTexture2D_ebyjl")
+shader_parameter/_spot_noise = SubResource("NoiseTexture2D_insal")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_u7nug"]
+render_priority = 1
+next_pass = SubResource("ShaderMaterial_bttow")
+shader = ExtResource("6_be58e")
+shader_parameter/border_colour = Color(1, 1, 1, 1)
+shader_parameter/emission_edge = Color(0.968627, 0.356863, 0, 1)
+shader_parameter/cutplane = null
+shader_parameter/burnratio = 0.426
 shader_parameter/_albedo = ExtResource("6_eskjp")
 shader_parameter/_noise = SubResource("NoiseTexture2D_ebyjl")
+shader_parameter/_spotnoise = ExtResource("9_ppad2")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q0mdb"]
 albedo_texture = ExtResource("6_eskjp")
@@ -298,8 +323,13 @@ mesh = SubResource("ArrayMesh_kykj8")
 script = ExtResource("6_ohgln")
 CutPlane = NodePath("../CutPlaneCube")
 
+[node name="Coin_tris2" type="MeshInstance3D" parent="."]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6.21003, 5.01836, 4.61308)
+material_override = ExtResource("11_vtkf1")
+mesh = SubResource("ArrayMesh_kykj8")
+
 [node name="CutPlaneCube" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.922585, -0.385793, 0, 0.385793, 0.922585, 0, 0, 0, 1, 0.963133, 1.91802, -3.48064)
+transform = Transform3D(0.996194, 0.0871557, 0, -0.0871557, 0.996194, 0, 0, 0, 1, 0, 8.41597, 0)
 mesh = SubResource("BoxMesh_gaqdo")
 
 [connection signal="Interacted" from="Node3D/StaticBody3D/InteractableComponent" to="Node3D/StaticBody3D/button/AnimationPlayer" method="play" binds= ["ButtonPress"]]

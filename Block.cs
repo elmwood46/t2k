@@ -14,7 +14,7 @@ public partial class Block : Resource
 {
 	// block ID is a unique number between 0-1024
 	[Export] public string Name { get; set; }
-	[Export] public byte MaxHealth { get; set; }
+	[Export] public BlockSpecies Species { get; set; }
 	[Export] public Texture2D MidTexture { get => _midTexture; set {_midTexture = value; SetTextures();} }
 	private Texture2D _midTexture;
 	[Export] public Texture2D BottomTexture { get => _bottomTexture; set {_bottomTexture = value; SetTextures();} }

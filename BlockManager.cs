@@ -10,9 +10,40 @@ using System.Linq;
 // the "front" texture faces in the +z direction (which is "back" in Godot's physics)
 // this is because we construct the blocks in "chunk space" and don't transform the textures to godot's physics space
 
+// this is the type of block
+// the group a block is in determines its resilience to damage and other things like footstep sounds
+public enum BlockSpecies {
+	Air,
+	Lava,
+	Stone,
+	Porcelain,
+	Dirt,
+	Grass,
+	Gravel,
+	Wood,
+	Leaves,
+	Brick,
+	GoldOre
+}
+
+// used to shade blocks when they get damaged
+public enum BlockDamageType {
+    Physical, // 6th bit in block info integer
+    Fire,    // 7th bit in block info integer
+    Acid     // 8th bit
+}
+
 [Tool]
 public partial class BlockManager : Node
 {
+
+
+	// blocks have 32 levels of damage and 3 damage types (stored in one byte when packed into a 32 bit block info package in the chunk).
+	// Their "resilience" determines how resistant to damage they are
+	public const int MAX_HEALTH = 32;
+
+	// how many bits are reserved for indicating damage types
+	public const int DAMAGE_BITS = 3;
 
 	// note the code assumes that block 0 is the empty (air) block
 	// but this has to be set manually
@@ -21,13 +52,6 @@ public partial class BlockManager : Node
 	private readonly System.Collections.Generic.Dictionary<Texture2D, int> _texarraylookup = new();
 
 	private readonly System.Collections.Generic.Dictionary<string, int> _blockIdLookup = new();
-
-	private const int ATLAS_WIDTH = 6; // gridwidth equivalent to number of faces (we store blocks vertically and faces horizontally)
-	private int _atlas_height;           // number of blocks
-
-	public Vector2I BlockTextureSize { get; } = new(16, 16);
-
-	public Vector2 TextureAtlasSize { get; private set; }
 
 	public static BlockManager Instance { get; private set; }
 
@@ -38,6 +62,23 @@ public partial class BlockManager : Node
 	public Texture2DArray TextureArray = new();
 
 	public int LavaBlockId {get; private set;}
+
+	// shader defaults
+	private static readonly NoiseTexture2D noise = GD.Load("res://shaders/flamenoise.tres") as NoiseTexture2D;
+	private static readonly NoiseTexture2D spotnoise = GD.Load("res://shaders/flame_spotnoise.tres") as NoiseTexture2D;
+	private static readonly Color fire_border_colour = new(1.0f,1.0f,1.0f,1.0f);
+	private static readonly Color fire_emission_colour = new(0.96f,0.35f,0.0f,1.0f);
+	private static readonly Color burned_colour = new(0.2f, 0.09f, 0.03f,1.0f);
+	private static readonly Color acid_colour = new(0, 0.9490196078f, 0);
+	private static readonly Color acid_edge = new(0.0509803922f, 0.6980392157f, 0.0470588235f);
+
+	public static BlockSpecies BlockSpecies(int blockID) {
+		return Instance.Blocks[blockID].Species;
+	}
+
+		public static BlockSpecies BlockSpecies(string blockName) {
+		return Instance.Blocks[BlockID(blockName)].Species;
+	}
 
 	public static int BlockID(string blockName) {
 		return Instance._blockIdLookup[blockName];
@@ -52,7 +93,7 @@ public partial class BlockManager : Node
 	}
 
 	public static int InitBlockInfo(int blockID) {
-		return blockID << 15 | Instance.Blocks[blockID].MaxHealth;
+		return blockID << 15;
 	}
 
 	private int[] GetBlockTextureArrayPositions(int blockID) {
@@ -62,7 +103,6 @@ public partial class BlockManager : Node
 			result[i] = _texarraylookup[texarray[i]];
 			//GD.Print($"Block {Blocks[blockID].Name} texture {i} is at array position {result[i]}");
 		}
-		for (int i=0; i< 6; i++) GD.Print(result[i]);
 		return result;
 	}
 
@@ -98,8 +138,19 @@ public partial class BlockManager : Node
 			Instance.Blocks[i].BakedTextureArrayPositions = GetBlockTextureArrayPositions(i);
 		}
 
+		// setup shader defaults
 		ChunkMaterial = GD.Load("res://shaders/chunk_uv_shader.tres") as ShaderMaterial;
 		ChunkMaterial.SetShaderParameter("_albedo", TextureArray);
+		ChunkMaterial.SetShaderParameter("_displacement", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_DISPa.png"));
+		ChunkMaterial.SetShaderParameter("_roughness", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_ROUGH.jpg"));
+		ChunkMaterial.SetShaderParameter("_normalmap", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_NORM.jpg"));
+		ChunkMaterial.SetShaderParameter("_noise", noise);
+		ChunkMaterial.SetShaderParameter("_spot_noise", spotnoise);
+		ChunkMaterial.SetShaderParameter("_bordercol", fire_border_colour);
+		ChunkMaterial.SetShaderParameter("_emissioncol", fire_emission_colour);
+		ChunkMaterial.SetShaderParameter("_burncol", burned_colour);
+		ChunkMaterial.SetShaderParameter("_acidcol", acid_colour);
+		ChunkMaterial.SetShaderParameter("_acidedge", acid_edge);
 
 		 // Save the image to a file (PNG format)
         /*
