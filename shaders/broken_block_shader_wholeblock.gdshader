@@ -1,41 +1,35 @@
 shader_type spatial;
 render_mode ensure_correct_normals;
-uniform sampler2DArray albedo_texture : filter_nearest;
 
-// this is the shader for a mini block after
-// a "parent" block has been subdivided
-// the boxmesh has a uv layout of 3x2
-// this shader is for a boxmesh only, so we
-// assume there is a boxmesh UV layout
+group_uniforms Textures;
+uniform sampler2DArray _albedo : filter_nearest;
+uniform sampler2D _displacement : filter_nearest;
+uniform sampler2D _roughness : filter_nearest;
+uniform sampler2D _normalmap : filter_nearest;
+uniform sampler2D _cracks_texture: filter_nearest;
+uniform sampler2D _noise;
+uniform sampler2D _spot_noise;
+uniform sampler2D _acidcurvetex;
+uniform sampler2D _firecurvetex;
 
-// which side of the parent block this mini block was on
-// 0-6 bottom, top, left, right, back, front
-// -1 means it's internal, and will be textured
-// with the block's bottom texture
-uniform int parent_face;
+group_uniforms Colours;
+uniform vec4 _bordercol : source_color;
+uniform vec4 _emissioncol : source_color;
+uniform vec3 _burncol : source_color;
+uniform vec3 _acidcol : source_color;
+uniform vec3 _acidedge : source_color;
 
-// 9 slice, indexed 0-8
-// 0-2 = bottom, 3-5 = middle, 6-8 = top
-// 5 means centre block
-// 0,0 is lower left
-// 1 is lower middle
-// 2 is lower right and so on
-uniform int parent_face_slice;
+group_uniforms BlockInfo;
+uniform int[6] _tex_array_idx;
+uniform int _damage_data;
 
-// holds the texture array positions
-// of the parent block (for looking up the sampler2d)
-uniform int[6] tex_array_idx;
+#include "res://shaders/chunk_block_damage_func.gdshaderinc"
 
-// check vector equality
-bool equals(vec3 v1, vec3 v2) {
-	return abs(dot(v1,v2) - 1.0) < 0.001;
-}
-
-void fragment() {
+vec3 Boxmesh_UV_To_Voxel_UV(vec2 box_uv) {
 	//vec3 normal = NORMAL;
 	// assume boxmesh has 3x2 uv layout
-	float facex = min(UV.x,0.999999f)*3.0;
-	float facey = min(UV.y,0.999999f)*2.0;
+	float facex = min(box_uv.x,0.999999f)*3.0;
+	float facey = min(box_uv.y,0.999999f)*2.0;
 
 	// get idx of uv wrapped around boxmesh
 	int idx = int(floor(facex) + floor(facey)*3.0);
@@ -51,13 +45,36 @@ void fragment() {
 		case 5: default : idx = 0; break;
 	};
 
-	float texture_frame = float(tex_array_idx[idx]);
+	float texture_frame = float(_tex_array_idx[idx]);
 
-	vec3 coord = vec3(fract(facex),fract(facey),texture_frame);
-	ALBEDO = texture(albedo_texture,coord).rgb;
+	return vec3(fract(facex),fract(facey),texture_frame);
 }
 
-//void light() {
-	// Called for every pixel for every light affecting the material.
-	// Uncomment to replace the default light processing function with this one.
-//}
+void fragment() {
+	vec3 coords = Boxmesh_UV_To_Voxel_UV(UV);
+	vec2 uv = coords.xy;
+	vec4 basecol = texture(_albedo,coords);
+	float damageratio = 1.0;
+	bool physicaldamage = (_damage_data>>5 & 1) == 1;
+	bool firedamage = (_damage_data>>6 & 1) == 1;
+	bool aciddamage = (_damage_data>>7 & 1) == 1;
+	
+	vec3[2] res = ApplyDamageShaders(uv, UV, damageratio, physicaldamage, firedamage, aciddamage, basecol.rgb);
+	
+	ALBEDO = res[0];
+	EMISSION = res[1];
+	
+	float normscale = 3.0;
+	
+	if (aciddamage || physicaldamage)
+	{
+		NORMAL_MAP = texture(_normalmap, 0.2*uv).rgb;
+		NORMAL_MAP_DEPTH = normscale;
+	}
+	
+	if (aciddamage)
+	{
+		SPECULAR = 1.0;
+		ROUGHNESS = texture(_roughness, 0.2*uv).r * normscale;	
+	}
+}

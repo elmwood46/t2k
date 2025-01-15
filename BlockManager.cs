@@ -11,7 +11,7 @@ using System.Linq;
 // this is because we construct the blocks in "chunk space" and don't transform the textures to godot's physics space
 
 // this is the type of block
-// the group a block is in determines its resilience to damage and other things like footstep sounds
+// a block's group determines its resilience to damage and other things like footstep sounds
 public enum BlockSpecies {
 	Air,
 	Lava,
@@ -36,15 +36,6 @@ public enum BlockDamageType {
 [Tool]
 public partial class BlockManager : Node
 {
-
-
-	// blocks have 32 levels of damage and 3 damage types (stored in one byte when packed into a 32 bit block info package in the chunk).
-	// Their "resilience" determines how resistant to damage they are
-	public const int MAX_HEALTH = 32;
-
-	// how many bits are reserved for indicating damage types
-	public const int DAMAGE_BITS = 3;
-
 	// note the code assumes that block 0 is the empty (air) block
 	// but this has to be set manually
 	[Export] public Array<Block> Blocks { get; set; }
@@ -56,6 +47,8 @@ public partial class BlockManager : Node
 	public static BlockManager Instance { get; private set; }
 
 	public ShaderMaterial ChunkMaterial { get; private set; }
+
+	public ShaderMaterial BrokenBlockShader { get; private set; }
 
 	public ShaderMaterial LavaShader { get; private set; }
 
@@ -139,11 +132,14 @@ public partial class BlockManager : Node
 		}
 
 		// setup shader defaults
-		ChunkMaterial = GD.Load("res://shaders/chunk_uv_shader.tres") as ShaderMaterial;
+		ChunkMaterial = ResourceLoader.Load("res://shaders/chunk_uv_shader.tres") as ShaderMaterial;
 		ChunkMaterial.SetShaderParameter("_albedo", TextureArray);
 		ChunkMaterial.SetShaderParameter("_displacement", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_DISPa.png"));
 		ChunkMaterial.SetShaderParameter("_roughness", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_ROUGH.jpg"));
 		ChunkMaterial.SetShaderParameter("_normalmap", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_NORM.jpg"));
+		ChunkMaterial.SetShaderParameter("_acidcurvetex", GD.Load("res://shaders/acid_damage_curve.tres"));
+		ChunkMaterial.SetShaderParameter("_firecurvetex", GD.Load("res://shaders/fire_damage_curve.tres"));
+		ChunkMaterial.SetShaderParameter("_cracks_texture", GD.Load("res://BlockTextures/textureExperiment/cracks_tex.bmp"));
 		ChunkMaterial.SetShaderParameter("_noise", noise);
 		ChunkMaterial.SetShaderParameter("_spot_noise", spotnoise);
 		ChunkMaterial.SetShaderParameter("_bordercol", fire_border_colour);
@@ -152,6 +148,21 @@ public partial class BlockManager : Node
 		ChunkMaterial.SetShaderParameter("_acidcol", acid_colour);
 		ChunkMaterial.SetShaderParameter("_acidedge", acid_edge);
 
+		BrokenBlockShader = ResourceLoader.Load("res://shaders/broken_block_shader_wholeblock.tres") as ShaderMaterial;
+		BrokenBlockShader.SetShaderParameter("_albedo", TextureArray);
+		BrokenBlockShader.SetShaderParameter("_displacement", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_DISPa.png"));
+		BrokenBlockShader.SetShaderParameter("_roughness", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_ROUGH.jpg"));
+		BrokenBlockShader.SetShaderParameter("_normalmap", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_NORM.jpg"));
+		BrokenBlockShader.SetShaderParameter("_acidcurvetex", GD.Load("res://shaders/acid_damage_curve.tres"));
+		BrokenBlockShader.SetShaderParameter("_firecurvetex", GD.Load("res://shaders/fire_damage_curve.tres"));
+		BrokenBlockShader.SetShaderParameter("_cracks_texture", GD.Load("res://BlockTextures/textureExperiment/cracks_tex.bmp"));
+		BrokenBlockShader.SetShaderParameter("_noise", noise);
+		BrokenBlockShader.SetShaderParameter("_spot_noise", spotnoise);
+		BrokenBlockShader.SetShaderParameter("_bordercol", fire_border_colour);
+		BrokenBlockShader.SetShaderParameter("_emissioncol", fire_emission_colour);
+		BrokenBlockShader.SetShaderParameter("_burncol", burned_colour);
+		BrokenBlockShader.SetShaderParameter("_acidcol", acid_colour);
+		BrokenBlockShader.SetShaderParameter("_acidedge", acid_edge);
 		 // Save the image to a file (PNG format)
         /*
 		GD.Print($"Block textures: {blockTextures.Length}");

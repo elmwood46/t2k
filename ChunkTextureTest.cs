@@ -42,6 +42,9 @@ public static int[] GenerateTest(Vector3I chunkPosition)
 	{
         var result = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
         var rnd = new RandomNumberGenerator();
+
+        // blocks spawn when 3d noise is >= cutoff (its values are -1 to 1)
+        var cutoff = 0.2f;
         
         for (int subchunk = 0; subchunk < Chunk.SUBCHUNKS; subchunk++) {
             for (int x=0;x<Chunk.CHUNK_SIZE;x++) {
@@ -54,30 +57,26 @@ public static int[] GenerateTest(Vector3I chunkPosition)
                             + new Vector3I(x, y + Chunk.Dimensions.Y*subchunk, z);                 
 
                         int blockType = 0;
-
-                        var noise = CELLNOISE.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Z);
-                        var groundheight = (int)(10*(noise+1)/2);
-                        var cutoff = 0.2f;
                         
-                        if (chunkPosition.Y == 0 && globalBlockPosition.Y <= groundheight)
-                        {
-                            if (y==0) blockType = BlockManager.Instance.LavaBlockId;
-                            else if (globalBlockPosition.Y == groundheight) blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
-                            else if (globalBlockPosition.Y > groundheight - 3) blockType = BlockManager.BlockID("Dirt");
-                            else blockType = rnd.Randf() > 0.9 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Stone");
-                        }
-                        else if (chunkPosition.Y == 3)
+                        // generate highest level differently
+                        if (chunkPosition.Y == 3)
                         {
                             var noise3d = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y, globalBlockPosition.Z);
-                            if (y == 0 && noise3d >= cutoff)
-                                blockType = BlockManager.BlockID("Check2");
-                            else if (y < 3 && block_idx-Chunk.CHUNKSQ > 0 && !Chunk.IsBlockEmpty(result[block_idx-Chunk.CHUNKSQ]))
-                                blockType = BlockManager.BlockID("Check1");
-                            else if (y == 3 && block_idx-Chunk.CHUNKSQ > 0 && !Chunk.IsBlockEmpty(result[block_idx-Chunk.CHUNKSQ]) && rnd.Randf() > 0.99)
-                            // spawn tree or totem
+                            if (y == 0 && noise3d >= cutoff) 
                             {
+                                blockType = BlockManager.BlockID("Check2");
+                            }
+                            else if (y < 3 && block_idx-Chunk.CHUNKSQ > 0 && !Chunk.IsBlockEmpty(result[block_idx-Chunk.CHUNKSQ]))
+                            {
+                                blockType = BlockManager.BlockID("Check1");
+                            }
+                            else if (y == 3 && block_idx-Chunk.CHUNKSQ > 0 && !Chunk.IsBlockEmpty(result[block_idx-Chunk.CHUNKSQ]) && rnd.Randf() > 0.99)
+                            {
+                                // spawn tree or totem
                                 result[block_idx-Chunk.CHUNKSQ] = BlockManager.InitBlockInfo(BlockManager.BlockID("Dirt"));
-                                var blockSet = rnd.Randf() > 0.5 ? GenTotem(rnd.RandiRange(3,15)) : new GenTree().Blocks;
+                                var blockSet = rnd.Randf() > 0.5 ? GenStructure.GenerateTotem(rnd.RandiRange(3,15)) : GenStructure.GenerateTree();
+
+                                // blockset is a dictionary of block positions and block info ints (with all bits initialized)
                                 foreach (KeyValuePair<Vector3I, int> kvp in blockSet)
                                 {
                                     Vector3I p = new(x + kvp.Key.X, y + kvp.Key.Y, z + kvp.Key.Z);
@@ -86,8 +85,12 @@ public static int[] GenerateTest(Vector3I chunkPosition)
                                     &&  p.Y < Chunk.CHUNK_SIZE && p.Y >= 0
                                     &&  p.Z < Chunk.CHUNK_SIZE && p.Z >= 0)
                                     {
-                                        if (Chunk.GetBlockID(kvp.Value) ==0) continue;
-                                        // randomly damage some blocks
+                                        if (Chunk.IsBlockEmpty(kvp.Value)) continue;
+                                        result[p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE] = kvp.Value;
+                                        
+
+                                        // randomly damage some blocks, but not leaves
+                                        if (Chunk.GetBlockSpecies(kvp.Value) == BlockSpecies.Leaves) continue;
                                         var dam_amount = 0;
                                         var dam_type = 0;
                                         if (rnd.Randf() < 0.5)
@@ -98,12 +101,35 @@ public static int[] GenerateTest(Vector3I chunkPosition)
                                         var dam_info = (dam_type<<5) | dam_amount;
 
                                         // add the damage type 
-                                        result[p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE] = (kvp.Value&0xff) | dam_info;
+                                        result[p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE] |= dam_info;
                                     }
                                 }
                                 continue;
                             }
-                            else continue;
+                            if (y>=3) continue;
+
+                            // apply damage to upper layer blocks
+                            int _damamount = 0, _damtype = 0;
+                            if (rnd.Randf() < 0.5)
+                            {
+                                _damtype = rnd.RandiRange(1, 7);
+                                _damamount = rnd.RandiRange(0, 31);
+                            }
+                            var _daminfo = (_damtype<<5) | _damamount;
+
+                            result[block_idx] = Chunk.PackBlockInfo(blockType) | _daminfo;
+                            continue;
+                        }
+
+                        // generate other levels
+                        var noise = CELLNOISE.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Z);
+                        var groundheight = (int)(10*(noise+1)/2);
+                        if (chunkPosition.Y == 0 && globalBlockPosition.Y <= groundheight)
+                        {
+                            if (y==0) blockType = BlockManager.Instance.LavaBlockId;
+                            else if (globalBlockPosition.Y == groundheight) blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
+                            else if (globalBlockPosition.Y > groundheight - 3) blockType = BlockManager.BlockID("Dirt");
+                            else blockType = rnd.Randf() > 0.9 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Stone");
                         }
                         else
                         {
@@ -112,22 +138,14 @@ public static int[] GenerateTest(Vector3I chunkPosition)
                             var noisebelow = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y-1, globalBlockPosition.Z);
                             if (noise3d >= cutoff)
                             {
-                                if (noiseabove < cutoff) blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
+                                if (noiseabove < cutoff || y==Chunk.CHUNK_SIZE-1) blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
                                 else if (noisebelow > noise3d) blockType = BlockManager.BlockID("Stone");
                                 else blockType = BlockManager.BlockID("Dirt");
                             }
                         }
 
-                        // randomly damage some blocks
-                        int blockDamageAmount, blockDamageType;
-                        {
-                            blockDamageType = blockType == 0 ? 0 : rnd.RandiRange(1, 7); // air doesnt damage
-                            blockDamageAmount = rnd.RandiRange(0, 31);
-                        }
-                        var blockDamageInfo = (blockDamageType<<5) | blockDamageAmount;
-
                         // add the damage type 
-                        var blockinfo = (blockType<<15) | blockDamageInfo;
+                        var blockinfo = Chunk.PackBlockInfo(blockType);
                         result[block_idx] = blockinfo;
                     }
                 }
@@ -137,28 +155,7 @@ public static int[] GenerateTest(Vector3I chunkPosition)
         return result;
 	}
 
-    public static Dictionary<Vector3I, int> GenTotem(int height) {
-        var ret = new Dictionary<Vector3I, int>();
-        var rng = new RandomNumberGenerator();
-
-        for (var i=0;i<height;i++) {
-            var rnd = rng.RandiRange(0, 4);           
-            var blocktype = rnd switch
-            {
-                0 => BlockManager.BlockID("MossyCobble1"),
-                1 => BlockManager.BlockID("MossyCobble2"),
-                2 => BlockManager.BlockID("MossyCobble3"),
-                3 => BlockManager.BlockID("MossyCobble4"),
-                _ => BlockManager.BlockID("GoldOre"),
-            };
-            if (i == height-1) blocktype = BlockManager.BlockID("Emerald");
-            ret[new Vector3I(0,i,0)] = BlockManager.InitBlockInfo(blocktype);
-        }
-
-        return ret;
-    }
-
- public static ArrayMesh BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk) {
+    public static ArrayMesh BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk) {
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
@@ -416,11 +413,11 @@ public static void GreedyChunkMeshTest(Dictionary<int, Dictionary<int, UInt32[]>
                                 + voxel_pos.Y * Chunk.CHUNKSQ
                                 + subchunk*Chunk.CHUNKSQ*Chunk.CHUNK_SIZE
                             ];
-                        var blocktype = blockinfo;//Chunk.GetBlockID(blockinfo);
 
-                        if (!data[axis].TryGetValue(blocktype, out Dictionary<int, UInt32[]> planeSet)) {
+                        
+                        if (!data[axis].TryGetValue(blockinfo, out Dictionary<int, UInt32[]> planeSet)) {
                             planeSet = new(); 
-                            data[axis].Add(blocktype, planeSet);
+                            data[axis].Add(blockinfo, planeSet);
                         }
 
                         var k_ymod = k+Chunk.Dimensions.Y*subchunk;

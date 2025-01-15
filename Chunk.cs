@@ -1,8 +1,6 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Numerics;
 using System.Threading.Tasks;
 
 [Tool]
@@ -22,9 +20,11 @@ public partial class Chunk : StaticBody3D
     public const int CSP3 = CSP2*CSP; // cubed padded chunk size
 	public static readonly Vector3I Dimensions = new(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
 
+    // in the Generate() method, noise >= this value doesnt generate blocks
+    public const float NOISE_CUTOFF = 0.2f;
+
     public const int SUBCHUNKS = 1; // each one is an extra 32x32 chunk in the vertical y direction
 
-    private readonly List<GpuParticlesCollisionBox3D> _partcolls = new();
 
     private static readonly PackedScene _block_break_particles = GD.Load<PackedScene>("res://effects/break_block.tscn");
 
@@ -82,15 +82,8 @@ public partial class Chunk : StaticBody3D
         AddChild(_chunk_area);
 	}
 
-    public static int PackBlockInfo(int blockType, int x, int y, int z) {
-        return blockType<<25 | z<<15 | y<<5 | x;
-    }
-
-    public struct BlockInfo {
-        public int BlockType;
-        public int X;
-        public int Y;
-        public int Z;
+    public static int PackBlockInfo(int blockType) {
+        return blockType<<15;
     }
 
     public static int GetBlockID(int blockInfo) {
@@ -101,7 +94,7 @@ public partial class Chunk : StaticBody3D
         return blockInfo & 0xff;
     }
 
-    public static int GetBlockDamageAmount(int blockInfo) {
+    public static int GetBlockDamageInteger(int blockInfo) {
         return GetBlockDamageData(blockInfo)&0x1f;
     }
 
@@ -109,11 +102,12 @@ public partial class Chunk : StaticBody3D
         return GetBlockDamageData(blockInfo) >> 5;
     }
 
+
     public void SetBlock(int blockIndex, int blockType) {
         _blocks[blockIndex] = (_blocks[blockIndex] & ~(0x3ff << 15)) | blockType << 15;
     }
 
-    public void SetBlockDamageType(int blockIndex, BlockDamageType damtype) {
+    public void SetBlockDamageFlag(int blockIndex, BlockDamageType damtype) {
         int damMask = damtype switch  {
             BlockDamageType.Physical => 1<<5,
             BlockDamageType.Fire => 1<<6,
@@ -123,7 +117,23 @@ public partial class Chunk : StaticBody3D
     }
 
     public void SetBlockToAir(int blockIndex) {
-        _blocks[blockIndex] &= ~0x3ff<<15;
+        _blocks[blockIndex] = 0;
+    }
+
+    public void SetBlockDamagePercentage(int blockIndex, float percentage) {
+        _blocks[blockIndex] = (_blocks[blockIndex] & ~0x1f) | Math.Clamp(Mathf.RoundToInt(percentage*31.0),0,31);
+    }
+
+    public void SetBlockDamageInteger(int blockIndex, int damage) {
+        _blocks[blockIndex] = (_blocks[blockIndex] & ~0x1f) | Math.Clamp(damage,0,31);
+    }
+
+    public static BlockSpecies GetBlockSpecies(int blockinfo) {
+        return BlockManager.Instance.Blocks[GetBlockID(blockinfo)].Species;
+    }
+
+    public static float GetBlockFragility(int blockinfo) {
+        return BlockManager.Instance.Blocks[GetBlockID(blockinfo)].Fragility;
     }
 
     public static bool IsBlockEmpty(int blockInfo) {
@@ -159,7 +169,7 @@ public partial class Chunk : StaticBody3D
 	public void DamageBlocks(List<(Vector3I, int)> blockDamages)
 	{ 
         // output dictionary of block positions where particles need to be spawned (for destroyed blocks) and textures for spawned particles
-        var particle_spawn_list = new Godot.Collections.Dictionary<Vector3I,int[]>();
+        var particle_spawn_list = new Godot.Collections.Dictionary<Vector3I,int>();
 
         // array of tuples with block global position as Item1 and damage as Item2
 		foreach ((Vector3I,int) blockdamage in blockDamages)
@@ -172,23 +182,25 @@ public partial class Chunk : StaticBody3D
                 + blockdamage.Item1.Z * Dimensions.X
                 + blockdamage.Item1.Y * Dimensions.X * Dimensions.Z;
 
-            var blockid = GetBlockID(_blocks[block_idx]);
+            var blockinfo = _blocks[block_idx];
 
             //GD.Print("checking if block empty: ", BlockManager.BlockName(blockid));
 
-            if (IsBlockInvincible(_blocks[block_idx])) continue; // dont damage air blocks or invincible blocks
+            if (IsBlockInvincible(blockinfo)) continue; // dont damage air blocks or invincible blocks
 
-            //GD.Print("damaging block: ", BlockManager.Instance.Blocks[blockid].Name);
 
-			//_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] -= blockdamage.Item2;
-			//if (_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] <= 0)
-			//{
-				//_blockHealth[blockdamage.Item1.X, blockdamage.Item1.Y, blockdamage.Item1.Z] = 0;
+            // increase block damage percentage
+            var block_damaged = (float)GetBlockDamageInteger(blockinfo);
+            block_damaged += blockdamage.Item2*GetBlockFragility(blockinfo);
+            var dam_rounded = Mathf.RoundToInt(block_damaged);
+            SetBlockDamageInteger(block_idx, dam_rounded);
+            SetBlockDamageFlag(block_idx, BlockDamageType.Physical);
 
-                particle_spawn_list[blockdamage.Item1] = BlockManager.BlockTextureArrayPositions(blockid);
-                
+			if (dam_rounded >= 31)
+			{
+                particle_spawn_list[blockdamage.Item1] = _blocks[block_idx];              
                 SetBlockToAir(block_idx);
-            //}
+            }
 		}
 
         // update mesh and collision shape
@@ -198,8 +210,8 @@ public partial class Chunk : StaticBody3D
         SpawnBlockParticles(particle_spawn_list);
 	}
 
-    public void SpawnBlockParticles(Godot.Collections.Dictionary<Vector3I, int[]> positionsAndTextures) {
-        if (positionsAndTextures.Count == 0) return;
+    public void SpawnBlockParticles(Godot.Collections.Dictionary<Vector3I, int> positionsAndBlockInfo) {
+        if (positionsAndBlockInfo.Count == 0) return;
         // sort dictionary by distance to player
         /*
         var globalChunkPos = new Godot.Vector3 (ChunkPosition.X * Dimensions.X, ChunkPosition.Y * Dimensions.Y * SUBCHUNKS, ChunkPosition.Z*Dimensions.Z);  
@@ -218,10 +230,10 @@ public partial class Chunk : StaticBody3D
 
         // spawn particles from closest to fartherest from player
         // the particles spawned first have more detail and more expensive collisions\
-        var blocks_being_destroyed = positionsAndTextures.Count;
+        var blocks_being_destroyed = positionsAndBlockInfo.Count;
         var blockCount = 0;
         var partcount = GetTree().GetNodesInGroup("RigidBreak").Count;
-        foreach (var (pos, tex) in positionsAndTextures) {
+        foreach (var (pos, block_info) in positionsAndBlockInfo) {
             var is_block_above = false;
             var block_idx = Mathf.FloorToInt(pos.X)
             + Mathf.FloorToInt(pos.Z) * CHUNK_SIZE
@@ -289,8 +301,7 @@ public partial class Chunk : StaticBody3D
 
             if (is_block_above) particles.NoUpwardsImpulse = true;
 
-            particles.BlockTextures = tex;
-
+            particles.BlockInfo = block_info;
             
             AddChild(particles);
             var impulse_pos = (particles.GlobalTransform.Origin - Player.Instance.GlobalTransform.Origin).Normalized() * 100.0f; 

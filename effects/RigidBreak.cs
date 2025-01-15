@@ -13,7 +13,7 @@ public partial class RigidBreak : Node3D
 
     public int BlockDivisions = 2;
 
-    private readonly ShaderMaterial _shader = (ShaderMaterial)ResourceLoader.Load("res://shaders/broken_block_shader_wholeblock.tres").Duplicate();
+    private readonly ShaderMaterial _shader = (ShaderMaterial)BlockManager.Instance.BrokenBlockShader.Duplicate();
 
     public float DecayTime { get; set; } = 2.0f;
     public bool MaskHalves { get; set; } = false;
@@ -28,7 +28,8 @@ public partial class RigidBreak : Node3D
     [Export] public Node3D ExplosionCentre { get; set; }
 
     public RandomNumberGenerator rng = new();
-    public int[] BlockTextures { get; set; }
+
+    public int BlockInfo { get; set; }
 
     public bool NoUpwardsImpulse = false;
 
@@ -41,9 +42,9 @@ public partial class RigidBreak : Node3D
     {
         AddToGroup("RigidBreak");
 
-        // pass uniform to shader
-        _shader.SetShaderParameter("albedo_texture", BlockManager.Instance.TextureArray);
-        _shader.SetShaderParameter("tex_array_idx", BlockTextures);
+        // pass uniforms to shader
+        _shader.SetShaderParameter("_tex_array_idx", BlockManager.BlockTextureArrayPositions(Chunk.GetBlockID(BlockInfo)));
+        _shader.SetShaderParameter("_damage_data", Chunk.GetBlockDamageData(BlockInfo));
 
         Scale = Vector3.One *  (1f/BlockDivisions);
         t = new Timer
@@ -165,7 +166,7 @@ public partial class RigidBreak : Node3D
                     }
                 }
             }
-            GD.Print($"created {i} particles");
+            //GD.Print($"created {i} particles");
         }
     }
 

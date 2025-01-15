@@ -2,34 +2,54 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-public partial class GenTree : Node3D
+public static class GenStructure
 {
-    private int _trunkHeight, _trunkRadius, _branchCount, _branchLength, _leafClusterSize, _leafcolourblock;
-    public Dictionary<Vector3I, int> Blocks {get; private set;}
+    public static Dictionary<Vector3I, int> GenerateTotem(int height) {
+        if (BlockManager.Instance == null) {
+            GD.PrintErr("BlockManager not initialized");
+            return null;
+        }
+        var ret = new Dictionary<Vector3I, int>();
+        var rng = new RandomNumberGenerator();
 
-    public static readonly Random rng = new();
+        for (var i=0;i<height;i++) {
+            var rnd = rng.RandiRange(0, 8);           
+            var blocktype = rnd switch
+            {
+                0 or 1 => BlockManager.BlockID("MossyCobble1"),
+                2 or 3 => BlockManager.BlockID("MossyCobble2"),
+                4 or 5 => BlockManager.BlockID("MossyCobble3"),
+                6 or 7 => BlockManager.BlockID("MossyCobble4"),
+                _ => BlockManager.BlockID("GoldOre"),
+            };
+            if (i == height-1) blocktype = BlockManager.BlockID("Emerald");
+            ret[new Vector3I(0,i,0)] = BlockManager.InitBlockInfo(blocktype);
+        }
 
-    public GenTree()
-    {
-        _trunkHeight = rng.Next(3, 6);
-        _trunkRadius = 1;//rng.Next(1, 1);
-        _branchCount = rng.Next(1, 5);
-        _branchLength = rng.Next(3, 4);
-        _leafClusterSize = rng.Next(3, 5);  
-        _leafcolourblock = rng.Next(0, 6) switch
-        {
-            0 => BlockManager.BlockID("LeafRed"),
-            1 => BlockManager.BlockID("LeafYellow"),
-            2 => BlockManager.BlockID("LeafOrange"),
-            3 => BlockManager.BlockID("LeafGreen"),
-            4 => BlockManager.BlockID("LeafGreenDark"),
-            _ => BlockManager.BlockID("LeafBlue"),
-        };
-        Blocks = GenerateTree();
+        return ret;
     }
 
-    private Dictionary<Vector3I, int> GenerateTree()
+    public static Dictionary<Vector3I, int> GenerateTree()
     {
+        if (BlockManager.Instance == null) {
+            GD.PrintErr("BlockManager not initialized");
+            return null;
+        }
+        Random rng = new();
+        int _trunkHeight, _trunkRadius, _branchCount, _branchLength, _leafClusterSize, _leafcolourblock;
+        _trunkHeight = rng.Next(3, 6);
+        _trunkRadius = 1;
+        _branchCount = rng.Next(1, 5);
+        _leafClusterSize = rng.Next(3, 5);  
+            _leafcolourblock = rng.Next(0, 6) switch
+            {
+                0 => BlockManager.BlockID("LeafRed"),
+                1 => BlockManager.BlockID("LeafYellow"),
+                2 => BlockManager.BlockID("LeafOrange"),
+                3 => BlockManager.BlockID("LeafGreen"),
+                4 => BlockManager.BlockID("LeafGreenDark"),
+                _ => BlockManager.BlockID("LeafBlue"),
+            };
         var _blocks = new Dictionary<Vector3I, int>();
 
         // Generate the trunk
@@ -49,8 +69,6 @@ public partial class GenTree : Node3D
         }
 
         // Generate branches
-
-        
         Random rand = new();
         for (int i = 0; i < _branchCount; i++)
         {
