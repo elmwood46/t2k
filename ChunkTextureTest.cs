@@ -51,7 +51,7 @@ public partial class ChunkTextureTest : Node3D
                  grass_surf_arrays = mesh.Mesh.SurfaceGetArrays(2);
             }
             else if (mesh.Mesh.GetSurfaceCount() == 2) {
-                if (mesh.Mesh.SurfaceGetMaterial(2) == BlockManager.Instance.ChunkMaterial) {
+                if (mesh.Mesh.SurfaceGetMaterial(1) == BlockManager.Instance.ChunkMaterial) {
                     grass_surf_arrays = mesh.Mesh.SurfaceGetArrays(1);
                 }
             }
