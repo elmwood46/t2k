@@ -26,14 +26,43 @@ public partial class ChunkTextureTest : Node3D
 
     [Export] public MeshInstance3D ChunkMesh {get; set;}
 
-
     private Vector3I _prevChunkPosition = new(int.MinValue,int.MinValue,int.MinValue);
+
+    public static readonly ArrayMesh GrassBladeFullRes = ResourceLoader.Load("res://shaders/grass/blade.res") as ArrayMesh;
+    public static readonly ArrayMesh GrassBladeLowRes = ResourceLoader.Load("res://shaders/grass/blade_optimized.tres") as ArrayMesh;
+
+    public static readonly PackedScene GrassParticlesScene = ResourceLoader.Load("res://shaders/grass/grass_particles.tscn") as PackedScene;
+
+    public static readonly ShaderMaterial GrassBladeMaterial = ResourceLoader.Load("res://shaders/grass/multimesh_grass_shader.tres") as ShaderMaterial;
+
+    [Export] public Grass GrassMultiMesh {get; set;}
+
+    [Export] public Godot.Vector3 PlayerPosition {get; set;}
 
     public override void _Process(double delta) {
         var chunkpos = (Vector3I)ChunkMesh.GlobalPosition;
-        if (_prevChunkPosition != chunkpos && ChunkMesh != null && ChunkMesh is MeshInstance3D mesh) {
+        if (_prevChunkPosition != chunkpos && ChunkMesh != null && ChunkMesh is MeshInstance3D mesh && BlockManager.Instance != null) {
             var blocks = GenerateTest(chunkpos);
             mesh.Mesh = BuildChunkMeshTest(blocks, false);
+
+            // set grass mesh
+            Godot.Collections.Array grass_surf_arrays = null;
+            if (mesh.Mesh.GetSurfaceCount() == 3) {
+                 grass_surf_arrays = mesh.Mesh.SurfaceGetArrays(2);
+            }
+            else if (mesh.Mesh.GetSurfaceCount() == 2) {
+                if (mesh.Mesh.SurfaceGetMaterial(2) == BlockManager.Instance.ChunkMaterial) {
+                    grass_surf_arrays = mesh.Mesh.SurfaceGetArrays(1);
+                }
+            }
+            ArrayMesh grass_mesh = null;
+            if (grass_surf_arrays != null) {
+                grass_mesh = new ArrayMesh();
+                grass_mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, grass_surf_arrays);
+            }
+            GrassMultiMesh.TerrainMesh = grass_mesh;
+            GrassMultiMesh.MaterialOverride = GrassBladeMaterial;
+            GD.Print($"set terrain mesh to {GrassMultiMesh.TerrainMesh}");
             _prevChunkPosition = chunkpos;
         }
     }
@@ -168,10 +197,12 @@ public static int[] GenerateTest(Vector3I chunkPosition)
         // construct mesh
         var _st = new SurfaceTool();
         var _st2 = new SurfaceTool();
+        var grassTopSurfaceTool = new SurfaceTool();
         _st.Begin(Mesh.PrimitiveType.Triangles);
         _st2.Begin(Mesh.PrimitiveType.Triangles);
-        //_st.SetMaterial(BlockManager.Instance.ChunkMaterial);
-        //_st2.SetMaterial(BlockManager.Instance.LavaShader);
+        grassTopSurfaceTool.Begin(Mesh.PrimitiveType.Triangles);
+        var hasLava = false;
+
         for (int axis=0; axis<6;axis++) {
             foreach (var (blockinfo, planeSet) in data[axis]) {
                 foreach (var (k_chunked, binary_plane) in planeSet) {
@@ -251,21 +282,30 @@ public static int[] GenerateTest(Vector3I chunkPosition)
 		                var uvTriangle2 = new Godot.Vector2[] { uvA, uvC, uvD };
 
                         // add the quad to the mesh
-                        var blockType = Chunk.GetBlockID(blockinfo);
-                        if (blockType == BlockManager.Instance.LavaBlockId)
+                        var blockId = Chunk.GetBlockID(blockinfo);
+                        if (blockId == BlockManager.Instance.LavaBlockId)
                         {
                             // lava blocks have their own shader
+                            hasLava = true;
                             _st2.AddTriangleFan(triangle1, uvTriangle1, normals: normals);
                             _st2.AddTriangleFan(triangle2, uvTriangle2, normals: normals);
                         }
                         else
                         {
                             var blockDamage = Chunk.GetBlockDamageData(blockinfo);
-                            var block_face_texture_idx = BlockManager.BlockTextureArrayPositions(blockType)[axis];
+                            var block_face_texture_idx = BlockManager.BlockTextureArrayPositions(blockId)[axis];
                             var notacolour = new Color(block_face_texture_idx, uv_offset.X, uv_offset.Y, blockDamage)*(1/255f);
                             var metadata = new Color[] {notacolour, notacolour, notacolour};
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            if (blockId == BlockManager.BlockID("Grass") && axis == 1)
+                            {
+                                grassTopSurfaceTool.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                                grassTopSurfaceTool.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            }
+                            else
+                            {
+                                _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                                _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            }
                         }
                     }
                 }
@@ -273,12 +313,21 @@ public static int[] GenerateTest(Vector3I chunkPosition)
         }
 
         var _arraymesh = new ArrayMesh();
+        grassTopSurfaceTool.Index();
         var a1 = _st.Commit();
         var a2 = _st2.Commit();
+        var a3 = grassTopSurfaceTool.Commit();
         if (a1.GetSurfaceCount() > 0) _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a1.SurfaceGetArrays(0));
         if (a2.GetSurfaceCount() > 0) _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a2.SurfaceGetArrays(0));
+        if (a3.GetSurfaceCount() > 0) _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a3.SurfaceGetArrays(0));
+
         if (_arraymesh.GetSurfaceCount() > 0) _arraymesh.SurfaceSetMaterial(0, BlockManager.Instance.ChunkMaterial);
-        if (_arraymesh.GetSurfaceCount() > 1) _arraymesh.SurfaceSetMaterial(1, BlockManager.Instance.LavaShader);
+        if (_arraymesh.GetSurfaceCount() == 2 && hasLava) _arraymesh.SurfaceSetMaterial(1, BlockManager.Instance.LavaShader);
+        else if (_arraymesh.GetSurfaceCount() == 2) _arraymesh.SurfaceSetMaterial(1, BlockManager.Instance.ChunkMaterial);
+        else if (_arraymesh.GetSurfaceCount() == 3) {
+            _arraymesh.SurfaceSetMaterial(1, BlockManager.Instance.LavaShader);
+            _arraymesh.SurfaceSetMaterial(2, BlockManager.Instance.ChunkMaterial);
+        }
         return _arraymesh;
     }
 

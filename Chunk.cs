@@ -161,7 +161,7 @@ public partial class Chunk : StaticBody3D
         foreach (Node3D child in _chunk_area.GetOverlappingBodies()) {
             if (child is RigidBody3D rb) {
                 //GD.Print("updating rigid body ", rb);
-                rb.MoveAndCollide(Godot.Vector3.Zero);
+                rb.MoveAndCollide(Vector3.Zero);
             }
         }
     }

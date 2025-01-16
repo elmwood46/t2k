@@ -1,0 +1,35 @@
+[gd_resource type="ArrayMesh" load_steps=5 format=3 uid="uid://c1wbr5uk8cuxv"]
+
+[ext_resource type="Shader" path="res://shaders/grass/bladegrass.gdshader" id="1_l8d08"]
+[ext_resource type="Texture2D" uid="uid://bxc573eqdtfmr" path="res://shaders/grass/grassCurveTexture.tres" id="2_qk6gs"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2bgce"]
+render_priority = 0
+shader = ExtResource("1_l8d08")
+shader_parameter/color1 = Color(0.106, 0.424, 0, 1)
+shader_parameter/color2 = Color(0.424, 0.678, 0.11, 1)
+shader_parameter/_colorcurve = ExtResource("2_qk6gs")
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_1s8y1"]
+_surfaces = [{
+"aabb": AABB(-0.05, 0, 0, 0.1, 0.4, 1e-05),
+"format": 34359738369,
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 3,
+"vertex_data": PackedByteArray(205, 204, 76, 189, 0, 0, 0, 0, 0, 0, 0, 0, 205, 204, 76, 61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 205, 204, 204, 62, 0, 0, 0, 0)
+}]
+
+[resource]
+_surfaces = [{
+"aabb": AABB(-0.05, 0, 0, 0.1, 0.4, 1e-05),
+"attribute_data": PackedByteArray(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 0, 0, 0, 0, 63, 0, 0, 128, 63),
+"format": 34359738391,
+"material": SubResource("ShaderMaterial_2bgce"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 3,
+"vertex_data": PackedByteArray(205, 204, 76, 189, 0, 0, 0, 0, 0, 0, 0, 0, 205, 204, 76, 61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 205, 204, 204, 62, 0, 0, 0, 0, 255, 127, 255, 255, 0, 0, 255, 191, 255, 127, 255, 255, 0, 0, 255, 191, 255, 127, 255, 255, 0, 0, 255, 191)
+}]
+custom_aabb = AABB(-16, 0, -16, 1, 1, 1)
+shadow_mesh = SubResource("ArrayMesh_1s8y1")

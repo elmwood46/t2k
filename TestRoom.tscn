@@ -10,7 +10,7 @@
 [ext_resource type="Texture2D" uid="uid://bicky6ugq6oog" path="res://props/treasure/coinC_2.png" id="6_eskjp"]
 [ext_resource type="Script" path="res://shaders/CutShaderTest.cs" id="6_ohgln"]
 [ext_resource type="Texture2D" uid="uid://bdoda4hoe0b1m" path="res://shaders/flame_spotnoise.tres" id="9_ppad2"]
-[ext_resource type="Material" uid="uid://bplkjq4sn3t4i" path="res://shaders/chunk_uv_shader.tres" id="11_vtkf1"]
+[ext_resource type="PackedScene" uid="uid://dmrxuql4mixtd" path="res://shaders/grass/grass_particles.tscn" id="11_7otgq"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_8lbaa"]
 
@@ -323,13 +323,11 @@ mesh = SubResource("ArrayMesh_kykj8")
 script = ExtResource("6_ohgln")
 CutPlane = NodePath("../CutPlaneCube")
 
-[node name="Coin_tris2" type="MeshInstance3D" parent="."]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6.21003, 5.01836, 4.61308)
-material_override = ExtResource("11_vtkf1")
-mesh = SubResource("ArrayMesh_kykj8")
-
 [node name="CutPlaneCube" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.996194, 0.0871557, 0, -0.0871557, 0.996194, 0, 0, 0, 1, 0, 8.41597, 0)
+transform = Transform3D(0.996194, 0.0871557, 0, -0.0871557, 0.996194, 0, 0, 0, 1, 0, 9.20233, 0)
 mesh = SubResource("BoxMesh_gaqdo")
+
+[node name="GrassParticles" parent="." instance=ExtResource("11_7otgq")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.506244, 8.75464)
 
 [connection signal="Interacted" from="Node3D/StaticBody3D/InteractableComponent" to="Node3D/StaticBody3D/button/AnimationPlayer" method="play" binds= ["ButtonPress"]]

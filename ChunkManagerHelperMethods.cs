@@ -225,6 +225,7 @@ public partial class ChunkManager : Node {
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
         Dictionary<int, Dictionary<int, UInt32[]>>[] data = new Dictionary<int,Dictionary<int, UInt32[]>>[6];
         for (short i=0; i<6; i++) data[i] = new(); // initialize the hash maps for each axis value
+        data[data.Length] = new(); // add a 7th dictionary for the grass blocks
 
         // add all Chunk.SUBCHUNKS
         for (int i=0; i< Chunk.SUBCHUNKS; i++) GreedyChunkMesh(data, chunk_blocks, i);
