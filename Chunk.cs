@@ -296,12 +296,14 @@ public partial class Chunk : StaticBody3D
             // set particles position
             // add 1/BLockDivisions to center the particles in the grid (since pos is floored block position)
             // and subtract a small amount to avoid z-fighting with top particles as well as keep them in their block
-            particles.Position = pos + Godot.Vector3.One*(1/particles.BlockDivisions) - Godot.Vector3.Up*0.0625f; 
+            particles.Position = pos + Vector3.One*(1/particles.BlockDivisions) - Vector3.Up*0.0625f; 
 
 
             if (is_block_above) particles.NoUpwardsImpulse = true;
 
             particles.BlockInfo = block_info;
+
+            
             
             AddChild(particles);
             var impulse_pos = (particles.GlobalTransform.Origin - Player.Instance.GlobalTransform.Origin).Normalized() * 100.0f; 

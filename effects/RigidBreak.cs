@@ -15,6 +15,8 @@ public partial class RigidBreak : Node3D
 
     private readonly ShaderMaterial _shader = (ShaderMaterial)BlockManager.Instance.BrokenBlockShader.Duplicate();
 
+    public static readonly PackedScene Grass = GD.Load<PackedScene>("res://effects/grass.tscn");
+
     public float DecayTime { get; set; } = 2.0f;
     public bool MaskHalves { get; set; } = false;
     public bool HalfStrength { get; set; } = false;

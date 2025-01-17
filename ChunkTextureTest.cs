@@ -43,26 +43,16 @@ public partial class ChunkTextureTest : Node3D
         var chunkpos = (Vector3I)ChunkMesh.GlobalPosition;
         if (_prevChunkPosition != chunkpos && ChunkMesh != null && ChunkMesh is MeshInstance3D mesh && BlockManager.Instance != null) {
             var blocks = GenerateTest(chunkpos);
-            mesh.Mesh = BuildChunkMeshTest(blocks, false);
+            var chunkmeshdata = BuildChunkMeshTest(blocks, false);
+            mesh.Mesh = chunkmeshdata.UnifySurfaces();
 
-            // set grass mesh
-            Godot.Collections.Array grass_surf_arrays = null;
-            if (mesh.Mesh.GetSurfaceCount() == 3) {
-                 grass_surf_arrays = mesh.Mesh.SurfaceGetArrays(2);
+            if (chunkmeshdata.HasSurfaceOfType(ChunkMeshData.GRASS_SURFACE)) {
+                var grass_mesh = chunkmeshdata.GetSurface(ChunkMeshData.GRASS_SURFACE);
+                GrassMultiMesh.TerrainMesh = grass_mesh;
+                GrassMultiMesh.MaterialOverride = GrassBladeMaterial;
+                //GD.Print($"set terrain mesh to {GrassMultiMesh.TerrainMesh}");
             }
-            else if (mesh.Mesh.GetSurfaceCount() == 2) {
-                if (mesh.Mesh.SurfaceGetMaterial(1) == BlockManager.Instance.ChunkMaterial) {
-                    grass_surf_arrays = mesh.Mesh.SurfaceGetArrays(1);
-                }
-            }
-            ArrayMesh grass_mesh = null;
-            if (grass_surf_arrays != null) {
-                grass_mesh = new ArrayMesh();
-                grass_mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, grass_surf_arrays);
-            }
-            GrassMultiMesh.TerrainMesh = grass_mesh;
-            GrassMultiMesh.MaterialOverride = GrassBladeMaterial;
-            GD.Print($"set terrain mesh to {GrassMultiMesh.TerrainMesh}");
+
             _prevChunkPosition = chunkpos;
         }
     }
@@ -184,7 +174,48 @@ public static int[] GenerateTest(Vector3I chunkPosition)
         return result;
 	}
 
-    public static ArrayMesh BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk) {
+    public struct ChunkMeshData {
+        public const byte MAX_SURFACES = 3;
+        public const byte CHUNK_SURFACE = 0;
+        public const byte GRASS_SURFACE = 1;
+        public const byte LAVA_SURFACE = 2;
+        private ArrayMesh[] _surfaces;
+
+        public ChunkMeshData(ArrayMesh[] input_surfaces) {
+            _surfaces = new ArrayMesh[MAX_SURFACES];
+            _surfaces[CHUNK_SURFACE] = input_surfaces[CHUNK_SURFACE];
+            _surfaces[GRASS_SURFACE] = input_surfaces[GRASS_SURFACE];
+            _surfaces[LAVA_SURFACE] = input_surfaces[LAVA_SURFACE];
+        }
+
+        public readonly ArrayMesh UnifySurfaces() {
+            var _arraymesh = new ArrayMesh();
+            for (byte type =0 ; type < MAX_SURFACES ; type ++) {
+                if (HasSurfaceOfType(type)) {
+                    var surface = _surfaces[type];
+                    var _surfmat = type switch {
+                        CHUNK_SURFACE => BlockManager.Instance.ChunkMaterial,
+                        GRASS_SURFACE => BlockManager.Instance.ChunkMaterial,
+                        LAVA_SURFACE => BlockManager.Instance.LavaShader,
+                        _ => BlockManager.Instance.ChunkMaterial
+                    };
+                    _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, surface.SurfaceGetArrays(0));
+                    _arraymesh.SurfaceSetMaterial(_arraymesh.GetSurfaceCount()-1, _surfmat);
+                }
+            }
+            return _arraymesh;
+        }
+
+        public readonly bool HasSurfaceOfType(byte type) {
+            return _surfaces[type].GetSurfaceCount() > 0;
+        }
+
+        public readonly ArrayMesh GetSurface(byte type) {
+            return _surfaces[type];
+        }
+    }
+
+    public static ChunkMeshData BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk) {
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
@@ -201,7 +232,6 @@ public static int[] GenerateTest(Vector3I chunkPosition)
         _st.Begin(Mesh.PrimitiveType.Triangles);
         _st2.Begin(Mesh.PrimitiveType.Triangles);
         grassTopSurfaceTool.Begin(Mesh.PrimitiveType.Triangles);
-        var hasLava = false;
 
         for (int axis=0; axis<6;axis++) {
             foreach (var (blockinfo, planeSet) in data[axis]) {
@@ -285,8 +315,6 @@ public static int[] GenerateTest(Vector3I chunkPosition)
                         var blockId = Chunk.GetBlockID(blockinfo);
                         if (blockId == BlockManager.Instance.LavaBlockId)
                         {
-                            // lava blocks have their own shader
-                            hasLava = true;
                             _st2.AddTriangleFan(triangle1, uvTriangle1, normals: normals);
                             _st2.AddTriangleFan(triangle2, uvTriangle2, normals: normals);
                         }
@@ -312,23 +340,20 @@ public static int[] GenerateTest(Vector3I chunkPosition)
             }
         }
 
-        var _arraymesh = new ArrayMesh();
+        
         grassTopSurfaceTool.Index();
         var a1 = _st.Commit();
         var a2 = _st2.Commit();
         var a3 = grassTopSurfaceTool.Commit();
-        if (a1.GetSurfaceCount() > 0) _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a1.SurfaceGetArrays(0));
-        if (a2.GetSurfaceCount() > 0) _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a2.SurfaceGetArrays(0));
-        if (a3.GetSurfaceCount() > 0) _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a3.SurfaceGetArrays(0));
+        
+        var surfaces = new ArrayMesh[ChunkMeshData.MAX_SURFACES];
+        surfaces[ChunkMeshData.CHUNK_SURFACE] = a1;
+        surfaces[ChunkMeshData.LAVA_SURFACE] = a2;
+        surfaces[ChunkMeshData.GRASS_SURFACE] = a3;
 
-        if (_arraymesh.GetSurfaceCount() > 0) _arraymesh.SurfaceSetMaterial(0, BlockManager.Instance.ChunkMaterial);
-        if (_arraymesh.GetSurfaceCount() == 2 && hasLava) _arraymesh.SurfaceSetMaterial(1, BlockManager.Instance.LavaShader);
-        else if (_arraymesh.GetSurfaceCount() == 2) _arraymesh.SurfaceSetMaterial(1, BlockManager.Instance.ChunkMaterial);
-        else if (_arraymesh.GetSurfaceCount() == 3) {
-            _arraymesh.SurfaceSetMaterial(1, BlockManager.Instance.LavaShader);
-            _arraymesh.SurfaceSetMaterial(2, BlockManager.Instance.ChunkMaterial);
-        }
-        return _arraymesh;
+        var cmd = new ChunkMeshData(surfaces);
+
+        return new ChunkMeshData(surfaces);
     }
 
 private static List<GreedyQuad> GreedyMeshBinaryPlane(UInt32[] data) {
