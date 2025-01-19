@@ -32,20 +32,21 @@ public static class MeshFactory
         meshData[(int)Mesh.ArrayType.Vertex] = verts;
         meshData[(int)Mesh.ArrayType.TexUV] = uvs;
         meshData[(int)Mesh.ArrayType.Normal] = norms;
+        var arrayMesh = new ArrayMesh();
+        arrayMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, meshData);
+        arrayMesh.CustomAabb = new Aabb(new Vector3(-0.5f,0.0f,-0.5f), new Vector3(1.0f,1.0f,1.0f));
 
+        // add shadow mesh
+        /*
         var shadowMeshData = new Godot.Collections.Array();
         shadowMeshData.Resize((int)Mesh.ArrayType.Max); // Reserve space for vertices
         shadowMeshData[(int)Mesh.ArrayType.Vertex] = verts;
-
-        // Create the ArrayMesh
-        var arrayMesh = new ArrayMesh();
         var shadowMesh = new ArrayMesh();
-        arrayMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, meshData);
         shadowMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, shadowMeshData);
         arrayMesh.ShadowMesh = shadowMesh;
-
-        arrayMesh.CustomAabb = new Aabb(new Vector3(-0.5f,0.0f,-0.5f), new Vector3(1.0f,1.0f,1.0f));
+        */
     
+        // for debugging
         //ResourceSaver.Save(arrayMesh, "res://shaders/grass/grass_mesh.tres");
 
         return arrayMesh;

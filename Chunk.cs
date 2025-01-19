@@ -9,7 +9,10 @@ public partial class Chunk : StaticBody3D
 	[Export] public CollisionShape3D CollisionShape { get; set; }
 
 	[Export] public MeshInstance3D MeshInstance { get; set; }
-	public const float VOXEL_SCALE = 0.5f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
+
+    [Export] public Grass[] GrassMultiMeshArray {get; set;}
+
+	public const float VOXEL_SCALE = 1.0f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
     public const float INV_VOXEL_SCALE = 1/VOXEL_SCALE;
 
     // chunk size is 30, padded chunk size is 32. Can't be increased easily because it uses binary UINT32 to do face culling
@@ -30,10 +33,12 @@ public partial class Chunk : StaticBody3D
 
     private static readonly PackedScene _rigid_break = GD.Load<PackedScene>("res://effects/rigid_break2.tscn");
 
-    private readonly Area3D _chunk_area = new() {Position = new Godot.Vector3(Dimensions.X,0,Dimensions.Z)*0.5f};
+    private readonly Area3D _chunk_area = new() {Position = new Vector3(Dimensions.X,0,Dimensions.Z)*0.5f};
     private readonly CollisionShape3D _chunk_bounding_box = new() {
-            Shape = new BoxShape3D { Size = new Godot.Vector3(Dimensions.X, Dimensions.Y, Dimensions.Z) }
+            Shape = new BoxShape3D { Size = new Vector3(Dimensions.X, Dimensions.Y, Dimensions.Z) }
         };
+
+    private ChunkMeshData _chunkMeshData;
 
 	// 3d int array for holding blocks
     // each 32bit int contains packed block info: block type (10 bits), z (5 bits), y (5 bits), x (5 bits) 
@@ -44,18 +49,70 @@ public partial class Chunk : StaticBody3D
 	[Export]
 	public FastNoiseLite WallNoise { get; set; }
 
+public struct ChunkMeshData {
+        public const byte MAX_SURFACES = 3;
+        public const byte CHUNK_SURFACE = 0;
+        public const byte GRASS_SURFACE = 1;
+        public const byte LAVA_SURFACE = 2;
+        private readonly ArrayMesh[] _surfaces;
+
+        public ChunkMeshData(ArrayMesh[] input_surfaces) {
+            _surfaces = new ArrayMesh[MAX_SURFACES];
+            _surfaces[CHUNK_SURFACE] = input_surfaces[CHUNK_SURFACE];
+            _surfaces[GRASS_SURFACE] = input_surfaces[GRASS_SURFACE];
+            _surfaces[LAVA_SURFACE] = input_surfaces[LAVA_SURFACE];
+        }
+
+        public readonly ArrayMesh UnifySurfaces() {
+            var _arraymesh = new ArrayMesh();
+            for (byte type = 0 ; type < MAX_SURFACES ; type ++) {
+                if (HasSurfaceOfType(type)) {
+                    var surface = _surfaces[type];
+                    var _surfmat = type switch {
+                        CHUNK_SURFACE => BlockManager.Instance.ChunkMaterial,
+                        GRASS_SURFACE => BlockManager.Instance.ChunkMaterial,
+                        LAVA_SURFACE => BlockManager.Instance.LavaShader,
+                        _ => BlockManager.Instance.ChunkMaterial
+                    };
+                    _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, surface.SurfaceGetArrays(0));
+                    _arraymesh.SurfaceSetMaterial(_arraymesh.GetSurfaceCount()-1, _surfmat);
+                }
+            }
+            return _arraymesh;
+        }
+
+        public readonly bool HasSurfaceOfType(byte type) {
+            return _surfaces[type].GetSurfaceCount() > 0;
+        }
+
+        public readonly ArrayMesh GetSurface(byte type) {
+            return _surfaces[type];
+        }
+    }
+
+	public override void _Ready() {
+		Scale = new Godot.Vector3(VOXEL_SCALE, VOXEL_SCALE, VOXEL_SCALE);
+        _chunk_area.AddChild(_chunk_bounding_box);
+        AddChild(_chunk_area);
+	}
+
 	public void InitChunk(Vector3I position)
 	{
 		ChunkManager.Instance.UpdateChunkPosition(this, position, ChunkPosition);
 		ChunkPosition = position;
-		CallDeferred(Node3D.MethodName.SetGlobalPosition, new Godot.Vector3(
+        var newpos = new Vector3(
             VOXEL_SCALE * ChunkPosition.X * Dimensions.X,
             VOXEL_SCALE * ChunkPosition.Y * Dimensions.Y * SUBCHUNKS,
-            VOXEL_SCALE * ChunkPosition.Z * Dimensions.Z)
-        );
+            VOXEL_SCALE * ChunkPosition.Z * Dimensions.Z);
+		
+        CallDeferred(Node3D.MethodName.SetGlobalPosition, newpos);
 
         _blocks = ChunkManager.Generate(ChunkPosition);
-        var mesh = ChunkManager.BuildChunkMesh(_blocks, ChunkPosition.Y == 0);
+        _chunkMeshData = ChunkManager.BuildChunkMesh(_blocks, ChunkPosition.Y == 0);
+
+        UpdateChunkGrass(new float[] {newpos.X,newpos.Y,newpos.Z});
+
+        var mesh = _chunkMeshData.UnifySurfaces();
         var collisionHull = mesh.CreateTrimeshShape();
         Update(mesh, collisionHull);
 	}
@@ -64,23 +121,85 @@ public partial class Chunk : StaticBody3D
 	{
 		ChunkManager.Instance.UpdateChunkPosition(this, position, ChunkPosition);
 		ChunkPosition = position;
-		CallDeferred(Node3D.MethodName.SetGlobalPosition, new Godot.Vector3(
+        var newpos = new Vector3(
             VOXEL_SCALE * ChunkPosition.X * Dimensions.X,
             VOXEL_SCALE * ChunkPosition.Y * Dimensions.Y * SUBCHUNKS,
-            VOXEL_SCALE * ChunkPosition.Z * Dimensions.Z)
-        );
+            VOXEL_SCALE * ChunkPosition.Z * Dimensions.Z);
+		
+        CallDeferred(Node3D.MethodName.SetGlobalPosition, newpos);
 
         _blocks = blocks;
-        var mesh = await Task.Run(()=>{return ChunkManager.BuildChunkMesh(_blocks,ChunkPosition.Y == 0);});
+
+        Grass[] newgrass = GrassMultiMeshArray;
+        foreach (Grass grass in newgrass) {
+            if (_chunkMeshData.HasSurfaceOfType(Chunk.ChunkMeshData.GRASS_SURFACE)) {
+                grass.TerrainMesh = _chunkMeshData.GetSurface(Chunk.ChunkMeshData.GRASS_SURFACE);
+            } else grass.TerrainMesh = null;
+
+            grass.Multimesh = await Task.Run(()=>{return Grass.GenMultiMesh(grass);});
+        }
+        
+        GrassMultiMeshArray = newgrass;
+        //_chunkMeshData = await Task.Run(()=>{return ChunkManager.BuildChunkMesh(_blocks,ChunkPosition.Y == 0);});
+
+        // HACK base density
+        /*
+        var _base_density = GrassMultiMeshArray[0].Density;
+        for (int i=0; i< GrassMultiMeshArray.Length; i++)
+        {
+            var g = GrassMultiMeshArray[i];
+            if (_chunkMeshData.HasSurfaceOfType(ChunkMeshData.GRASS_SURFACE))
+            {
+                g.TerrainMesh = _chunkMeshData.GetSurface(ChunkMeshData.GRASS_SURFACE);
+            }
+            else
+            {
+                g.TerrainMesh = null;
+            } 
+            g.ChunkPosition = newpos;
+            g.PlayerPosition = (Player.Instance != null) ? Player.Instance.GlobalPosition : Vector3.Zero;
+
+            var density = _base_density/(i+1);
+            g.Density = density;
+
+            var spawns = await Task.Run(()=>{return Grass.GenSpawns(g);});
+            g.Rebuild(spawns);
+        }*/
+
+        // recalculate grass
+        /*
+        if (_chunkMeshData.HasSurfaceOfType(ChunkMeshData.GRASS_SURFACE)) {
+            GrassMultiMesh.TerrainMesh = _chunkMeshData.GetSurface(ChunkMeshData.GRASS_SURFACE);
+        } else GrassMultiMesh.TerrainMesh = null;
+        GrassMultiMesh.ChunkPosition = newpos;
+        GrassMultiMesh.PlayerPosition = Player.Instance.GlobalPosition;
+        if (Player.Instance.GlobalPosition.DistanceSquaredTo(newpos+Vector3.One*VOXEL_SCALE*CHUNK_SIZE/2) >= Mathf.Pow(CHUNK_SIZE*VOXEL_SCALE*2f,2.0f)) {
+            GrassMultiMesh.Visible = false;
+        } else GrassMultiMesh.Visible = true;
+        await Task.Run(()=>{GrassMultiMesh.Rebuild();});
+        GrassMultiMesh.Rebuild();*/
+
+        var mesh = _chunkMeshData.UnifySurfaces();
         var collisionHull = await Task.Run(()=>{return mesh.CreateTrimeshShape();});
         Update(mesh, collisionHull);
 	}
 
-	public override void _Ready() {
-		Scale = new Godot.Vector3(VOXEL_SCALE, VOXEL_SCALE, VOXEL_SCALE);
-        _chunk_area.AddChild(_chunk_bounding_box);
-        AddChild(_chunk_area);
-	}
+    public void UpdateChunkGrass(float[] newChunkPosition = null) {
+        // HACK base density
+        for (int i=0; i< GrassMultiMeshArray.Length; i++) {
+            var g = GrassMultiMeshArray[i];
+            if (_chunkMeshData.HasSurfaceOfType(ChunkMeshData.GRASS_SURFACE)) {
+                g.TerrainMesh = _chunkMeshData.GetSurface(ChunkMeshData.GRASS_SURFACE);
+            } else g.TerrainMesh = null;
+            g.ChunkPosition = (newChunkPosition != null) ? new Vector3(newChunkPosition[0], newChunkPosition[1], newChunkPosition[2]) : GlobalPosition;
+            g.PlayerPosition = (Player.Instance != null) ? Player.Instance.GlobalPosition : Vector3.Zero;
+            g.Rebuild();
+        }
+    }
+
+    public override void _ExitTree() {
+        foreach (var g in GrassMultiMeshArray) g.Multimesh = null;
+    }
 
     public static int PackBlockInfo(int blockType) {
         return blockType<<15;
@@ -101,7 +220,6 @@ public partial class Chunk : StaticBody3D
     public static int GetBlockDamageType(int blockInfo) {
         return GetBlockDamageData(blockInfo) >> 5;
     }
-
 
     public void SetBlock(int blockIndex, int blockType) {
         _blocks[blockIndex] = (_blocks[blockIndex] & ~(0x3ff << 15)) | blockType << 15;
@@ -166,6 +284,15 @@ public partial class Chunk : StaticBody3D
         }
     }
 
+    public override void _Process(double delta) {
+        if (Player.Instance != null) {
+            var sq_dist = Player.Instance.GlobalPosition.DistanceSquaredTo(GlobalPosition+Vector3.One*VOXEL_SCALE*CHUNK_SIZE/2);
+            var chunk_dist  = Mathf.RoundToInt(sq_dist/(CHUNK_SIZE*CHUNK_SIZE*VOXEL_SCALE*VOXEL_SCALE));
+            foreach (var g in GrassMultiMeshArray) g.Visible = false;
+            if (chunk_dist < GrassMultiMeshArray.Length) GrassMultiMeshArray[chunk_dist].Visible = true;
+        }
+    }
+
 	public void DamageBlocks(List<(Vector3I, int)> blockDamages)
 	{ 
         // output dictionary of block positions where particles need to be spawned (for destroyed blocks) and textures for spawned particles
@@ -204,7 +331,10 @@ public partial class Chunk : StaticBody3D
 		}
 
         // update mesh and collision shape
-        var mesh = ChunkManager.BuildChunkMesh(_blocks,ChunkPosition.Y == 0);
+        _chunkMeshData = ChunkManager.BuildChunkMesh(_blocks,ChunkPosition.Y == 0);
+        var mesh = _chunkMeshData.UnifySurfaces();
+
+        CallDeferred(nameof(Chunk.UpdateChunkGrass), null);
         var shape = mesh.CreateTrimeshShape();
 		Update(mesh, shape);
         SpawnBlockParticles(particle_spawn_list);

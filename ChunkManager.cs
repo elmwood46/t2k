@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 public partial class ChunkManager : Node
 {
 	public static ChunkManager Instance { get; private set; }
-
 	private Dictionary<Chunk, Vector3I> _chunkToPosition = new();
 	private Dictionary<Vector3I, Chunk> _positionToChunk = new();
 
@@ -57,6 +56,8 @@ public partial class ChunkManager : Node
 
 	public static readonly Noise NOISE = new FastNoiseLite();
 
+	public Chunk central_chunk;
+
 	// surface tools
 
 	// vertices of a cube
@@ -101,6 +102,10 @@ public partial class ChunkManager : Node
 			var chunk = ChunkScene.Instantiate<Chunk>();
 			GetParent().CallDeferred(Node.MethodName.AddChild, chunk);
 			_chunks.Add(chunk);
+			if (i%_width == _width/2 && i/_width%_width == _width/2 && i/(_width*_width) == _y_width/2)
+			{
+				central_chunk = chunk;
+			}
 		}
 
 		//Vector2I playerChunk;
@@ -213,11 +218,11 @@ public partial class ChunkManager : Node
 	}
 
 	private Task UpdateChunkPositionAsync(Vector3I newPosition, Chunk chunk) {
-							lock(_positionToChunk)
-					{
-						int[] blocks = Generate(newPosition);
-		chunk.CallDeferred(nameof(Chunk.SetChunkPosition), newPosition, blocks);
-					}
+		lock(_positionToChunk)
+		{
+			int[] blocks = Generate(newPosition);
+			chunk.CallDeferred(nameof(Chunk.SetChunkPosition), newPosition, blocks);
+		}
 		return Task.CompletedTask;
 	}
 
@@ -226,12 +231,17 @@ public partial class ChunkManager : Node
 		while (IsInstanceValid(this))
 		{
 			int playerChunkX, playerChunkZ; //playerChunkY
+
+			//Godot.Vector3 player_glob_pos;
+
 			lock(_playerPositionLock)
 			{
 				playerChunkX = Mathf.FloorToInt(_playerPosition.X / (Chunk.Dimensions.X*Chunk.VOXEL_SCALE));
 				//playerChunkY = Mathf.FloorToInt(_playerPosition.Y / (Chunk.Dimensions.Y*Chunk.SUBCHUNKS*Chunk.VOXEL_SCALE));
 				//playerChunkY = Mathf.FloorToInt((_playerPosition.Y+Chunk.VOXEL_SCALE*Chunk.Dimensions.Y*Chunk.SUBCHUNKS*0.5f) / (Chunk.Dimensions.Y*Chunk.SUBCHUNKS*Chunk.VOXEL_SCALE));
 				playerChunkZ = Mathf.FloorToInt(_playerPosition.Z / (Chunk.Dimensions.Z*Chunk.VOXEL_SCALE));
+				
+				//player_glob_pos = _playerPosition;
 			}
 
 			foreach (var chunk in _chunks)
@@ -257,10 +267,6 @@ public partial class ChunkManager : Node
 						}
 						_chunkToPosition[chunk] = newPosition;
 						_positionToChunk[newPosition] = chunk;
-
-						//var blocks = Generate(newPosition);
-						//var mesh = BuildChunkMesh(blocks);
-						//var hull = mesh.CreateTrimeshShape();
 					}
 					await Task.Run(() => {UpdateChunkPositionAsync(newPosition, chunk);});
 				}

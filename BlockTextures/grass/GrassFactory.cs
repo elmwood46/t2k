@@ -50,18 +50,38 @@ public static class GrassFactory
         return Mathf.Sqrt(s*(s-ab)*(s-bc)*(s-ca)); 
     }
 
-    public static List<(Transform3D, Color)> Generate(Mesh mesh, float density, Vector2 bladewidth, Vector2 bladeheight, Vector2 degyaw, Vector2 degpitch) {
+    public static List<(Transform3D, Color)> Generate
+        (Mesh mesh,
+        float density,
+        Vector2 bladewidth,
+        Vector2 bladeheight,
+        Vector2 degyaw,
+        Vector2 degpitch,
+        Vector3 player_pos,
+        Vector3 chunk_pos) 
+    {
         if (mesh == null) {
-            GD.PrintErr("TerrainMesh is not set!");
-            return null;
+            //GD.PrintErr("TerrainMesh is not set!");
+            return new List<(Transform3D, Color)>();
         }
+
+        // HACK for testing
+       // density = 120;
 
         var surface = mesh.SurfaceGetArrays(0);
         var positions = (Vector3[])surface[(int)Mesh.ArrayType.Vertex];
         var indices = (int[])surface[(int)Mesh.ArrayType.Index];
         var normals = (Vector3[])surface[(int)Mesh.ArrayType.Normal];
-        GD.Print($"Array lengths: positions={positions.Length}, indices={indices.Length}, normals={normals.Length}");
+        //GD.Print($"Array lengths: positions={positions.Length}, indices={indices.Length}, normals={normals.Length}");
         var spawns = new List<(Transform3D, Color)>();
+
+        //var player_dist = player_pos.DistanceTo(chunk_pos+Vector3.One * (Chunk.VOXEL_SCALE * Chunk.CHUNK_SIZE*1.5f)); 
+        
+        // distance to chunk centre
+        // drop off very fast - powers of four
+       // var dropoff = Mathf.Pow(2,-player_dist/Mathf.RoundToInt(Chunk.CHUNK_SIZE*1.5f*Chunk.VOXEL_SCALE)); // halve density every 1.5 chunks
+        //density *= dropoff;
+        //if (density < 50.0f) return spawns;
 
         for (int i=0;i<indices.Length;i+=3) {
             var j = indices[i];
@@ -72,10 +92,17 @@ public static class GrassFactory
 				positions[k],
 				positions[l]
 			);
+            
             var bladesPerFace = (int)Mathf.Round(area * density);
             for (int blade=0;blade<bladesPerFace;blade++) {
                 var uvw = RandBcc();
                 var pos = FromBccVector3(uvw,positions[j],positions[k],positions[l]);
+
+                // LOD less fast - powers of two
+                //player_dist = player_pos.DistanceTo(pos+chunk_pos);
+                //dropoff = Mathf.Pow(2,-player_dist/(Chunk.CHUNK_SIZE*1.5f*Chunk.VOXEL_SCALE));
+                //if (blade > (int)bladesPerFace*dropoff) continue;
+
                 var normal = FromBccVector3(uvw,normals[j],normals[k],normals[l]);
                 var q1 = new Quaternion(Vector3.Up,Mathf.DegToRad(360.0f*GD.Randf()));
                 var q2 = ShortestArc(Vector3.Up,normal);
@@ -89,7 +116,7 @@ public static class GrassFactory
                 spawns.Add(new (transform,customParams));
             }
         }
-        GD.Print("generated ",spawns.Count," grass blades");
+        //GD.Print("generated ",spawns.Count," grass blades");
         return spawns;
     }
 }

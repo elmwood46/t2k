@@ -1,6 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://da5ax8fx3rml2"]
+[gd_scene load_steps=5 format=3 uid="uid://da5ax8fx3rml2"]
 
 [ext_resource type="Script" path="res://Chunk.cs" id="1_02ktv"]
+[ext_resource type="Material" uid="uid://xgt17gegmlin" path="res://shaders/grass/multimesh_grass_shader.tres" id="2_0jyn7"]
+[ext_resource type="Script" path="res://BlockTextures/grass/Grass.cs" id="3_aurgl"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_qcpys"]
 noise_type = 2
@@ -11,14 +13,41 @@ cellular_distance_function = 2
 cellular_jitter = 0.0
 cellular_return_type = 0
 
-[node name="Chunk" type="StaticBody3D" node_paths=PackedStringArray("CollisionShape", "MeshInstance")]
-transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
+[node name="Chunk" type="StaticBody3D" node_paths=PackedStringArray("CollisionShape", "MeshInstance", "GrassMultiMeshArray")]
 script = ExtResource("1_02ktv")
 CollisionShape = NodePath("CollisionShape3D")
 MeshInstance = NodePath("MeshInstance3D")
+GrassMultiMeshArray = [NodePath("MeshInstance3D/Grass"), NodePath("MeshInstance3D/Grass2"), NodePath("MeshInstance3D/Grass3")]
 WallNoise = SubResource("FastNoiseLite_qcpys")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 gi_mode = 2
+
+[node name="Grass" type="MultiMeshInstance3D" parent="MeshInstance3D"]
+material_override = ExtResource("2_0jyn7")
+cast_shadow = 0
+script = ExtResource("3_aurgl")
+Density = 240.0
+BladeWidth = Vector2(0.5, 0.5)
+BladeHeight = Vector2(0.8, 1)
+SwayPitchDegrees = Vector2(1, 2)
+
+[node name="Grass2" type="MultiMeshInstance3D" parent="MeshInstance3D"]
+material_override = ExtResource("2_0jyn7")
+cast_shadow = 0
+script = ExtResource("3_aurgl")
+Density = 100.0
+BladeWidth = Vector2(0.5, 0.5)
+BladeHeight = Vector2(0.8, 1)
+SwayPitchDegrees = Vector2(1, 2)
+
+[node name="Grass3" type="MultiMeshInstance3D" parent="MeshInstance3D"]
+material_override = ExtResource("2_0jyn7")
+cast_shadow = 0
+script = ExtResource("3_aurgl")
+Density = 50.0
+BladeWidth = Vector2(0.5, 0.5)
+BladeHeight = Vector2(0.8, 1)
+SwayPitchDegrees = Vector2(1, 2)

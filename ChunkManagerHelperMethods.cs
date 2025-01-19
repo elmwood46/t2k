@@ -8,6 +8,9 @@ public partial class ChunkManager : Node {
 	{
         var result = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
         var rnd = new RandomNumberGenerator();
+
+        // blocks spawn when 3d noise is >= cutoff (its values are -1 to 1)
+        var cutoff = 0.2f;
         
         for (int subchunk = 0; subchunk < Chunk.SUBCHUNKS; subchunk++) {
             for (int x=0;x<Chunk.CHUNK_SIZE;x++) {
@@ -25,7 +28,7 @@ public partial class ChunkManager : Node {
                         if (chunkPosition.Y == 3)
                         {
                             var noise3d = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y, globalBlockPosition.Z);
-                            if (y == 0 && noise3d >= Chunk.NOISE_CUTOFF) 
+                            if (y == 0 && noise3d >= cutoff) 
                             {
                                 blockType = BlockManager.BlockID("Check2");
                             }
@@ -86,8 +89,7 @@ public partial class ChunkManager : Node {
 
                         // generate other levels
                         var noise = CELLNOISE.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Z);
-                        var groundheight = Mathf.Round(0.8*(noise+1)/2);
-                        if (groundheight ==0) groundheight += rnd.Randf()<0.01 ? 1 : 0;
+                        var groundheight = (int)(0.0*(noise+1)/2);
                         if (chunkPosition.Y == 0 && globalBlockPosition.Y <= groundheight)
                         {
                             if (y==0) blockType = BlockManager.Instance.LavaBlockId;
@@ -100,9 +102,9 @@ public partial class ChunkManager : Node {
                             var noise3d = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y, globalBlockPosition.Z);
                             var noiseabove = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y+1, globalBlockPosition.Z);
                             var noisebelow = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y-1, globalBlockPosition.Z);
-                            if (noise3d >= Chunk.NOISE_CUTOFF)
+                            if (noise3d >= cutoff)
                             {
-                                if (noiseabove < Chunk.NOISE_CUTOFF || y==Chunk.CHUNK_SIZE-1) blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
+                                if (noiseabove < cutoff || y==Chunk.CHUNK_SIZE-1) blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
                                 else if (noisebelow > noise3d) blockType = BlockManager.BlockID("Stone");
                                 else blockType = BlockManager.BlockID("Dirt");
                             }
@@ -219,13 +221,12 @@ public partial class ChunkManager : Node {
         }
     }
 
-    public static ArrayMesh BuildChunkMesh(int[] chunk_blocks, bool isLowestChunk) {
+    public static Chunk.ChunkMeshData BuildChunkMesh(int[] chunk_blocks, bool isLowestChunk) {
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
         Dictionary<int, Dictionary<int, UInt32[]>>[] data = new Dictionary<int,Dictionary<int, UInt32[]>>[6];
         for (short i=0; i<6; i++) data[i] = new(); // initialize the hash maps for each axis value
-        data[data.Length] = new(); // add a 7th dictionary for the grass blocks
 
         // add all Chunk.SUBCHUNKS
         for (int i=0; i< Chunk.SUBCHUNKS; i++) GreedyChunkMesh(data, chunk_blocks, i);
@@ -233,10 +234,11 @@ public partial class ChunkManager : Node {
         // construct mesh
         var _st = new SurfaceTool();
         var _st2 = new SurfaceTool();
+        var grassTopSurfaceTool = new SurfaceTool();
         _st.Begin(Mesh.PrimitiveType.Triangles);
         _st2.Begin(Mesh.PrimitiveType.Triangles);
-        //_st.SetMaterial(BlockManager.Instance.ChunkMaterial);
-        //_st2.SetMaterial(BlockManager.Instance.LavaShader);
+        grassTopSurfaceTool.Begin(Mesh.PrimitiveType.Triangles);
+
         for (int axis=0; axis<6;axis++) {
             foreach (var (blockinfo, planeSet) in data[axis]) {
                 foreach (var (k_chunked, binary_plane) in planeSet) {
@@ -316,35 +318,46 @@ public partial class ChunkManager : Node {
 		                var uvTriangle2 = new Godot.Vector2[] { uvA, uvC, uvD };
 
                         // add the quad to the mesh
-                        var blockType = Chunk.GetBlockID(blockinfo);
-                        if (blockType == BlockManager.Instance.LavaBlockId)
+                        var blockId = Chunk.GetBlockID(blockinfo);
+                        if (blockId == BlockManager.Instance.LavaBlockId)
                         {
-                            // lava blocks have their own shader
                             _st2.AddTriangleFan(triangle1, uvTriangle1, normals: normals);
                             _st2.AddTriangleFan(triangle2, uvTriangle2, normals: normals);
                         }
                         else
                         {
                             var blockDamage = Chunk.GetBlockDamageData(blockinfo);
-                            var block_face_texture_idx = BlockManager.BlockTextureArrayPositions(blockType)[axis];
+                            var block_face_texture_idx = BlockManager.BlockTextureArrayPositions(blockId)[axis];
                             var notacolour = new Color(block_face_texture_idx, uv_offset.X, uv_offset.Y, blockDamage)*(1/255f);
                             var metadata = new Color[] {notacolour, notacolour, notacolour};
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            if (blockId == BlockManager.BlockID("Grass") && axis == 1)
+                            {
+                                grassTopSurfaceTool.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                                grassTopSurfaceTool.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            }
+                            else
+                            {
+                                _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                                _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            }
                         }
                     }
                 }
             }
         }
 
-        var _arraymesh = new ArrayMesh();
+        
+        grassTopSurfaceTool.Index();
         var a1 = _st.Commit();
         var a2 = _st2.Commit();
-        if (a1.GetSurfaceCount() > 0) _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a1.SurfaceGetArrays(0));
-        if (a2.GetSurfaceCount() > 0) _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a2.SurfaceGetArrays(0));
-        if (_arraymesh.GetSurfaceCount() > 0) _arraymesh.SurfaceSetMaterial(0, BlockManager.Instance.ChunkMaterial);
-        if (_arraymesh.GetSurfaceCount() > 1) _arraymesh.SurfaceSetMaterial(1, BlockManager.Instance.LavaShader);
-        return _arraymesh;
+        var a3 = grassTopSurfaceTool.Commit();
+        
+        var surfaces = new ArrayMesh[Chunk.ChunkMeshData.MAX_SURFACES];
+        surfaces[Chunk.ChunkMeshData.CHUNK_SURFACE] = a1;
+        surfaces[Chunk.ChunkMeshData.LAVA_SURFACE] = a2;
+        surfaces[Chunk.ChunkMeshData.GRASS_SURFACE] = a3;
+
+        return new Chunk.ChunkMeshData(surfaces);
     }
 
     // greedy quad for a 32 x 32 binary plane (assuming data length is 32) // CHANGED THIS TO 64 CHUNK SIZE

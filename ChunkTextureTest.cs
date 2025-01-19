@@ -27,6 +27,7 @@ public partial class ChunkTextureTest : Node3D
     [Export] public MeshInstance3D ChunkMesh {get; set;}
 
     private Vector3I _prevChunkPosition = new(int.MinValue,int.MinValue,int.MinValue);
+    private float _prevPlayerDistance = 0f;
 
     public static readonly ArrayMesh GrassBladeFullRes = ResourceLoader.Load("res://shaders/grass/blade.res") as ArrayMesh;
     public static readonly ArrayMesh GrassBladeLowRes = ResourceLoader.Load("res://shaders/grass/blade_optimized.tres") as ArrayMesh;
@@ -41,19 +42,39 @@ public partial class ChunkTextureTest : Node3D
 
     public override void _Process(double delta) {
         var chunkpos = (Vector3I)ChunkMesh.GlobalPosition;
+        var camera_position = EditorInterface.Singleton.GetEditorViewport3D(0).GetCamera3D().GlobalPosition;
+
         if (_prevChunkPosition != chunkpos && ChunkMesh != null && ChunkMesh is MeshInstance3D mesh && BlockManager.Instance != null) {
             var blocks = GenerateTest(chunkpos);
             var chunkmeshdata = BuildChunkMeshTest(blocks, false);
             mesh.Mesh = chunkmeshdata.UnifySurfaces();
 
-            if (chunkmeshdata.HasSurfaceOfType(ChunkMeshData.GRASS_SURFACE)) {
-                var grass_mesh = chunkmeshdata.GetSurface(ChunkMeshData.GRASS_SURFACE);
+            if (chunkmeshdata.HasSurfaceOfType(Chunk.ChunkMeshData.GRASS_SURFACE)) {
+                var grass_mesh = chunkmeshdata.GetSurface(Chunk.ChunkMeshData.GRASS_SURFACE);
                 GrassMultiMesh.TerrainMesh = grass_mesh;
                 GrassMultiMesh.MaterialOverride = GrassBladeMaterial;
-                //GD.Print($"set terrain mesh to {GrassMultiMesh.TerrainMesh}");
-            }
+                GrassMultiMesh.ChunkPosition = chunkpos;
+                GrassMultiMesh.PlayerPosition = camera_position;
+            } else GrassMultiMesh.TerrainMesh = null;
 
             _prevChunkPosition = chunkpos;
+        }
+
+        // grass mesh LOD
+        var player_dist = camera_position.DistanceTo(chunkpos+Godot.Vector3.One*Chunk.VOXEL_SCALE*Chunk.CHUNK_SIZE/2);
+        if (player_dist > Chunk.CHUNK_SIZE*Chunk.VOXEL_SCALE*1.5f
+        && _prevPlayerDistance <= Chunk.CHUNK_SIZE*Chunk.VOXEL_SCALE*1.5f) {
+            GrassMultiMesh.ChunkPosition = chunkpos;
+            GrassMultiMesh.PlayerPosition = camera_position;
+            GrassMultiMesh.Rebuild();
+            _prevPlayerDistance = player_dist;
+        }
+        else if (player_dist <= Chunk.CHUNK_SIZE*Chunk.VOXEL_SCALE*1.5f
+        && _prevPlayerDistance > Chunk.CHUNK_SIZE*Chunk.VOXEL_SCALE*1.5f) {
+            GrassMultiMesh.ChunkPosition = chunkpos;
+            GrassMultiMesh.PlayerPosition = camera_position;
+            GrassMultiMesh.Rebuild();
+            _prevPlayerDistance = player_dist;
         }
     }
 
@@ -174,48 +195,7 @@ public static int[] GenerateTest(Vector3I chunkPosition)
         return result;
 	}
 
-    public struct ChunkMeshData {
-        public const byte MAX_SURFACES = 3;
-        public const byte CHUNK_SURFACE = 0;
-        public const byte GRASS_SURFACE = 1;
-        public const byte LAVA_SURFACE = 2;
-        private ArrayMesh[] _surfaces;
-
-        public ChunkMeshData(ArrayMesh[] input_surfaces) {
-            _surfaces = new ArrayMesh[MAX_SURFACES];
-            _surfaces[CHUNK_SURFACE] = input_surfaces[CHUNK_SURFACE];
-            _surfaces[GRASS_SURFACE] = input_surfaces[GRASS_SURFACE];
-            _surfaces[LAVA_SURFACE] = input_surfaces[LAVA_SURFACE];
-        }
-
-        public readonly ArrayMesh UnifySurfaces() {
-            var _arraymesh = new ArrayMesh();
-            for (byte type =0 ; type < MAX_SURFACES ; type ++) {
-                if (HasSurfaceOfType(type)) {
-                    var surface = _surfaces[type];
-                    var _surfmat = type switch {
-                        CHUNK_SURFACE => BlockManager.Instance.ChunkMaterial,
-                        GRASS_SURFACE => BlockManager.Instance.ChunkMaterial,
-                        LAVA_SURFACE => BlockManager.Instance.LavaShader,
-                        _ => BlockManager.Instance.ChunkMaterial
-                    };
-                    _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, surface.SurfaceGetArrays(0));
-                    _arraymesh.SurfaceSetMaterial(_arraymesh.GetSurfaceCount()-1, _surfmat);
-                }
-            }
-            return _arraymesh;
-        }
-
-        public readonly bool HasSurfaceOfType(byte type) {
-            return _surfaces[type].GetSurfaceCount() > 0;
-        }
-
-        public readonly ArrayMesh GetSurface(byte type) {
-            return _surfaces[type];
-        }
-    }
-
-    public static ChunkMeshData BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk) {
+    public static Chunk.ChunkMeshData BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk) {
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
@@ -346,14 +326,13 @@ public static int[] GenerateTest(Vector3I chunkPosition)
         var a2 = _st2.Commit();
         var a3 = grassTopSurfaceTool.Commit();
         
-        var surfaces = new ArrayMesh[ChunkMeshData.MAX_SURFACES];
-        surfaces[ChunkMeshData.CHUNK_SURFACE] = a1;
-        surfaces[ChunkMeshData.LAVA_SURFACE] = a2;
-        surfaces[ChunkMeshData.GRASS_SURFACE] = a3;
+        var surfaces = new ArrayMesh[Chunk.ChunkMeshData.MAX_SURFACES];
+        surfaces[Chunk.ChunkMeshData.CHUNK_SURFACE] = a1;
+        surfaces[Chunk.ChunkMeshData.LAVA_SURFACE] = a2;
+        surfaces[Chunk.ChunkMeshData.GRASS_SURFACE] = a3;
 
-        var cmd = new ChunkMeshData(surfaces);
 
-        return new ChunkMeshData(surfaces);
+        return new Chunk.ChunkMeshData(surfaces);
     }
 
 private static List<GreedyQuad> GreedyMeshBinaryPlane(UInt32[] data) {

@@ -58,23 +58,23 @@ void fragment() {
 	bool physicaldamage = (_damage_data>>5 & 1) == 1;
 	bool firedamage = (_damage_data>>6 & 1) == 1;
 	bool aciddamage = (_damage_data>>7 & 1) == 1;
-	
+
 	vec3[2] res = ApplyDamageShaders(uv, UV, damageratio, physicaldamage, firedamage, aciddamage, basecol.rgb);
-	
+
 	ALBEDO = res[0];
 	EMISSION = res[1];
-	
+
 	float normscale = 3.0;
-	
+
 	if (aciddamage || physicaldamage)
 	{
 		NORMAL_MAP = texture(_normalmap, 0.2*uv).rgb;
 		NORMAL_MAP_DEPTH = normscale;
 	}
-	
+
 	if (aciddamage)
 	{
 		SPECULAR = 1.0;
-		ROUGHNESS = texture(_roughness, 0.2*uv).r * normscale;	
+		ROUGHNESS = texture(_roughness, 0.2*uv).r * normscale;
 	}
 }
