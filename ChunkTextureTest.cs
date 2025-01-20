@@ -6,10 +6,17 @@ using System.Numerics;
 [Tool]
 public partial class ChunkTextureTest : Node3D
 {
+    const float INVSQRT2 = 0.70710678118f;
+
+    public Dictionary<Vector3I, int[]> ChunkBlocksBuffer = new();
+
+    public HashSet<Vector3I> HasGeneratedChunk = new();
+
+    private static readonly Godot.Vector3 SlopedNormalNegZ = new(0, INVSQRT2, -INVSQRT2);
+
 	public static readonly Noise CELLNOISE = new FastNoiseLite(){NoiseType = FastNoiseLite.NoiseTypeEnum.Cellular
 	, CellularDistanceFunction = FastNoiseLite.CellularDistanceFunctionEnum.Manhattan,
 	FractalType = FastNoiseLite.FractalTypeEnum.Fbm, CellularReturnType = FastNoiseLite.CellularReturnTypeEnum.CellValue};
-
 	
 	public static readonly Noise WHITENOISE = new FastNoiseLite(){
 		NoiseType = FastNoiseLite.NoiseTypeEnum.Cellular,
@@ -25,6 +32,27 @@ public partial class ChunkTextureTest : Node3D
 	public static readonly Noise NOISE = new FastNoiseLite();
 
     [Export] public MeshInstance3D ChunkMesh {get; set;}
+
+    [Export] public bool FlipSlope {
+        get => _flipslope;
+        set {
+            _flipslope = value;
+            SlopeRotationDegrees = _slope_rotate_degrees;
+        }
+    }
+    private bool _flipslope = false;
+
+    [Export] public float SlopeRotationDegrees {
+        get => _slope_rotate_degrees;
+        set {
+            _slope_rotate_degrees = value;
+            GenerateTest((Vector3I)ChunkMesh.GlobalPosition);
+            var blocks = ChunkBlocksBuffer[(Vector3I)ChunkMesh.GlobalPosition];
+            var chunkmeshdata = BuildChunkMeshTest(blocks, false, _slope_rotate_degrees, _flipslope);
+            ChunkMesh.Mesh = chunkmeshdata.UnifySurfaces();
+        }
+    }
+    private float _slope_rotate_degrees = 0.0f;
 
     private Vector3I _prevChunkPosition = new(int.MinValue,int.MinValue,int.MinValue);
     private float _prevPlayerDistance = 0f;
@@ -45,8 +73,9 @@ public partial class ChunkTextureTest : Node3D
         var camera_position = EditorInterface.Singleton.GetEditorViewport3D(0).GetCamera3D().GlobalPosition;
 
         if (_prevChunkPosition != chunkpos && ChunkMesh != null && ChunkMesh is MeshInstance3D mesh && BlockManager.Instance != null) {
-            var blocks = GenerateTest(chunkpos);
-            var chunkmeshdata = BuildChunkMeshTest(blocks, false);
+            GenerateTest(chunkpos);
+            var blocks = ChunkBlocksBuffer[chunkpos];
+            var chunkmeshdata = BuildChunkMeshTest(blocks, false, SlopeRotationDegrees, _flipslope);
             mesh.Mesh = chunkmeshdata.UnifySurfaces();
 
             if (chunkmeshdata.HasSurfaceOfType(Chunk.ChunkMeshData.GRASS_SURFACE)) {
@@ -56,6 +85,7 @@ public partial class ChunkTextureTest : Node3D
                 GrassMultiMesh.ChunkPosition = chunkpos;
                 GrassMultiMesh.PlayerPosition = camera_position;
             } else GrassMultiMesh.TerrainMesh = null;
+            GrassMultiMesh.Rebuild();
 
             _prevChunkPosition = chunkpos;
         }
@@ -78,9 +108,12 @@ public partial class ChunkTextureTest : Node3D
         }
     }
 
-public static int[] GenerateTest(Vector3I chunkPosition)
+public void GenerateTest(Vector3I chunkPosition)
 	{
-        var result = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
+        if (!ChunkBlocksBuffer.TryGetValue(chunkPosition, out var result)) {
+            result = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
+        };
+
         var rnd = new RandomNumberGenerator();
 
         // blocks spawn when 3d noise is >= cutoff (its values are -1 to 1)
@@ -91,12 +124,12 @@ public static int[] GenerateTest(Vector3I chunkPosition)
                 for (int y=0;y<Chunk.CHUNK_SIZE;y++) {
                     for (int z=0;z<Chunk.CHUNK_SIZE;z++) {
                         int block_idx = x + y * Chunk.CHUNKSQ + z * Chunk.CHUNK_SIZE + subchunk*Chunk.CHUNKSQ*Chunk.CHUNK_SIZE;
-                        if (block_idx >= result.Length) continue;  
+                        if (block_idx >= result.Length) continue;
 
                         var globalBlockPosition = chunkPosition * new Vector3I(Chunk.Dimensions.X, Chunk.Dimensions.Y*Chunk.SUBCHUNKS, Chunk.Dimensions.Z)
-                            + new Vector3I(x, y + Chunk.Dimensions.Y*subchunk, z);                 
+                            + new Vector3I(x, y + Chunk.Dimensions.Y*subchunk, z);
 
-                        int blockType = 0;
+                        int blockType = result[block_idx];
                         
                         // generate highest level differently
                         if (chunkPosition.Y == 3)
@@ -142,6 +175,21 @@ public static int[] GenerateTest(Vector3I chunkPosition)
 
                                         // add the damage type 
                                         result[p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE] |= dam_info;
+                                    } else {
+                                        var neighbour_chunk = new Vector3I(chunkPosition.X, chunkPosition.Y, chunkPosition.Z);
+                                        var dx = p.X > Chunk.CHUNK_SIZE-1 ? 1 : p.X < 0 ? -1 : 0;
+                                        var dy = p.Y > Chunk.CHUNK_SIZE-1 ? 1 : p.Y < 0 ? -1 : 0;
+                                        var dz = p.Z > Chunk.CHUNK_SIZE-1 ? 1 : p.Z < 0 ? -1 : 0;
+                                        var delta = new Vector3I(dx, dy, dz);
+                                        var newp = p-delta*Chunk.CHUNK_SIZE;
+                                        if (!ChunkBlocksBuffer.TryGetValue(neighbour_chunk+delta, out var neighbour)) {
+                                            neighbour = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
+                                            neighbour[newp.X + newp.Y*Chunk.CHUNKSQ + newp.Z*Chunk.CHUNK_SIZE] = kvp.Value;
+                                        } else {
+                                            var idx = newp.X + newp.Y*Chunk.CHUNKSQ + newp.Z*Chunk.CHUNK_SIZE;
+                                            if (Chunk.IsBlockEmpty(neighbour[idx])) neighbour[idx] = kvp.Value;
+                                        }
+                                        ChunkBlocksBuffer[neighbour_chunk+delta] = neighbour;
                                     }
                                 }
                                 continue;
@@ -178,7 +226,18 @@ public static int[] GenerateTest(Vector3I chunkPosition)
                             var noisebelow = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y-1, globalBlockPosition.Z);
                             if (noise3d >= cutoff)
                             {
-                                if (noiseabove < cutoff || y==Chunk.CHUNK_SIZE-1) blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
+                                if (noiseabove < cutoff || y==Chunk.CHUNK_SIZE-1) {
+                                    blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
+                                    if (z > 0 && y > 0) {
+                                        if (block_idx - Chunk.CHUNK_SIZE - Chunk.CHUNKSQ > 0) {
+                                            if (!Chunk.IsBlockEmpty(result[block_idx - Chunk.CHUNK_SIZE - Chunk.CHUNKSQ])
+                                            && !Chunk.IsBlockEmpty(result[block_idx - Chunk.CHUNKSQ])) {
+                                                result[block_idx - Chunk.CHUNK_SIZE - Chunk.CHUNKSQ] = BlockManager.BlockID("AngleSlopedTest");
+                                                blockType = BlockManager.BlockID("AngleSlopedTest");
+                                            }
+                                        }
+                                    }
+                                } 
                                 else if (noisebelow > noise3d) blockType = BlockManager.BlockID("Stone");
                                 else blockType = BlockManager.BlockID("Dirt");
                             }
@@ -192,18 +251,20 @@ public static int[] GenerateTest(Vector3I chunkPosition)
             }
         }
 
-        return result;
+        ChunkBlocksBuffer[chunkPosition] = result;
 	}
 
-    public static Chunk.ChunkMeshData BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk) {
+    public static Chunk.ChunkMeshData BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk, float sloperotation, bool flipSlope = false) {
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
-        Dictionary<int, Dictionary<int, UInt32[]>>[] data = new Dictionary<int,Dictionary<int, UInt32[]>>[6];
-        for (short i=0; i<6; i++) data[i] = new(); // initialize the hash maps for each axis value
+        Dictionary<int, Dictionary<int, UInt32[]>>[] data = new Dictionary<int,Dictionary<int, UInt32[]>>[7];
+        short i;
+        for (i=0; i<6; i++) data[i] = new(); // initialize the hash maps for each axis value
+        data[i] = new(); // an extra one for sloped blocks
 
         // add all Chunk.SUBCHUNKS
-        for (int i=0; i< Chunk.SUBCHUNKS; i++) GreedyChunkMeshTest(data, chunk_blocks, i);
+        for (i=0; i < Chunk.SUBCHUNKS; i++) GreedyChunkMeshTest(data, chunk_blocks, i);
 
         // construct mesh
         var _st = new SurfaceTool();
@@ -216,6 +277,9 @@ public static int[] GenerateTest(Vector3I chunkPosition)
         for (int axis=0; axis<6;axis++) {
             foreach (var (blockinfo, planeSet) in data[axis]) {
                 foreach (var (k_chunked, binary_plane) in planeSet) {
+                    var blockId = Chunk.GetBlockID(blockinfo);
+
+                    // sloped blocks are not greedy meshed
                     var greedy_quads = GreedyMeshBinaryPlane(binary_plane);
 
                     var k = k_chunked % Chunk.Dimensions.Y;
@@ -259,7 +323,7 @@ public static int[] GenerateTest(Vector3I chunkPosition)
 
                         // construct vertices and normals for mesh
                         Godot.Vector3[] verts = new Godot.Vector3[4];
-                        for (int i=0; i<4; i++) {
+                        for (i=0; i<4; i++) {
                             verts[i] = quad_offset + (Godot.Vector3)CUBE_VERTS1[AXIS1[axis,i]]*quad_delta;
 
                             // if the lowest block level, push the bottom verts down by 100
@@ -292,7 +356,6 @@ public static int[] GenerateTest(Vector3I chunkPosition)
 		                var uvTriangle2 = new Godot.Vector2[] { uvA, uvC, uvD };
 
                         // add the quad to the mesh
-                        var blockId = Chunk.GetBlockID(blockinfo);
                         if (blockId == BlockManager.Instance.LavaBlockId)
                         {
                             _st2.AddTriangleFan(triangle1, uvTriangle1, normals: normals);
@@ -304,6 +367,7 @@ public static int[] GenerateTest(Vector3I chunkPosition)
                             var block_face_texture_idx = BlockManager.BlockTextureArrayPositions(blockId)[axis];
                             var notacolour = new Color(block_face_texture_idx, uv_offset.X, uv_offset.Y, blockDamage)*(1/255f);
                             var metadata = new Color[] {notacolour, notacolour, notacolour};
+
                             if (blockId == BlockManager.BlockID("Grass") && axis == 1)
                             {
                                 grassTopSurfaceTool.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
@@ -320,7 +384,131 @@ public static int[] GenerateTest(Vector3I chunkPosition)
             }
         }
 
-        
+        // sloped blocks are not greedy meshed, but constucted seperately
+        // their data is stored in the 7th dictionary
+        foreach (var (blockinfo, blockposition) in data[6][0])
+        {
+            var blockId = Chunk.GetBlockID(blockinfo);
+
+            // two types of slope, regular slope or angled (7 face) corner slope
+            var regularSlope = blockId == BlockManager.BlockID("SlopedTest");
+            for (int axis=0;axis<6;axis++)
+            {
+                // regular slope - skip front face because it's a ramp
+                if (regularSlope && axis==4) continue;
+
+                Vector3I pos = new((int)blockposition[0],(int)blockposition[1],(int)blockposition[2]); 
+                //pos += quad_offset;
+
+                var blockDamage = Chunk.GetBlockDamageData(blockinfo);
+                var block_face_texture_idx = BlockManager.BlockTextureArrayPositions(blockId)[axis];
+                var notacolour = new Color(block_face_texture_idx, 1.0f, 1.0f, blockDamage)*(1/255f);
+                var metadata = new Color[] {notacolour, notacolour, notacolour};
+
+                Godot.Vector3[] verts = new Godot.Vector3[4];
+
+                // DEBUG rotation degrees
+                float rotation_degrees = sloperotation;
+
+                for (i=0; i<4; i++) {
+                    // get local vertex coords
+                    verts[i] = (Godot.Vector3) CUBE_VERTS1[AXIS1[axis,i]] - Godot.Vector3.One * 0.5f;
+
+                    // shift down top face into a slope, for regular slope
+                    if (regularSlope && axis==1 && (i==0 || i==1)) verts[i] -= Godot.Vector3.Up;
+                    else if (axis==1 && i==1) verts[i] -= Godot.Vector3.Up; // else shift corner down by 1
+                    
+                    if (flipSlope) verts[i] = verts[i].Rotated(Godot.Vector3.Forward, Mathf.Pi);
+                    verts[i] = verts[i].Rotated(Godot.Vector3.Up, Mathf.DegToRad(rotation_degrees));
+                    verts[i] += (Godot.Vector3)pos+Godot.Vector3.One*0.5f;
+                }
+                
+                Godot.Vector3[] triangle1 = {verts[0], verts[1], verts[2]};
+                Godot.Vector3[] triangle2 = {verts[0], verts[2], verts[3]};
+                Godot.Vector3 normal = axis switch
+                {
+                    0 => Godot.Vector3.Down,    // -y
+                    1 => Godot.Vector3.Up,      // +y
+                    2 => Godot.Vector3.Left,    // -x
+                    3 => Godot.Vector3.Right,   // +x
+                    4 => Godot.Vector3.Forward, // -z is forward in godot
+                    _ => Godot.Vector3.Back     // +z
+                };
+                 if (flipSlope) {
+                    normal =  normal.Rotated(Godot.Vector3.Forward, Mathf.Pi);
+                    //normal =  normal.Rotated(Godot.Vector3.Right, Mathf.Pi);
+                    //normal =  normal.Rotated(Godot.Vector3.Up, Mathf.Pi);
+                }
+                normal = normal.Rotated(Godot.Vector3.Up, Mathf.DegToRad(rotation_degrees));
+
+                Godot.Vector3[] normals = {normal, normal, normal};
+                
+                var uvA = Godot.Vector2.Zero;
+                var uvB = new Godot.Vector2(0, 1);
+                var uvC = Godot.Vector2.One;
+                var uvD = new Godot.Vector2(1, 0);
+                var uvTriangle1 = new Godot.Vector2[] { uvA, uvB, uvC };
+                var uvTriangle2 = new Godot.Vector2[] { uvA, uvC, uvD };
+
+                if (regularSlope) {
+                    switch (axis) {
+                        case 1: // shift down top face  normals to 45 degrees
+                            var normrotate = SlopedNormalNegZ;
+                            if (flipSlope) {
+                                normrotate = normrotate.Rotated(Godot.Vector3.Forward, Mathf.Pi);
+                                //normrotate = normrotate.Rotated(Godot.Vector3.Right, Mathf.Pi);
+                                //normrotate = normrotate.Rotated(Godot.Vector3.Up, Mathf.Pi);
+                            }
+                            normrotate = normrotate.Rotated(Godot.Vector3.Up, Mathf.DegToRad(rotation_degrees));
+                            normals = new Godot.Vector3[] {normrotate,normrotate,normrotate};
+                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            break;
+                        case 2: // side face, only add one of the triangles and adjust UVs accordingly
+                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            break;
+                        case 3: // side face, only add one of the triangles and adjust UVs accordingly
+                            triangle1 = new Godot.Vector3[] {verts[1], verts[2], verts[3]};
+                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            break;
+                        default:
+                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            break;
+                    }
+                } else {
+                    switch (axis) {
+                        case 1: // shift down top face  normals to 45 degrees
+                            var normrotate = SlopedNormalNegZ;
+                            if (flipSlope) {
+                                normrotate = normrotate.Rotated(Godot.Vector3.Forward, Mathf.Pi);
+                                //normrotate = normrotate.Rotated(Godot.Vector3.Right, Mathf.Pi);
+                                //normrotate = normrotate.Rotated(Godot.Vector3.Up, Mathf.Pi);
+                            }
+                            normrotate = normrotate.Rotated(Godot.Vector3.Up, Mathf.DegToRad(rotation_degrees));
+                            normals = new Godot.Vector3[] {normrotate,normrotate,normrotate};
+                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            break;
+                        //case 2: // side face, only add one of the triangles and adjust UVs accordingly
+                            //_st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                           // break;
+                        case 3: // side face, only add one of the triangles and adjust UVs accordingly
+                            triangle1 = new Godot.Vector3[] {verts[1], verts[2], verts[3]};
+                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            break;
+                        case 4: // facing -z, front, only add one triangle
+                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            break;
+                        default:
+                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            break;
+                    }
+                }
+            }
+        }
+
         grassTopSurfaceTool.Index();
         var a1 = _st.Commit();
         var a2 = _st2.Commit();
@@ -331,8 +519,22 @@ public static int[] GenerateTest(Vector3I chunkPosition)
         surfaces[Chunk.ChunkMeshData.LAVA_SURFACE] = a2;
         surfaces[Chunk.ChunkMeshData.GRASS_SURFACE] = a3;
 
-
         return new Chunk.ChunkMeshData(surfaces);
+    }
+
+private static List<GreedyQuad> RegularMeshBinaryPlane(UInt32[] data) {
+        List<GreedyQuad> single_quads = new();
+        int data_length = data.Length;
+        for (int j=0;j<data_length;j++) { // j selects a row from the data[j]
+            var i = 0; // i  traverses the bits in current row j
+            while (i < Chunk.CHUNK_SIZE) {
+                i += BitOperations.TrailingZeroCount(data[j] >> i);
+                if (i>=Chunk.CHUNK_SIZE) continue;
+                single_quads.Add(new GreedyQuad{row=j, col=i, delta_row=1, delta_col=1}); 
+                i++;
+            }
+        }
+        return single_quads;
     }
 
 private static List<GreedyQuad> GreedyMeshBinaryPlane(UInt32[] data) {
@@ -404,6 +606,8 @@ public static void GreedyChunkMeshTest(Dictionary<int, Dictionary<int, UInt32[]>
         var axis_cols = new UInt32[Chunk.CSP3*3];
         var col_face_masks = new UInt32[Chunk.CSP3*6];
 
+        var slope_blocks = new Dictionary<int, UInt32[]>();
+
         // generate binary 0 1 voxel representation for each axis
         for (int x=0;x<Chunk.CSP;x++) {
             for (int y=0;y<Chunk.CSP;y++) {
@@ -414,7 +618,13 @@ public static void GreedyChunkMeshTest(Dictionary<int, Dictionary<int, UInt32[]>
                     chunk_idx += subchunk*Chunk.CHUNKSQ*Chunk.CHUNK_SIZE; // move up one subchunk
                     
                     var b = chunk_blocks[chunk_idx];
-                    if (!Chunk.IsBlockEmpty(b)) { // if block is solid
+                    if (Chunk.IsBlockSloped(b)) {
+                        // add sloped blocks and IDs to a separate list
+                        if (!slope_blocks.TryGetValue(b, out _ )) {
+                            slope_blocks.Add(b, new UInt32[] {(uint)x,(uint)y,(uint)z});
+                        }
+                    }
+                    else if (!Chunk.IsBlockEmpty(b)) { // if block is solid
                         axis_cols[x + z*Chunk.CSP] |= (UInt32)1 << y;           // y axis defined by x,z
                         axis_cols[z + y*Chunk.CSP + Chunk.CSP2] |= (UInt32)1 << x;    // x axis defined by z,y
                         axis_cols[x + y*Chunk.CSP + Chunk.CSP2*2] |= (UInt32)1 << z;  // z axis defined by x,y
@@ -422,6 +632,10 @@ public static void GreedyChunkMeshTest(Dictionary<int, Dictionary<int, UInt32[]>
                 }
             }
         }
+
+        // add slope blocks to entry zero of the extra "axis"
+        // data 1-5 are the cube axes, 6 is the sloped blocks 
+        data[6].Add(0, slope_blocks);
 
         // do face culling for each axis
         for (int axis = 0; axis < 3; axis++) {

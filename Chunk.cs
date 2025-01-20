@@ -10,9 +10,9 @@ public partial class Chunk : StaticBody3D
 
 	[Export] public MeshInstance3D MeshInstance { get; set; }
 
-    [Export] public Grass[] GrassMultiMeshArray {get; set;}
+    //[Export] public Grass[] GrassMultiMeshArray {get; set;}
 
-	public const float VOXEL_SCALE = 1.0f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
+	public const float VOXEL_SCALE = 0.5f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
     public const float INV_VOXEL_SCALE = 1/VOXEL_SCALE;
 
     // chunk size is 30, padded chunk size is 32. Can't be increased easily because it uses binary UINT32 to do face culling
@@ -110,7 +110,8 @@ public struct ChunkMeshData {
         _blocks = ChunkManager.Generate(ChunkPosition);
         _chunkMeshData = ChunkManager.BuildChunkMesh(_blocks, ChunkPosition.Y == 0);
 
-        UpdateChunkGrass(new float[] {newpos.X,newpos.Y,newpos.Z});
+        // HACK expensive LOD grass is disabled
+        //UpdateChunkGrass(new float[] {newpos.X,newpos.Y,newpos.Z});
 
         var mesh = _chunkMeshData.UnifySurfaces();
         var collisionHull = mesh.CreateTrimeshShape();
@@ -129,7 +130,9 @@ public struct ChunkMeshData {
         CallDeferred(Node3D.MethodName.SetGlobalPosition, newpos);
 
         _blocks = blocks;
+        _chunkMeshData = await Task.Run(()=>{return ChunkManager.BuildChunkMesh(_blocks,ChunkPosition.Y == 0);});
 
+        /* HACK base density expensive grass lod is disabled
         Grass[] newgrass = GrassMultiMeshArray;
         foreach (Grass grass in newgrass) {
             if (_chunkMeshData.HasSurfaceOfType(Chunk.ChunkMeshData.GRASS_SURFACE)) {
@@ -140,50 +143,17 @@ public struct ChunkMeshData {
         }
         
         GrassMultiMeshArray = newgrass;
+
         //_chunkMeshData = await Task.Run(()=>{return ChunkManager.BuildChunkMesh(_blocks,ChunkPosition.Y == 0);});
-
-        // HACK base density
-        /*
-        var _base_density = GrassMultiMeshArray[0].Density;
-        for (int i=0; i< GrassMultiMeshArray.Length; i++)
-        {
-            var g = GrassMultiMeshArray[i];
-            if (_chunkMeshData.HasSurfaceOfType(ChunkMeshData.GRASS_SURFACE))
-            {
-                g.TerrainMesh = _chunkMeshData.GetSurface(ChunkMeshData.GRASS_SURFACE);
-            }
-            else
-            {
-                g.TerrainMesh = null;
-            } 
-            g.ChunkPosition = newpos;
-            g.PlayerPosition = (Player.Instance != null) ? Player.Instance.GlobalPosition : Vector3.Zero;
-
-            var density = _base_density/(i+1);
-            g.Density = density;
-
-            var spawns = await Task.Run(()=>{return Grass.GenSpawns(g);});
-            g.Rebuild(spawns);
-        }*/
-
-        // recalculate grass
-        /*
-        if (_chunkMeshData.HasSurfaceOfType(ChunkMeshData.GRASS_SURFACE)) {
-            GrassMultiMesh.TerrainMesh = _chunkMeshData.GetSurface(ChunkMeshData.GRASS_SURFACE);
-        } else GrassMultiMesh.TerrainMesh = null;
-        GrassMultiMesh.ChunkPosition = newpos;
-        GrassMultiMesh.PlayerPosition = Player.Instance.GlobalPosition;
-        if (Player.Instance.GlobalPosition.DistanceSquaredTo(newpos+Vector3.One*VOXEL_SCALE*CHUNK_SIZE/2) >= Mathf.Pow(CHUNK_SIZE*VOXEL_SCALE*2f,2.0f)) {
-            GrassMultiMesh.Visible = false;
-        } else GrassMultiMesh.Visible = true;
-        await Task.Run(()=>{GrassMultiMesh.Rebuild();});
-        GrassMultiMesh.Rebuild();*/
+        */
 
         var mesh = _chunkMeshData.UnifySurfaces();
         var collisionHull = await Task.Run(()=>{return mesh.CreateTrimeshShape();});
         Update(mesh, collisionHull);
 	}
 
+    // HACK expensive LOD grass is disabled
+    /*
     public void UpdateChunkGrass(float[] newChunkPosition = null) {
         // HACK base density
         for (int i=0; i< GrassMultiMeshArray.Length; i++) {
@@ -199,7 +169,7 @@ public struct ChunkMeshData {
 
     public override void _ExitTree() {
         foreach (var g in GrassMultiMeshArray) g.Multimesh = null;
-    }
+    }*/
 
     public static int PackBlockInfo(int blockType) {
         return blockType<<15;
@@ -258,6 +228,10 @@ public struct ChunkMeshData {
         return GetBlockID(blockInfo) == 0;
     }
 
+    public static bool IsBlockSloped(int blockInfo) {
+        return GetBlockID(blockInfo) == BlockManager.BlockID("SlopedTest") || GetBlockID(blockInfo) == BlockManager.BlockID("AngleSlopedTest");
+    }
+
     public static bool IsBlockInvincible(int blockInfo) {
         return IsBlockEmpty(blockInfo) || (GetBlockID(blockInfo) == BlockManager.Instance.LavaBlockId);
     }
@@ -284,6 +258,8 @@ public struct ChunkMeshData {
         }
     }
 
+/*
+    // HACK expensive LOD grass disabled for now
     public override void _Process(double delta) {
         if (Player.Instance != null) {
             var sq_dist = Player.Instance.GlobalPosition.DistanceSquaredTo(GlobalPosition+Vector3.One*VOXEL_SCALE*CHUNK_SIZE/2);
@@ -291,7 +267,7 @@ public struct ChunkMeshData {
             foreach (var g in GrassMultiMeshArray) g.Visible = false;
             if (chunk_dist < GrassMultiMeshArray.Length) GrassMultiMeshArray[chunk_dist].Visible = true;
         }
-    }
+    }*/
 
 	public void DamageBlocks(List<(Vector3I, int)> blockDamages)
 	{ 
@@ -334,7 +310,9 @@ public struct ChunkMeshData {
         _chunkMeshData = ChunkManager.BuildChunkMesh(_blocks,ChunkPosition.Y == 0);
         var mesh = _chunkMeshData.UnifySurfaces();
 
-        CallDeferred(nameof(Chunk.UpdateChunkGrass), null);
+        // HACK expensive LOD grass is disabled
+        //CallDeferred(nameof(Chunk.UpdateChunkGrass), null);
+
         var shape = mesh.CreateTrimeshShape();
 		Update(mesh, shape);
         SpawnBlockParticles(particle_spawn_list);

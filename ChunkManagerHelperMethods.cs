@@ -3,7 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 
+
+
 public partial class ChunkManager : Node {
+    const float INVSQRT2 = 0.70710678118f;
+
+    private static readonly Godot.Vector3 SlopedNormal = new(0, INVSQRT2, INVSQRT2);
+
     public static int[] Generate(Vector3I chunkPosition)
 	{
         var result = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
@@ -89,7 +95,8 @@ public partial class ChunkManager : Node {
 
                         // generate other levels
                         var noise = CELLNOISE.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Z);
-                        var groundheight = (int)(0.0*(noise+1)/2);
+                        var groundheight = (int)(1.0*(noise+1)/2);
+                        if (groundheight ==0 && rnd.Randf()<0.2f) groundheight = 1;
                         if (chunkPosition.Y == 0 && globalBlockPosition.Y <= groundheight)
                         {
                             if (y==0) blockType = BlockManager.Instance.LavaBlockId;
@@ -171,6 +178,7 @@ public partial class ChunkManager : Node {
 
         // put the data into the hash maps
         for (int axis = 0; axis < 6; axis++) {
+
             // i and j are coords in the binary plane for the given axis
             // i is column, j is row
             for (int j=0;j<Chunk.CHUNK_SIZE;j++) {
@@ -202,6 +210,8 @@ public partial class ChunkManager : Node {
                                 + subchunk*Chunk.CHUNKSQ*Chunk.CHUNK_SIZE
                             ];
 
+                        // sloped blocks tilt their tops down, they don't have a front face 
+                        if (Chunk.GetBlockID(blockinfo) == BlockManager.BlockID("SlopedTest") && axis == 5) continue;
                         
                         if (!data[axis].TryGetValue(blockinfo, out Dictionary<int, UInt32[]> planeSet)) {
                             planeSet = new(); 
@@ -286,7 +296,7 @@ public partial class ChunkManager : Node {
                         // construct vertices and normals for mesh
                         Godot.Vector3[] verts = new Godot.Vector3[4];
                         for (int i=0; i<4; i++) {
-                            verts[i] = quad_offset + (Godot.Vector3)CUBE_VERTS[AXIS[axis,i]]*quad_delta;
+                            verts[i] = quad_offset + (Godot.Vector3)CUBE_VERTS[CUBE_AXIS[axis,i]]*quad_delta;
 
                             // if the lowest block level, push the bottom verts down by 100
                             // this makes a bottomless pit instead of just cutting the map off in a void
@@ -330,16 +340,40 @@ public partial class ChunkManager : Node {
                             var block_face_texture_idx = BlockManager.BlockTextureArrayPositions(blockId)[axis];
                             var notacolour = new Color(block_face_texture_idx, uv_offset.X, uv_offset.Y, blockDamage)*(1/255f);
                             var metadata = new Color[] {notacolour, notacolour, notacolour};
+
                             if (blockId == BlockManager.BlockID("Grass") && axis == 1)
                             {
                                 grassTopSurfaceTool.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
                                 grassTopSurfaceTool.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            }
+                            else if (blockId == BlockManager.BlockID("SlopedTest"))
+                            {
+                                switch (axis) {
+                                    case 1: // shift down top face and adjust its normals to 45 degrees
+                                        verts[0] -= Godot.Vector3.Up;
+                                        verts[1] -= Godot.Vector3.Up;
+                                        normals = new Godot.Vector3[] {SlopedNormal,SlopedNormal,SlopedNormal};
+                                        _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                                        _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                                        break;
+                                    case 2: // left face, only add one of the triangles and adjust UVs accordingly
+                                        _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                                        break;
+                                    case 3: // right face, only add the bottom most triangle
+                                        _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                                        break;
+                                    default:
+                                        _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                                        _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                                        break;
+                                }
                             }
                             else
                             {
                                 _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
                                 _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
                             }
+
                         }
                     }
                 }

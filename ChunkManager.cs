@@ -76,7 +76,7 @@ public partial class ChunkManager : Node
     // vertices for a square face of the above, cube depending on axis
     // axis has 2 entries for each coordinate - y, x, z and alternates between -/+
     // axis 0 = down, 1 = up, 2 = right, 3 = left, 4 = front (-z is front in godot), 5 = back
-    private static readonly int[,] AXIS = 
+    private static readonly int[,] CUBE_AXIS = 
         {
             {0, 4, 5, 1}, // bottom
             {2, 3, 7, 6}, // top
