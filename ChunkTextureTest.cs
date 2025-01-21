@@ -3,6 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 
+public enum SlopeType {
+    None=0,
+    Side=1,
+    Corner=2,
+    InvCorner=3
+}
+
 [Tool]
 public partial class ChunkTextureTest : Node3D
 {
@@ -10,9 +17,8 @@ public partial class ChunkTextureTest : Node3D
 
     public Dictionary<Vector3I, int[]> ChunkBlocksBuffer = new();
 
-    public HashSet<Vector3I> HasGeneratedChunk = new();
-
     private static readonly Godot.Vector3 SlopedNormalNegZ = new(0, INVSQRT2, -INVSQRT2);
+    private static readonly Godot.Vector3 SlopedCornerNormalNegZ = new(INVSQRT2, INVSQRT2, -INVSQRT2);
 
 	public static readonly Noise CELLNOISE = new FastNoiseLite(){NoiseType = FastNoiseLite.NoiseTypeEnum.Cellular
 	, CellularDistanceFunction = FastNoiseLite.CellularDistanceFunctionEnum.Manhattan,
@@ -64,7 +70,7 @@ public partial class ChunkTextureTest : Node3D
 
     public static readonly ShaderMaterial GrassBladeMaterial = ResourceLoader.Load("res://shaders/grass/multimesh_grass_shader.tres") as ShaderMaterial;
 
-    [Export] public Grass GrassMultiMesh {get; set;}
+    //[Export] public Grass GrassMultiMesh {get; set;}
 
     [Export] public Godot.Vector3 PlayerPosition {get; set;}
 
@@ -73,11 +79,14 @@ public partial class ChunkTextureTest : Node3D
         var camera_position = EditorInterface.Singleton.GetEditorViewport3D(0).GetCamera3D().GlobalPosition;
 
         if (_prevChunkPosition != chunkpos && ChunkMesh != null && ChunkMesh is MeshInstance3D mesh && BlockManager.Instance != null) {
-            GenerateTest(chunkpos);
-            var blocks = ChunkBlocksBuffer[chunkpos];
+            if (!ChunkBlocksBuffer.TryGetValue(chunkpos, out var blocks)) {
+                GenerateTest(chunkpos);
+            }
+            blocks = ChunkBlocksBuffer[chunkpos];
             var chunkmeshdata = BuildChunkMeshTest(blocks, false, SlopeRotationDegrees, _flipslope);
             mesh.Mesh = chunkmeshdata.UnifySurfaces();
 
+            /*
             if (chunkmeshdata.HasSurfaceOfType(Chunk.ChunkMeshData.GRASS_SURFACE)) {
                 var grass_mesh = chunkmeshdata.GetSurface(Chunk.ChunkMeshData.GRASS_SURFACE);
                 GrassMultiMesh.TerrainMesh = grass_mesh;
@@ -85,12 +94,13 @@ public partial class ChunkTextureTest : Node3D
                 GrassMultiMesh.ChunkPosition = chunkpos;
                 GrassMultiMesh.PlayerPosition = camera_position;
             } else GrassMultiMesh.TerrainMesh = null;
-            GrassMultiMesh.Rebuild();
+            GrassMultiMesh.Rebuild();*/
 
             _prevChunkPosition = chunkpos;
         }
 
         // grass mesh LOD
+        /*
         var player_dist = camera_position.DistanceTo(chunkpos+Godot.Vector3.One*Chunk.VOXEL_SCALE*Chunk.CHUNK_SIZE/2);
         if (player_dist > Chunk.CHUNK_SIZE*Chunk.VOXEL_SCALE*1.5f
         && _prevPlayerDistance <= Chunk.CHUNK_SIZE*Chunk.VOXEL_SCALE*1.5f) {
@@ -105,19 +115,28 @@ public partial class ChunkTextureTest : Node3D
             GrassMultiMesh.PlayerPosition = camera_position;
             GrassMultiMesh.Rebuild();
             _prevPlayerDistance = player_dist;
-        }
+        }*/
     }
 
 public void GenerateTest(Vector3I chunkPosition)
 	{
+        if (CantorPairing.Contains(chunkPosition)) {
+            GD.Print("cantor pairing says Chunk already generated at ", chunkPosition);
+            return;
+        } 
+        else GD.Print("Generating chunk at ", chunkPosition);
+
         if (!ChunkBlocksBuffer.TryGetValue(chunkPosition, out var result)) {
             result = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
+            ChunkBlocksBuffer[chunkPosition] = result;
         };
 
         var rnd = new RandomNumberGenerator();
 
         // blocks spawn when 3d noise is >= cutoff (its values are -1 to 1)
         var cutoff = 0.2f;
+
+        List<Vector3I> filledBlocks = new();
         
         for (int subchunk = 0; subchunk < Chunk.SUBCHUNKS; subchunk++) {
             for (int x=0;x<Chunk.CHUNK_SIZE;x++) {
@@ -160,7 +179,7 @@ public void GenerateTest(Vector3I chunkPosition)
                                     {
                                         if (Chunk.IsBlockEmpty(kvp.Value)) continue;
                                         result[p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE] = kvp.Value;
-                                        
+                                        filledBlocks.Add(new Vector3I(p.X, p.Y, p.Z));
 
                                         // randomly damage some blocks, but not leaves
                                         if (Chunk.GetBlockSpecies(kvp.Value) == BlockSpecies.Leaves) continue;
@@ -194,7 +213,7 @@ public void GenerateTest(Vector3I chunkPosition)
                                 }
                                 continue;
                             }
-                            if (y>=3) continue;
+                            if (y>=3) continue; // skip here so we dont overwrite the tree with new blocks
 
                             // apply damage to upper layer blocks
                             int _damamount = 0, _damtype = 0;
@@ -206,6 +225,9 @@ public void GenerateTest(Vector3I chunkPosition)
                             var _daminfo = (_damtype<<5) | _damamount;
 
                             result[block_idx] = Chunk.PackBlockInfo(blockType) | _daminfo;
+
+                            if (blockType != 0) filledBlocks.Add(new Vector3I(x, y, z));
+
                             continue;
                         }
 
@@ -226,34 +248,307 @@ public void GenerateTest(Vector3I chunkPosition)
                             var noisebelow = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y-1, globalBlockPosition.Z);
                             if (noise3d >= cutoff)
                             {
-                                if (noiseabove < cutoff || y==Chunk.CHUNK_SIZE-1) {
+                                if (noiseabove < cutoff) {
                                     blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
-                                    if (z > 0 && y > 0) {
-                                        if (block_idx - Chunk.CHUNK_SIZE - Chunk.CHUNKSQ > 0) {
-                                            if (!Chunk.IsBlockEmpty(result[block_idx - Chunk.CHUNK_SIZE - Chunk.CHUNKSQ])
-                                            && !Chunk.IsBlockEmpty(result[block_idx - Chunk.CHUNKSQ])) {
-                                                result[block_idx - Chunk.CHUNK_SIZE - Chunk.CHUNKSQ] = BlockManager.BlockID("AngleSlopedTest");
-                                                blockType = BlockManager.BlockID("AngleSlopedTest");
-                                            }
-                                        }
-                                    }
-                                } 
+                                }
                                 else if (noisebelow > noise3d) blockType = BlockManager.BlockID("Stone");
                                 else blockType = BlockManager.BlockID("Dirt");
                             }
                         }
 
                         // add the damage type 
-                        var blockinfo = Chunk.PackBlockInfo(blockType);
+                        int blockinfo = 0;
+                        blockinfo |= Chunk.PackBlockInfo(blockType);
                         result[block_idx] = blockinfo;
+
+                        if (blockType != 0) filledBlocks.Add(new Vector3I(x, y, z));
+                        
+                        // add slope
+                        /*
+                        if (y>2) {
+                            var altblockinfo = result[block_idx-2*Chunk.CHUNKSQ];
+                            if (!Chunk.IsBlockEmpty(altblockinfo)) {
+                                altblockinfo &= ~(0xff<<24);
+                                ChunkBlocksBuffer[chunkPosition] = result;
+                                var neighbour_bits = GetBlockNeighborBits(chunkPosition, new(x, y-2, z));
+                                altblockinfo |= PackSlopeInfo(neighbour_bits);
+                                result[block_idx-2*Chunk.CHUNKSQ] = altblockinfo;
+                            }
+                        }*/
                     }
                 }
             }
         }
 
+        // loop over all blocks again, add slopes
+        Dictionary<Vector3I,int> packedSlopeBlockData = new();
+
+        // add corner and side slopes
+        foreach (var p in filledBlocks) {
+            var i = p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE;
+            if (!Chunk.IsBlockEmpty(result[i]) && BlockIsSlopeCandidate(chunkPosition, p)) {
+                var s = BlockPackSlopeInfo(chunkPosition, p);
+                if (Chunk.GetBlockSlopeType(s) == (int)SlopeType.Corner) {
+                    var newidx = p.X + (p.Y-1)*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE;
+                    if (newidx >= 0) result[newidx] = result[i];
+                }
+                packedSlopeBlockData[p] = s;
+            }
+        }
+
+        foreach (var (p, packedSlopeData) in packedSlopeBlockData) {
+            var i = p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE;
+            result[i] |= packedSlopeData;
+        }
+
         ChunkBlocksBuffer[chunkPosition] = result;
+        CantorPairing.Add(chunkPosition);
 	}
 
+    public int BlockPackSlopeInfo(Vector3I chunkPosition, Vector3I blockPosition) {
+        Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
+        Vector3I chunkpos = new(chunkPosition.X, chunkPosition.Y, chunkPosition.Z);
+
+        var slopetype = 0;
+        var sloperot = 0;
+
+        // these functions assume that the block is a slope candidate already (not empty, surrounded, has a block below and no block above)
+
+
+        if (BlockIsCorner(chunkpos, p)) {
+            slopetype = 2;
+            sloperot = BlockCornerRotation(chunkpos, p);
+        }
+        if (BlockIsSide(chunkpos, p)) {
+            slopetype = 1;
+            sloperot = BlockSideRotation(chunkpos, p);
+        }
+
+        if (BlockIsInvCorner(chunkpos, p)) {
+            slopetype = 3;
+            sloperot = BlockInvCornerRotation(chunkpos, p);
+        }
+
+        return Chunk.PackSlopeData(slopetype, sloperot);
+    }
+
+    public bool BlockIsSlopeCandidate(Vector3I chunkPosition, Vector3I blockPosition) {
+        Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
+        return IsBlockBelow(chunkPosition, p) && !IsBlockAbove(chunkPosition, p) && (!BlockIsSurrounded(chunkPosition, p)||BlockSingleDiagonalFree(chunkPosition, p));
+    }
+
+    public bool BlockIsInvCorner(Vector3I chunkPosition, Vector3I blockPosition) {
+        return BlockIsSurrounded(chunkPosition, blockPosition)&&BlockSingleDiagonalFree(chunkPosition, blockPosition);
+    }
+
+    public int BlockInvCornerRotation(Vector3I chunkPosition, Vector3I blockPosition) {
+        // already assume block is inv corner
+        Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
+        
+        var b1 = !BlockHasNeighbor(chunkPosition, p, Vector3I.Forward+Vector3I.Right);
+        var b2 = !BlockHasNeighbor(chunkPosition, p, Vector3I.Forward+Vector3I.Left);
+        var b3 = !BlockHasNeighbor(chunkPosition, p, Vector3I.Back+Vector3I.Right);
+        var b4 = !BlockHasNeighbor(chunkPosition, p, Vector3I.Back+Vector3I.Left);
+
+        if (b1) return 0;
+        if (b2) return 1;
+        if (b4) return 2;
+        if (b3) return 3;
+        return 0;
+    }
+
+    public bool BlockIsCorner(Vector3I chunkPosition, Vector3I blockPosition) {
+        // these functions assume that the block is a slope candidate already (not empty, surrounded, has a block below and no block above)
+        Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
+
+
+        if (
+                ! (
+                    (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsBlockAbove(chunkPosition, p+Vector3I.Forward) && !IsBlockAbove(chunkPosition, p+Vector3I.Right))
+                    ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsBlockAbove(chunkPosition, p+Vector3I.Forward) && !IsBlockAbove(chunkPosition, p+Vector3I.Left))
+                    ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsBlockAbove(chunkPosition, p+Vector3I.Back) && !IsBlockAbove(chunkPosition, p+Vector3I.Right))
+                    ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsBlockAbove(chunkPosition, p+Vector3I.Back) && !IsBlockAbove(chunkPosition, p+ Vector3I.Left))
+                )
+            ) return false;
+
+
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Right)) {
+            var b1 = GetBlockNeighbour(chunkPosition, p, Vector3I.Forward);
+            var b2 = GetBlockNeighbour(chunkPosition, p, Vector3I.Right);
+            if (!Chunk.IsBlockSloped(b1) && !Chunk.IsBlockSloped(b2)) return true;
+        }
+
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left)) {
+            var b1 = GetBlockNeighbour(chunkPosition, p, Vector3I.Forward);
+            var b2 = GetBlockNeighbour(chunkPosition, p, Vector3I.Left);
+            if (!Chunk.IsBlockSloped(b1) && !Chunk.IsBlockSloped(b2)) return true;
+        }
+
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && BlockHasNeighbor(chunkPosition, p, Vector3I.Right)) {
+            var b1 = GetBlockNeighbour(chunkPosition, p, Vector3I.Back);
+            var b2 = GetBlockNeighbour(chunkPosition, p, Vector3I.Right);
+            if (!Chunk.IsBlockSloped(b1) && !Chunk.IsBlockSloped(b2)) return true;
+        }
+
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left)) {
+            var b1 = GetBlockNeighbour(chunkPosition, p, Vector3I.Back);
+            var b2 = GetBlockNeighbour(chunkPosition, p, Vector3I.Left);
+            if (!Chunk.IsBlockSloped(b1) && !Chunk.IsBlockSloped(b2)) return true;
+        }
+
+        return false;
+    }
+
+    public int BlockCornerRotation(Vector3I chunkPosition, Vector3I blockPosition) {
+        // already assume block is corner
+        Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Right)) return 2;
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left)) return 3;
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left)) return 0;
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && BlockHasNeighbor(chunkPosition, p, Vector3I.Right)) return 1;
+        return 0;
+    }
+
+    public bool IsBlockAbove(Vector3I chunkPosition, Vector3I blockPosition) {
+        return BlockHasNeighbor(chunkPosition, blockPosition, Vector3I.Up);
+    }
+
+    public bool IsBlockBelow(Vector3I chunkPosition, Vector3I blockPosition) {
+        return BlockHasNeighbor(chunkPosition, blockPosition, Vector3I.Down);
+    }
+
+    public bool BlockIsSurrounded(Vector3I chunkPosition, Vector3I blockPosition) {
+        Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
+        return BlockHasNeighbor(chunkPosition, p, Vector3I.Forward)
+        && BlockHasNeighbor(chunkPosition, p, Vector3I.Back)
+        && BlockHasNeighbor(chunkPosition, p, Vector3I.Left)
+        && BlockHasNeighbor(chunkPosition, p, Vector3I.Right);
+    }
+
+    public bool BlockSingleDiagonalFree(Vector3I chunkPosition, Vector3I blockPosition) {
+        // already assume block is inv corner
+        Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
+        
+        var b1 = BlockHasNeighbor(chunkPosition, p, Vector3I.Forward+Vector3I.Right);
+        var b2 = BlockHasNeighbor(chunkPosition, p, Vector3I.Forward+Vector3I.Left);
+        var b3 =  BlockHasNeighbor(chunkPosition, p, Vector3I.Back+Vector3I.Right);
+        var b4 =  BlockHasNeighbor(chunkPosition, p, Vector3I.Back+Vector3I.Left);
+
+        return (!b1 && b2 && b3 && b4) ^ (b1 && !b2 && b3 && b4) ^ (b1 && b2 && !b3 && b4) ^ (b1 && b2 && b3 && !b4);
+    }
+
+    public int BlockDiagonalsCount(Vector3I chunkPosition, Vector3I blockPosition) {
+        Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
+        int count = 0;
+        for (int x=-1;x<2;x+=2) {
+                for (int z=-1;z<2;z+=2) {
+                    if (BlockHasNeighbor(chunkPosition, p, new Vector3I(p.X+x, p.Y, p.Z+z))) count++;
+                }
+        }
+        return count;
+    }
+
+    public int BlockNeighbourCount(Vector3I chunkPosition, Vector3I blockPosition) {
+        Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
+        int count = 0;
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward)) count++;
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back)) count++;
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Left)) count++;
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Right)) count++;
+        return count;
+    }
+
+    public bool BlockIsSide(Vector3I chunkPosition, Vector3I blockPosition) {
+        // these functions assume that the block is a slope candidate already (not empty, surrounded, has a block below and no block above)
+        Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
+
+        if (!(BlockNeighbourCount(chunkPosition, p) == 3 || BlockNeighbourCount(chunkPosition, p) == 1)) return false;
+
+        if (BlockNeighbourCount(chunkPosition, p) == 1) {
+            return
+                (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && !IsBlockAbove(chunkPosition, p+Vector3I.Forward))
+                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && !IsBlockAbove(chunkPosition, p+Vector3I.Back))
+                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsBlockAbove(chunkPosition, p+Vector3I.Left))
+                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsBlockAbove(chunkPosition, p+Vector3I.Right));
+        }
+
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Back))
+        {
+            return
+                (BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsBlockAbove(chunkPosition, p+Vector3I.Left))
+                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsBlockAbove(chunkPosition, p+Vector3I.Right));
+
+        }
+        else if (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left))
+        {
+            return
+                (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && !IsBlockAbove(chunkPosition, p+Vector3I.Forward))
+                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && !IsBlockAbove(chunkPosition, p+Vector3I.Back));
+        }
+
+        return false;
+    }
+
+    public int BlockSideRotation(Vector3I chunkPosition, Vector3I blockPosition) {
+        // already assume block is slope
+        Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
+
+        if (BlockNeighbourCount(chunkPosition, p) == 1) {
+            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && !IsBlockAbove(chunkPosition, p+Vector3I.Forward)) return 2;
+            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && !IsBlockAbove(chunkPosition, p+Vector3I.Back)) return 0;
+            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsBlockAbove(chunkPosition, p+Vector3I.Left)) return 3;
+            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsBlockAbove(chunkPosition, p+Vector3I.Right)) return 1;
+        }
+
+        if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Back))
+        {
+            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsBlockAbove(chunkPosition, p+Vector3I.Right)) return 1;
+            else if (BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsBlockAbove(chunkPosition, p+Vector3I.Left)) return 3;  
+        }
+        else if (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left))
+        {
+            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && !IsBlockAbove(chunkPosition, p+Vector3I.Forward)) return 2;
+            else if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && !IsBlockAbove(chunkPosition, p+Vector3I.Back)) return 0;
+        }
+    
+
+        return 0;
+    }
+
+    public bool BlockHasNeighbor(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection) {
+        return GetBlockNeighbour(chunkPosition, blockPosition, neighborDirection) != 0;
+    }
+
+    public int GetBlockNeighbour(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection) {
+        var chunk = ChunkBlocksBuffer[chunkPosition];
+        Vector3I p = new(blockPosition.X + neighborDirection.X, blockPosition.Y + neighborDirection.Y, blockPosition.Z + neighborDirection.Z);
+
+        if (p.X < Chunk.CHUNK_SIZE && p.X >= 0
+        &&  p.Y < Chunk.CHUNK_SIZE && p.Y >= 0
+        &&  p.Z < Chunk.CHUNK_SIZE && p.Z >= 0)
+        {
+            var b = chunk[p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE];
+            if (!Chunk.IsBlockEmpty(b)) return b;
+        }
+        else
+        {
+            var neighbour_chunk = new Vector3I(chunkPosition.X, chunkPosition.Y, chunkPosition.Z);
+            var dx = p.X > Chunk.CHUNK_SIZE-1 ? 1 : p.X < 0 ? -1 : 0;
+            var dy = p.Y > Chunk.CHUNK_SIZE-1 ? 1 : p.Y < 0 ? -1 : 0;
+            var dz = p.Z > Chunk.CHUNK_SIZE-1 ? 1 : p.Z < 0 ? -1 : 0;
+            var delta = new Vector3I(dx, dy, dz);
+            var newp = p-delta*Chunk.CHUNK_SIZE;
+            if (!ChunkBlocksBuffer.TryGetValue(neighbour_chunk+delta, out var neighbour)) {
+                neighbour = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
+                ChunkBlocksBuffer[neighbour_chunk+delta] = neighbour;
+            }
+
+            var new_idx = newp.X + newp.Y*Chunk.CHUNKSQ + newp.Z*Chunk.CHUNK_SIZE;
+            if (!Chunk.IsBlockEmpty(neighbour[new_idx])) return neighbour[new_idx];
+        }
+
+        return 0;
+    }
     public static Chunk.ChunkMeshData BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk, float sloperotation, bool flipSlope = false) {
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
@@ -386,18 +681,33 @@ public void GenerateTest(Vector3I chunkPosition)
 
         // sloped blocks are not greedy meshed, but constucted seperately
         // their data is stored in the 7th dictionary
-        foreach (var (blockinfo, blockposition) in data[6][0])
+        foreach (var (chunk_idx, blockdata) in data[6][0])
         {
+            var blockinfo = (int)blockdata[0];
             var blockId = Chunk.GetBlockID(blockinfo);
+            var slopeType = Chunk.GetBlockSlopeType(blockinfo);
 
-            // two types of slope, regular slope or angled (7 face) corner slope
-            var regularSlope = blockId == BlockManager.BlockID("SlopedTest");
+            // two types of slope, regular slope (id:1) or angled (7 face) corner slope (id:2)
+            // all blocks in this set are sloped so it's either going to be 1 or 2
+            var regularSlope = slopeType == (int)SlopeType.Side;
+            var cornerSlope = slopeType == (int)SlopeType.Corner;
+            var invCornerSlope = slopeType == (int)SlopeType.InvCorner;
+            float rotation_angle = Chunk.GetBlockSlopeRotation(blockinfo);
+            //rotation_angle += Mathf.Pi/2;
+            while (rotation_angle > Mathf.Pi*2) rotation_angle -= Mathf.Pi*2;
+            // DEBUG no flip slope
+            //if (flipSlope && !regularSlope) rotation_degrees -= 90f;
+
+            var x = chunk_idx % Chunk.CHUNK_SIZE;
+            var z = (chunk_idx / Chunk.CHUNK_SIZE) % Chunk.CHUNK_SIZE;
+            var y = chunk_idx / Chunk.CHUNKSQ;
+            Vector3I pos = new(x,y,z); 
+
             for (int axis=0;axis<6;axis++)
             {
                 // regular slope - skip front face because it's a ramp
                 if (regularSlope && axis==4) continue;
 
-                Vector3I pos = new((int)blockposition[0],(int)blockposition[1],(int)blockposition[2]); 
                 //pos += quad_offset;
 
                 var blockDamage = Chunk.GetBlockDamageData(blockinfo);
@@ -407,19 +717,17 @@ public void GenerateTest(Vector3I chunkPosition)
 
                 Godot.Vector3[] verts = new Godot.Vector3[4];
 
-                // DEBUG rotation degrees
-                float rotation_degrees = sloperotation;
-
                 for (i=0; i<4; i++) {
                     // get local vertex coords
                     verts[i] = (Godot.Vector3) CUBE_VERTS1[AXIS1[axis,i]] - Godot.Vector3.One * 0.5f;
 
                     // shift down top face into a slope, for regular slope
                     if (regularSlope && axis==1 && (i==0 || i==1)) verts[i] -= Godot.Vector3.Up;
-                    else if (axis==1 && i==1) verts[i] -= Godot.Vector3.Up; // else shift corner down by 1
+                    if (cornerSlope && axis==1 && (i==0 || i==1 || i ==2)) verts[i] -= Godot.Vector3.Up; // else shift corner down by 1 for corner slopes
+                    if (invCornerSlope && axis==1 && i==1) verts[i] -= Godot.Vector3.Up; // else shift corner down by 1
                     
                     if (flipSlope) verts[i] = verts[i].Rotated(Godot.Vector3.Forward, Mathf.Pi);
-                    verts[i] = verts[i].Rotated(Godot.Vector3.Up, Mathf.DegToRad(rotation_degrees));
+                    verts[i] = verts[i].Rotated(Godot.Vector3.Up, rotation_angle);
                     verts[i] += (Godot.Vector3)pos+Godot.Vector3.One*0.5f;
                 }
                 
@@ -434,12 +742,8 @@ public void GenerateTest(Vector3I chunkPosition)
                     4 => Godot.Vector3.Forward, // -z is forward in godot
                     _ => Godot.Vector3.Back     // +z
                 };
-                 if (flipSlope) {
-                    normal =  normal.Rotated(Godot.Vector3.Forward, Mathf.Pi);
-                    //normal =  normal.Rotated(Godot.Vector3.Right, Mathf.Pi);
-                    //normal =  normal.Rotated(Godot.Vector3.Up, Mathf.Pi);
-                }
-                normal = normal.Rotated(Godot.Vector3.Up, Mathf.DegToRad(rotation_degrees));
+                if (flipSlope) normal = normal.Rotated(Godot.Vector3.Forward, Mathf.Pi);
+                normal = normal.Rotated(Godot.Vector3.Up, rotation_angle);
 
                 Godot.Vector3[] normals = {normal, normal, normal};
                 
@@ -450,61 +754,58 @@ public void GenerateTest(Vector3I chunkPosition)
                 var uvTriangle1 = new Godot.Vector2[] { uvA, uvB, uvC };
                 var uvTriangle2 = new Godot.Vector2[] { uvA, uvC, uvD };
 
-                if (regularSlope) {
-                    switch (axis) {
-                        case 1: // shift down top face  normals to 45 degrees
-                            var normrotate = SlopedNormalNegZ;
-                            if (flipSlope) {
-                                normrotate = normrotate.Rotated(Godot.Vector3.Forward, Mathf.Pi);
-                                //normrotate = normrotate.Rotated(Godot.Vector3.Right, Mathf.Pi);
-                                //normrotate = normrotate.Rotated(Godot.Vector3.Up, Mathf.Pi);
-                            }
-                            normrotate = normrotate.Rotated(Godot.Vector3.Up, Mathf.DegToRad(rotation_degrees));
-                            normals = new Godot.Vector3[] {normrotate,normrotate,normrotate};
+                switch (axis)
+                {
+                    case 1: // top face - modify normals
+                        if (invCornerSlope) _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                        
+                        var normrotate = SlopedNormalNegZ;
+                        if (cornerSlope || invCornerSlope) normrotate = SlopedCornerNormalNegZ;
+                        if (flipSlope) normrotate = normrotate.Rotated(Godot.Vector3.Forward, Mathf.Pi);
+                        normrotate = normrotate.Rotated(Godot.Vector3.Up, rotation_angle);
+                        normals = new Godot.Vector3[] {normrotate,normrotate,normrotate};
+                        if (regularSlope || invCornerSlope) _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+
+                        if (!invCornerSlope) _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                        break;
+                    case 2: // side face, only add one of the triangles
+                        if (regularSlope || cornerSlope) _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                        else if (invCornerSlope) {
+                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals); 
+                        }
+                        break;
+                    case 3: // obverse side face, only add one of the triangles and adjust its vertices accordingly
+                        triangle1 = new Godot.Vector3[] {verts[1], verts[2], verts[3]};
+
+                        //if (invCornerSlope) uvTriangle1 = new Godot.Vector2[] { uvC, uvB, uvA };
+                        if (regularSlope || invCornerSlope) {
+                            uvTriangle1 = new Godot.Vector2[] { uvC, uvB, uvA };
+                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                        }
+                        break;
+                    case 4: // facing -z, front, corner slopes only add one triangle, else normal
+                        if (regularSlope) {
                             _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
                             _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
-                            break;
-                        case 2: // side face, only add one of the triangles and adjust UVs accordingly
+                        }
+                        else if (invCornerSlope) _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                        break;
+                    case 5:
+                        if (regularSlope || invCornerSlope) {
                             _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            break;
-                        case 3: // side face, only add one of the triangles and adjust UVs accordingly
+                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                        }
+                        if (cornerSlope) {
                             triangle1 = new Godot.Vector3[] {verts[1], verts[2], verts[3]};
+                            uvTriangle1 = new Godot.Vector2[] { uvC, uvB, uvA };
                             _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            break;
-                        default:
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
-                            break;
-                    }
-                } else {
-                    switch (axis) {
-                        case 1: // shift down top face  normals to 45 degrees
-                            var normrotate = SlopedNormalNegZ;
-                            if (flipSlope) {
-                                normrotate = normrotate.Rotated(Godot.Vector3.Forward, Mathf.Pi);
-                                //normrotate = normrotate.Rotated(Godot.Vector3.Right, Mathf.Pi);
-                                //normrotate = normrotate.Rotated(Godot.Vector3.Up, Mathf.Pi);
-                            }
-                            normrotate = normrotate.Rotated(Godot.Vector3.Up, Mathf.DegToRad(rotation_degrees));
-                            normals = new Godot.Vector3[] {normrotate,normrotate,normrotate};
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
-                            break;
-                        //case 2: // side face, only add one of the triangles and adjust UVs accordingly
-                            //_st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                           // break;
-                        case 3: // side face, only add one of the triangles and adjust UVs accordingly
-                            triangle1 = new Godot.Vector3[] {verts[1], verts[2], verts[3]};
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            break;
-                        case 4: // facing -z, front, only add one triangle
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            break;
-                        default:
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
-                            break;
-                    }
+                        }
+                        break;
+                    default: // bottom face is always drawn
+                        _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                        _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                        break;
                 }
             }
         }
@@ -520,21 +821,6 @@ public void GenerateTest(Vector3I chunkPosition)
         surfaces[Chunk.ChunkMeshData.GRASS_SURFACE] = a3;
 
         return new Chunk.ChunkMeshData(surfaces);
-    }
-
-private static List<GreedyQuad> RegularMeshBinaryPlane(UInt32[] data) {
-        List<GreedyQuad> single_quads = new();
-        int data_length = data.Length;
-        for (int j=0;j<data_length;j++) { // j selects a row from the data[j]
-            var i = 0; // i  traverses the bits in current row j
-            while (i < Chunk.CHUNK_SIZE) {
-                i += BitOperations.TrailingZeroCount(data[j] >> i);
-                if (i>=Chunk.CHUNK_SIZE) continue;
-                single_quads.Add(new GreedyQuad{row=j, col=i, delta_row=1, delta_col=1}); 
-                i++;
-            }
-        }
-        return single_quads;
     }
 
 private static List<GreedyQuad> GreedyMeshBinaryPlane(UInt32[] data) {
@@ -620,8 +906,8 @@ public static void GreedyChunkMeshTest(Dictionary<int, Dictionary<int, UInt32[]>
                     var b = chunk_blocks[chunk_idx];
                     if (Chunk.IsBlockSloped(b)) {
                         // add sloped blocks and IDs to a separate list
-                        if (!slope_blocks.TryGetValue(b, out _ )) {
-                            slope_blocks.Add(b, new UInt32[] {(uint)x,(uint)y,(uint)z});
+                        if (!slope_blocks.TryGetValue(chunk_idx, out _ )) {
+                            slope_blocks.Add(chunk_idx, new UInt32[] {(uint)b});
                         }
                     }
                     else if (!Chunk.IsBlockEmpty(b)) { // if block is solid

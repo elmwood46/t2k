@@ -171,16 +171,21 @@ public struct ChunkMeshData {
         foreach (var g in GrassMultiMeshArray) g.Multimesh = null;
     }*/
 
+    // block bits
+    // byte 1-2, 00-15: block type
+    // byte 3,   16-23: block damage info
+    // btye 4,   24-31: block slope orientation
+
     public static int PackBlockInfo(int blockType) {
-        return blockType<<15;
+        return blockType;
     }
 
     public static int GetBlockID(int blockInfo) {
-        return (blockInfo >> 15) & 0x3ff;
+        return blockInfo & 0xffff;
     }
 
     public static int GetBlockDamageData(int blockInfo) {
-        return blockInfo & 0xff;
+        return (blockInfo>>16) & 0xff;
     }
 
     public static int GetBlockDamageInteger(int blockInfo) {
@@ -191,8 +196,24 @@ public struct ChunkMeshData {
         return GetBlockDamageData(blockInfo) >> 5;
     }
 
+    public static int GetBlockSlopeData(int blockInfo) {
+        return blockInfo >> 24;
+    }
+
+    public static int GetBlockSlopeType(int blockInfo) {
+        return GetBlockSlopeData(blockInfo) & 0b11;
+    }
+
+    public static float GetBlockSlopeRotation(int blockInfo) {
+        return ((GetBlockSlopeData(blockInfo) >> 2)& 0b11)*Mathf.Pi/2;
+    }
+
+    public static int PackSlopeData(int slopeType, int slopeRotation) {
+        return ((slopeType) | ((slopeRotation) << 2))<<24;
+    }
+
     public void SetBlock(int blockIndex, int blockType) {
-        _blocks[blockIndex] = (_blocks[blockIndex] & ~(0x3ff << 15)) | blockType << 15;
+        _blocks[blockIndex] = (_blocks[blockIndex] & ~0xffff) | blockType;
     }
 
     public void SetBlockDamageFlag(int blockIndex, BlockDamageType damtype) {
@@ -201,7 +222,7 @@ public struct ChunkMeshData {
             BlockDamageType.Fire => 1<<6,
             _ => 1<<7
         };
-        _blocks[blockIndex] |= damMask;
+        _blocks[blockIndex] |= damMask<<21; // << 16 then << 5, first 5 bits of damage data are reserved for damage percentage
     }
 
     public void SetBlockToAir(int blockIndex) {
@@ -209,11 +230,11 @@ public struct ChunkMeshData {
     }
 
     public void SetBlockDamagePercentage(int blockIndex, float percentage) {
-        _blocks[blockIndex] = (_blocks[blockIndex] & ~0x1f) | Math.Clamp(Mathf.RoundToInt(percentage*31.0),0,31);
+        _blocks[blockIndex] = (_blocks[blockIndex] & ~0x1f0000) | ((((_blocks[blockIndex]>>16) & ~0x1f) | Math.Clamp(Mathf.RoundToInt(percentage*31.0),0,31))<<16);
     }
 
     public void SetBlockDamageInteger(int blockIndex, int damage) {
-        _blocks[blockIndex] = (_blocks[blockIndex] & ~0x1f) | Math.Clamp(damage,0,31);
+        _blocks[blockIndex] = (_blocks[blockIndex] & ~0x1f0000) | ((((_blocks[blockIndex]>>16) & ~0x1f) | Math.Clamp(damage,0,31))<<16);
     }
 
     public static BlockSpecies GetBlockSpecies(int blockinfo) {
@@ -229,7 +250,7 @@ public struct ChunkMeshData {
     }
 
     public static bool IsBlockSloped(int blockInfo) {
-        return GetBlockID(blockInfo) == BlockManager.BlockID("SlopedTest") || GetBlockID(blockInfo) == BlockManager.BlockID("AngleSlopedTest");
+        return GetBlockSlopeType(blockInfo) != 0;
     }
 
     public static bool IsBlockInvincible(int blockInfo) {
