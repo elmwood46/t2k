@@ -133,14 +133,14 @@ public partial class Save
         int[] bids = Data.Chunks[(position.X,position.Y)];
 
         // fill 3d array with blocks
-        Block[,,] blocks = new Block[Chunk.Dimensions.X, Chunk.Dimensions.Y, Chunk.Dimensions.Z];
-        for (int x = 0; x < Chunk.Dimensions.X; x++)
+        Block[,,] blocks = new Block[ChunkManager.Dimensions.X, ChunkManager.Dimensions.Y, ChunkManager.Dimensions.Z];
+        for (int x = 0; x < ChunkManager.Dimensions.X; x++)
         {
-            for (int y = 0; y < Chunk.Dimensions.Y; y++)
+            for (int y = 0; y < ChunkManager.Dimensions.Y; y++)
             {
-                for (int z = 0; z < Chunk.Dimensions.Z; z++)
+                for (int z = 0; z < ChunkManager.Dimensions.Z; z++)
                 {
-                    int index = x * Chunk.Dimensions.Y * Chunk.Dimensions.Z + y * Chunk.Dimensions.Z + z;
+                    int index = x * ChunkManager.Dimensions.Y * ChunkManager.Dimensions.Z + y * ChunkManager.Dimensions.Z + z;
                     blocks[x, y, z] = ParseIntToBlock(bids[index]);
                 }
             }

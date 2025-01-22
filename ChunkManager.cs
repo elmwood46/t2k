@@ -15,7 +15,7 @@ public partial class ChunkManager : Node
 	private Dictionary<Vector3I, Chunk> _positionToChunk = new();
 
 	public ConcurrentDictionary<Vector3I, int[]> ChunkCache = new();
-	public ConcurrentDictionary<Vector3I, int[]> ChunkMeshDataCache = new();
+	public ConcurrentDictionary<Vector3I, ChunkMeshData> ChunkMeshDataCache = new();
 
 	private List<Chunk> _chunks;
 
@@ -60,7 +60,24 @@ public partial class ChunkManager : Node
 
 	public static readonly Noise NOISE = new FastNoiseLite();
 
-	public Chunk central_chunk;
+
+
+	public const float VOXEL_SCALE = 0.5f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
+    public const float INV_VOXEL_SCALE = 1/VOXEL_SCALE;
+
+    // chunk size is 30, padded chunk size is 32. Can't be increased easily because it uses binary UINT32 to do face culling
+	public const int CHUNK_SIZE = 30; // the chunk size is 62, padded chunk size is 64, // must match size in compute shader
+    public const int CHUNKSQ = CHUNK_SIZE*CHUNK_SIZE;
+    public const int CSP = CHUNK_SIZE+2;
+    public const int CSP2 = CSP*CSP; // squared padded chunk size
+    public const int CSP3 = CSP2*CSP; // cubed padded chunk size
+	public static readonly Vector3I Dimensions = new(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
+
+    // in the Generate() method, noise >= this value doesnt generate blocks
+    public const float NOISE_CUTOFF = 0.2f;
+
+    public const int SUBCHUNKS = 1; // each one is an extra 32x32 chunk in the vertical y direction
+
 
 	// surface tools
 
@@ -95,6 +112,7 @@ public partial class ChunkManager : Node
 
 	private object _cantorSetLock = new();
 
+	#region init
 	public override void _Ready()
 	{
 		if (Engine.IsEditorHint()) return;
@@ -108,10 +126,6 @@ public partial class ChunkManager : Node
 			var chunk = ChunkScene.Instantiate<Chunk>();
 			GetParent().CallDeferred(Node.MethodName.AddChild, chunk);
 			_chunks.Add(chunk);
-			if (i%_width == _width/2 && i/_width%_width == _width/2 && i/(_width*_width) == _y_width/2)
-			{
-				central_chunk = chunk;
-			}
 		}
 
 		//Vector2I playerChunk;
@@ -141,31 +155,23 @@ public partial class ChunkManager : Node
 			new Thread(new ThreadStart(ThreadProcess)).Start();
 		}
 	}
+	#endregion
 
-	public void UpdateChunkPosition(Chunk chunk, Vector3I currentPosition, Vector3I previousPosition)
-	{
-		if (_positionToChunk.TryGetValue(previousPosition, out var chunkAtPosition) && chunkAtPosition == chunk)
-		{
-			_positionToChunk.Remove(previousPosition);
-		}
-
-		_chunkToPosition[chunk] = currentPosition;
-		_positionToChunk[currentPosition] = chunk;
-	}
+	#region manipulate blocks
 
 	public void SetBlock(Vector3I globalPosition, int block_type)
 	{
 		var chunkTilePosition = new Vector3I(
-			Mathf.FloorToInt(globalPosition.X / (float)Chunk.Dimensions.X),
-			Mathf.FloorToInt(globalPosition.Y / ((float)Chunk.Dimensions.Y*Chunk.SUBCHUNKS)),
-			Mathf.FloorToInt(globalPosition.Z / (float)Chunk.Dimensions.Z)
+			Mathf.FloorToInt(globalPosition.X / (float)Dimensions.X),
+			Mathf.FloorToInt(globalPosition.Y / ((float)Dimensions.Y*SUBCHUNKS)),
+			Mathf.FloorToInt(globalPosition.Z / (float)Dimensions.Z)
 		);
 		lock (_positionToChunk)
 		{
 			if (_positionToChunk.TryGetValue(chunkTilePosition, out var chunk))
 			{
 				var v = (Vector3I)(globalPosition - chunk.GlobalPosition);
-				var blockidx = v.X + v.Z * Chunk.Dimensions.X + v.Y * Chunk.Dimensions.X * Chunk.Dimensions.Z;
+				var blockidx = v.X + v.Z * Dimensions.X + v.Y * Dimensions.X * Dimensions.Z;
 				chunk.SetBlock(blockidx, block_type);
 			}
 		}
@@ -178,15 +184,15 @@ public partial class ChunkManager : Node
 		foreach (var (globalPosition, damage) in blockAndDamage)
 		{
 			var chunkTilePosition = new Vector3I(
-				Mathf.FloorToInt(globalPosition.X / (float)Chunk.Dimensions.X),
-				Mathf.FloorToInt(globalPosition.Y / ((float)Chunk.Dimensions.Y*Chunk.SUBCHUNKS)),
-				Mathf.FloorToInt(globalPosition.Z / (float)Chunk.Dimensions.Z)
+				Mathf.FloorToInt(globalPosition.X / (float)Dimensions.X),
+				Mathf.FloorToInt(globalPosition.Y / ((float)Dimensions.Y*SUBCHUNKS)),
+				Mathf.FloorToInt(globalPosition.Z / (float)Dimensions.Z)
 			);
 
 			var chunkGlobalPosition = new Vector3I(
-				chunkTilePosition.X * Chunk.Dimensions.X,
-				chunkTilePosition.Y * Chunk.Dimensions.Y*Chunk.SUBCHUNKS,
-				chunkTilePosition.Z * Chunk.Dimensions.Z
+				chunkTilePosition.X * Dimensions.X,
+				chunkTilePosition.Y * Dimensions.Y*SUBCHUNKS,
+				chunkTilePosition.Z * Dimensions.Z
 			);
 
 			var relativePosition = globalPosition - chunkGlobalPosition;
@@ -211,6 +217,7 @@ public partial class ChunkManager : Node
 			}
 		}
 	}
+	#endregion
 
 	public override void _PhysicsProcess(double delta)
 	{
@@ -223,15 +230,69 @@ public partial class ChunkManager : Node
 		}
 	}
 
-	private Task UpdateChunkPositionAsync(Vector3I newPosition, Chunk chunk) {
+	#region updates
+
+	public void UpdateChunkPosition(Chunk chunk, Vector3I currentPosition, Vector3I previousPosition)
+	{
+		if (_positionToChunk.TryGetValue(previousPosition, out var chunkAtPosition) && chunkAtPosition == chunk)
+		{
+			_positionToChunk.Remove(previousPosition);
+		}
+
+		_chunkToPosition[chunk] = currentPosition;
+		_positionToChunk[currentPosition] = chunk;
+	}
+
+
+	public static void UpdateChunkBlockData(Vector3I chunkPosition, int[] blockData = null) {
+		Instance.Generate(chunkPosition);
+		if (blockData != null) Instance.ChunkCache[chunkPosition] = blockData;
+	}
+
+	public static void UpdateChunkMeshData(Vector3I chunkPosition)
+	{
+		if (Instance.ChunkCache.TryGetValue(chunkPosition, out var cachedBlocks)) {
+			Instance.ChunkMeshDataCache[chunkPosition] = BuildChunkMesh(cachedBlocks);
+		}
+		else throw new Exception("Tried to generate chunk mesh without cached blocks.");
+	}
+
+	public static int[] GetChunkBlockData(Vector3I chunkPosition)
+	{
+		if (Instance.ChunkCache.TryGetValue(chunkPosition, out var blockData))
+		{
+			return blockData;
+		}
+		else
+		{
+			throw new Exception("Tried to get chunk block data that doesn't exist.");
+		}
+	}
+
+	public static ChunkMeshData GetChunkMeshData(Vector3I chunkPosition)
+	{
+		if (Instance.ChunkMeshDataCache.TryGetValue(chunkPosition, out var meshData))
+		{
+			return meshData;
+		}
+		else
+		{
+			throw new Exception("Tried to get chunk mesh data that doesn't exist.");
+		}
+	}
+
+	private Task ThreadedChunkPosChange(Vector3I newPosition, Chunk chunk) {
 		lock(_positionToChunk)
 		{
-			int[] blocks = Generate(newPosition);
-			chunk.CallDeferred(nameof(Chunk.SetChunkPosition), newPosition, blocks);
+			UpdateChunkBlockData(newPosition);
+			UpdateChunkMeshData(newPosition);
+			chunk.CallDeferred(nameof(Chunk.SetChunkPosition), newPosition);
 		}
 		return Task.CompletedTask;
 	}
+	#endregion
 
+	#region thread process
 	private async void ThreadProcess()
 	{
 		while (IsInstanceValid(this))
@@ -242,10 +303,10 @@ public partial class ChunkManager : Node
 
 			lock(_playerPositionLock)
 			{
-				playerChunkX = Mathf.FloorToInt(_playerPosition.X / (Chunk.Dimensions.X*Chunk.VOXEL_SCALE));
-				//playerChunkY = Mathf.FloorToInt(_playerPosition.Y / (Chunk.Dimensions.Y*Chunk.SUBCHUNKS*Chunk.VOXEL_SCALE));
-				//playerChunkY = Mathf.FloorToInt((_playerPosition.Y+Chunk.VOXEL_SCALE*Chunk.Dimensions.Y*Chunk.SUBCHUNKS*0.5f) / (Chunk.Dimensions.Y*Chunk.SUBCHUNKS*Chunk.VOXEL_SCALE));
-				playerChunkZ = Mathf.FloorToInt(_playerPosition.Z / (Chunk.Dimensions.Z*Chunk.VOXEL_SCALE));
+				playerChunkX = Mathf.FloorToInt(_playerPosition.X / (Dimensions.X*VOXEL_SCALE));
+				//playerChunkY = Mathf.FloorToInt(_playerPosition.Y / (Dimensions.Y*SUBCHUNKS*Chunk.VOXEL_SCALE));
+				//playerChunkY = Mathf.FloorToInt((_playerPosition.Y+Chunk.VOXEL_SCALE*Dimensions.Y*SUBCHUNKS*0.5f) / (Dimensions.Y*SUBCHUNKS*Chunk.VOXEL_SCALE));
+				playerChunkZ = Mathf.FloorToInt(_playerPosition.Z / (Dimensions.Z*VOXEL_SCALE));
 				
 				//player_glob_pos = _playerPosition;
 			}
@@ -274,11 +335,12 @@ public partial class ChunkManager : Node
 						_chunkToPosition[chunk] = newPosition;
 						_positionToChunk[newPosition] = chunk;
 					}
-					await Task.Run(() => {UpdateChunkPositionAsync(newPosition, chunk);});
+					await Task.Run(() => {ThreadedChunkPosChange(newPosition, chunk);});
 				}
 				Thread.Sleep(1);
 			}
 			Thread.Sleep(100);
 		}
 	}
+	#endregion
 }

@@ -76,7 +76,7 @@ public partial class Player : CharacterBody3D
 		_crouch_speed = WalkSpeed * 0.8f;
 		_standing_height = ((CapsuleShape3D)CollisionShape.Shape).Height;
 
-		BlockHighlight.Scale = new Vector3(Chunk.VOXEL_SCALE + 0.05f,Chunk.VOXEL_SCALE + 0.05f,Chunk.VOXEL_SCALE + 0.05f);
+		BlockHighlight.Scale = new Vector3(ChunkManager.VOXEL_SCALE + 0.05f,ChunkManager.VOXEL_SCALE + 0.05f,ChunkManager.VOXEL_SCALE + 0.05f);
 
 		_animationTree = GetNode<AnimationTree>("WorldModel/AnimationTree");
 		_stateMachinePlayback = (AnimationNodeStateMachinePlayback)_animationTree.Get("parameters/playback");
@@ -153,20 +153,20 @@ public partial class Player : CharacterBody3D
 		if (RayCast.IsColliding() && RayCast.GetCollider() is Chunk chunk)
 		{
 			BlockHighlight.Visible = true;
-			var inv_vox_size = 1/Chunk.VOXEL_SCALE;
+			var inv_vox_size = 1/ChunkManager.VOXEL_SCALE;
 
-			var blockPosition = RayCast.GetCollisionPoint() - 0.5f * Chunk.VOXEL_SCALE * RayCast.GetCollisionNormal();
+			var blockPosition = RayCast.GetCollisionPoint() - 0.5f * ChunkManager.VOXEL_SCALE * RayCast.GetCollisionNormal();
 			blockPosition *= inv_vox_size;
 			var intBlockPosition = new Vector3I(
 				Mathf.FloorToInt(blockPosition.X),
 				Mathf.FloorToInt(blockPosition.Y),
 				Mathf.FloorToInt(blockPosition.Z));
 			BlockHighlight.GlobalPosition = new Vector3(
-					Mathf.FloorToInt(blockPosition.X)*Chunk.VOXEL_SCALE,
-					Mathf.FloorToInt(blockPosition.Y)*Chunk.VOXEL_SCALE,
-					Mathf.FloorToInt(blockPosition.Z)*Chunk.VOXEL_SCALE
+					Mathf.FloorToInt(blockPosition.X)*ChunkManager.VOXEL_SCALE,
+					Mathf.FloorToInt(blockPosition.Y)*ChunkManager.VOXEL_SCALE,
+					Mathf.FloorToInt(blockPosition.Z)*ChunkManager.VOXEL_SCALE
 				)
-				+ new Vector3(0.5f, 0.5f, 0.5f)*Chunk.VOXEL_SCALE;
+				+ new Vector3(0.5f, 0.5f, 0.5f)*ChunkManager.VOXEL_SCALE;
 			//intBlockPosition.X = Math.Clamp(intBlockPosition.X, 0, Chunk.Dimensions.X);
 			//intBlockPosition.Y = Math.Clamp(intBlockPosition.Y, 0, Chunk.Dimensions.Y);
 			//intBlockPosition.Z = Math.Clamp(intBlockPosition.Z, 0, Chunk.Dimensions.Z);

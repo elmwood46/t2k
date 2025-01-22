@@ -87,20 +87,20 @@ public partial class GrassGpuParticles : Node3D
             Array.Fill(_grass_position_indices, -1);
             int grasscount = 0, skipped_blocks = 0;
             for (int i=0; i<blocks.Length; i++) {
-                var y = i / Chunk.CHUNKSQ;
-                if  (Chunk.GetBlockID(blocks[i]) == BlockManager.BlockID("Grass")
+                var y = i / ChunkManager.CHUNKSQ;
+                if  (ChunkManager.GetBlockID(blocks[i]) == BlockManager.BlockID("Grass")
                         /*&&
                         (
-                            y==Chunk.CHUNK_SIZE-1
+                            y==ChunkManager.CHUNK_SIZE-1
                             ||
                             (
-                                (i+Chunk.CHUNKSQ < blocks.Length) && Chunk.IsBlockEmpty(blocks[i+Chunk.CHUNKSQ])
+                                (i+ChunkManager.CHUNKSQ < blocks.Length) && ChunkManager.IsBlockEmpty(blocks[i+ChunkManager.CHUNKSQ])
                             )
                         )*/
                     )
                 {
-                    var x = i % Chunk.CHUNK_SIZE;
-                    var z = (i / Chunk.CHUNK_SIZE) % Chunk.CHUNK_SIZE;
+                    var x = i % ChunkManager.CHUNK_SIZE;
+                    var z = (i / ChunkManager.CHUNK_SIZE) % ChunkManager.CHUNK_SIZE;
 
                     // put a vertex in the array
                     var idx = 3*(i-skipped_blocks);

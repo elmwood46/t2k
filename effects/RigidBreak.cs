@@ -45,8 +45,8 @@ public partial class RigidBreak : Node3D
         AddToGroup("RigidBreak");
 
         // pass uniforms to shader
-        _shader.SetShaderParameter("_tex_array_idx", BlockManager.BlockTextureArrayPositions(Chunk.GetBlockID(BlockInfo)));
-        _shader.SetShaderParameter("_damage_data", Chunk.GetBlockDamageData(BlockInfo));
+        _shader.SetShaderParameter("_tex_array_idx", BlockManager.BlockTextureArrayPositions(ChunkManager.GetBlockID(BlockInfo)));
+        _shader.SetShaderParameter("_damage_data", ChunkManager.GetBlockDamageData(BlockInfo));
 
         Scale = Vector3.One *  (1f/BlockDivisions);
         t = new Timer

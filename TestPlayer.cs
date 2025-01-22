@@ -94,11 +94,11 @@ public partial class TestPlayer : CharacterBody3D
             int i=1;
             bool canJump = true;
             while (i < 4) {
-                if (intBlockPosition.Y + i >= Chunk.Dimensions.Y) {
+                if (intBlockPosition.Y + i >= ChunkManager.Dimensions.Y) {
 
                     break;
                 }
-                if (Chunk.IsBlockEmpty(chunk.GetBlockInfoFromPosition(intBlockPosition + new Vector3I(0,i,0)))) { // CHANGED FROM AIR CHECK
+                if (ChunkManager.IsBlockEmpty(chunk.GetBlockInfoFromPosition(intBlockPosition + new Vector3I(0,i,0)))) { // CHANGED FROM AIR CHECK
 
                     canJump = false;
                     break;

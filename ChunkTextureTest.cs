@@ -13,14 +13,13 @@ public enum SlopeType {
 [Tool]
 public partial class ChunkTextureTest : Node3D
 {
-    const float INVSQRT2 = 0.70710678118f;
-
+    
     public Dictionary<Vector3I, int[]> ChunkBlocksBuffer = new();
 
     public HashSet<(int,int,int)> allGeneratedChunks = new();
 
-    private static readonly Godot.Vector3 SlopedNormalNegZ = new(0, INVSQRT2, -INVSQRT2);
-    private static readonly Godot.Vector3 SlopedCornerNormalNegZ = new(INVSQRT2, INVSQRT2, -INVSQRT2);
+    private static readonly Godot.Vector3 SlopedNormalNegZ = new(0,  0.70710678118f, - 0.70710678118f);
+    private static readonly Godot.Vector3 SlopedCornerNormalNegZ = new( 0.70710678118f,  0.70710678118f, -0.70710678118f);
 
 	public static readonly Noise CELLNOISE = new FastNoiseLite(){NoiseType = FastNoiseLite.NoiseTypeEnum.Cellular
 	, CellularDistanceFunction = FastNoiseLite.CellularDistanceFunctionEnum.Manhattan,
@@ -96,8 +95,8 @@ public partial class ChunkTextureTest : Node3D
             mesh.Mesh = chunkmeshdata.UnifySurfaces();
 
             /*
-            if (chunkmeshdata.HasSurfaceOfType(Chunk.ChunkMeshData.GRASS_SURFACE)) {
-                var grass_mesh = chunkmeshdata.GetSurface(Chunk.ChunkMeshData.GRASS_SURFACE);
+            if (chunkmeshdata.HasSurfaceOfType(ChunkManager.ChunkMeshData.GRASS_SURFACE)) {
+                var grass_mesh = chunkmeshdata.GetSurface(ChunkManager.ChunkMeshData.GRASS_SURFACE);
                 GrassMultiMesh.TerrainMesh = grass_mesh;
                 GrassMultiMesh.MaterialOverride = GrassBladeMaterial;
                 GrassMultiMesh.ChunkPosition = chunkpos;
@@ -110,16 +109,16 @@ public partial class ChunkTextureTest : Node3D
 
         // grass mesh LOD
         /*
-        var player_dist = camera_position.DistanceTo(chunkpos+Godot.Vector3.One*Chunk.VOXEL_SCALE*Chunk.CHUNK_SIZE/2);
-        if (player_dist > Chunk.CHUNK_SIZE*Chunk.VOXEL_SCALE*1.5f
-        && _prevPlayerDistance <= Chunk.CHUNK_SIZE*Chunk.VOXEL_SCALE*1.5f) {
+        var player_dist = camera_position.DistanceTo(chunkpos+Godot.Vector3.One*ChunkManager.VOXEL_SCALE*ChunkManager.CHUNK_SIZE/2);
+        if (player_dist > ChunkManager.CHUNK_SIZE*ChunkManager.VOXEL_SCALE*1.5f
+        && _prevPlayerDistance <= ChunkManager.CHUNK_SIZE*ChunkManager.VOXEL_SCALE*1.5f) {
             GrassMultiMesh.ChunkPosition = chunkpos;
             GrassMultiMesh.PlayerPosition = camera_position;
             GrassMultiMesh.Rebuild();
             _prevPlayerDistance = player_dist;
         }
-        else if (player_dist <= Chunk.CHUNK_SIZE*Chunk.VOXEL_SCALE*1.5f
-        && _prevPlayerDistance > Chunk.CHUNK_SIZE*Chunk.VOXEL_SCALE*1.5f) {
+        else if (player_dist <= ChunkManager.CHUNK_SIZE*ChunkManager.VOXEL_SCALE*1.5f
+        && _prevPlayerDistance > ChunkManager.CHUNK_SIZE*ChunkManager.VOXEL_SCALE*1.5f) {
             GrassMultiMesh.ChunkPosition = chunkpos;
             GrassMultiMesh.PlayerPosition = camera_position;
             GrassMultiMesh.Rebuild();
@@ -136,7 +135,7 @@ public void GenerateTest(Vector3I chunkPosition)
         else GD.Print("Generating chunk at ", chunkPosition);
 
         if (!ChunkBlocksBuffer.TryGetValue(chunkPosition, out var result)) {
-            result = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
+            result = new int[ChunkManager.CHUNKSQ*ChunkManager.CHUNK_SIZE*ChunkManager.SUBCHUNKS];
             ChunkBlocksBuffer[chunkPosition] = result;
         };
 
@@ -147,15 +146,15 @@ public void GenerateTest(Vector3I chunkPosition)
 
         List<Vector3I> filledBlocks = new();
         
-        for (int subchunk = 0; subchunk < Chunk.SUBCHUNKS; subchunk++) {
-            for (int x=0;x<Chunk.CHUNK_SIZE;x++) {
-                for (int y=0;y<Chunk.CHUNK_SIZE;y++) {
-                    for (int z=0;z<Chunk.CHUNK_SIZE;z++) {
-                        int block_idx = x + y * Chunk.CHUNKSQ + z * Chunk.CHUNK_SIZE + subchunk*Chunk.CHUNKSQ*Chunk.CHUNK_SIZE;
+        for (int subchunk = 0; subchunk < ChunkManager.SUBCHUNKS; subchunk++) {
+            for (int x=0;x<ChunkManager.CHUNK_SIZE;x++) {
+                for (int y=0;y<ChunkManager.CHUNK_SIZE;y++) {
+                    for (int z=0;z<ChunkManager.CHUNK_SIZE;z++) {
+                        int block_idx = x + y * ChunkManager.CHUNKSQ + z * ChunkManager.CHUNK_SIZE + subchunk*ChunkManager.CHUNKSQ*ChunkManager.CHUNK_SIZE;
                         if (block_idx >= result.Length) continue;
 
-                        var globalBlockPosition = chunkPosition * new Vector3I(Chunk.Dimensions.X, Chunk.Dimensions.Y*Chunk.SUBCHUNKS, Chunk.Dimensions.Z)
-                            + new Vector3I(x, y + Chunk.Dimensions.Y*subchunk, z);
+                        var globalBlockPosition = chunkPosition * new Vector3I(ChunkManager.Dimensions.X, ChunkManager.Dimensions.Y*ChunkManager.SUBCHUNKS, ChunkManager.Dimensions.Z)
+                            + new Vector3I(x, y + ChunkManager.Dimensions.Y*subchunk, z);
 
                         int blockType = result[block_idx];
                         
@@ -167,14 +166,14 @@ public void GenerateTest(Vector3I chunkPosition)
                             {
                                 blockType = BlockManager.BlockID("Check2");
                             }
-                            else if (y < 3 && block_idx-Chunk.CHUNKSQ > 0 && !Chunk.IsBlockEmpty(result[block_idx-Chunk.CHUNKSQ]))
+                            else if (y < 3 && block_idx-ChunkManager.CHUNKSQ > 0 && !ChunkManager.IsBlockEmpty(result[block_idx-ChunkManager.CHUNKSQ]))
                             {
                                 blockType = BlockManager.BlockID("Check1");
                             }
-                            else if (y == 3 && block_idx-Chunk.CHUNKSQ > 0 && !Chunk.IsBlockEmpty(result[block_idx-Chunk.CHUNKSQ]) && rnd.Randf() > 0.99)
+                            else if (y == 3 && block_idx-ChunkManager.CHUNKSQ > 0 && !ChunkManager.IsBlockEmpty(result[block_idx-ChunkManager.CHUNKSQ]) && rnd.Randf() > 0.99)
                             {
                                 // spawn tree or totem
-                                result[block_idx-Chunk.CHUNKSQ] = BlockManager.InitBlockInfo(BlockManager.BlockID("Dirt"));
+                                result[block_idx-ChunkManager.CHUNKSQ] = BlockManager.InitBlockInfo(BlockManager.BlockID("Dirt"));
                                 var blockSet = rnd.Randf() > 0.5 ? GenStructure.GenerateTotem(rnd.RandiRange(3,15)) : GenStructure.GenerateTree();
 
                                 // blockset is a dictionary of block positions and block info ints (with all bits initialized)
@@ -182,16 +181,16 @@ public void GenerateTest(Vector3I chunkPosition)
                                 {
                                     Vector3I p = new(x + kvp.Key.X, y + kvp.Key.Y, z + kvp.Key.Z);
 
-                                    if (p.X < Chunk.CHUNK_SIZE && p.X >= 0
-                                    &&  p.Y < Chunk.CHUNK_SIZE && p.Y >= 0
-                                    &&  p.Z < Chunk.CHUNK_SIZE && p.Z >= 0)
+                                    if (p.X < ChunkManager.CHUNK_SIZE && p.X >= 0
+                                    &&  p.Y < ChunkManager.CHUNK_SIZE && p.Y >= 0
+                                    &&  p.Z < ChunkManager.CHUNK_SIZE && p.Z >= 0)
                                     {
-                                        if (Chunk.IsBlockEmpty(kvp.Value)) continue;
-                                        result[p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE] = kvp.Value;
+                                        if (ChunkManager.IsBlockEmpty(kvp.Value)) continue;
+                                        result[p.X + p.Y*ChunkManager.CHUNKSQ + p.Z*ChunkManager.CHUNK_SIZE] = kvp.Value;
                                         filledBlocks.Add(new Vector3I(p.X, p.Y, p.Z));
 
                                         // randomly damage some blocks, but not leaves
-                                        if (Chunk.GetBlockSpecies(kvp.Value) == BlockSpecies.Leaves) continue;
+                                        if (ChunkManager.GetBlockSpecies(kvp.Value) == BlockSpecies.Leaves) continue;
                                         var dam_amount = 0;
                                         var dam_type = 0;
                                         if (rnd.Randf() < 0.5)
@@ -202,20 +201,20 @@ public void GenerateTest(Vector3I chunkPosition)
                                         var dam_info = (dam_type<<5) | dam_amount;
 
                                         // add the damage type 
-                                        result[p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE] |= dam_info;
+                                        result[p.X + p.Y*ChunkManager.CHUNKSQ + p.Z*ChunkManager.CHUNK_SIZE] |= dam_info;
                                     } else {
                                         var neighbour_chunk = new Vector3I(chunkPosition.X, chunkPosition.Y, chunkPosition.Z);
-                                        var dx = p.X > Chunk.CHUNK_SIZE-1 ? 1 : p.X < 0 ? -1 : 0;
-                                        var dy = p.Y > Chunk.CHUNK_SIZE-1 ? 1 : p.Y < 0 ? -1 : 0;
-                                        var dz = p.Z > Chunk.CHUNK_SIZE-1 ? 1 : p.Z < 0 ? -1 : 0;
+                                        var dx = p.X > ChunkManager.CHUNK_SIZE-1 ? 1 : p.X < 0 ? -1 : 0;
+                                        var dy = p.Y > ChunkManager.CHUNK_SIZE-1 ? 1 : p.Y < 0 ? -1 : 0;
+                                        var dz = p.Z > ChunkManager.CHUNK_SIZE-1 ? 1 : p.Z < 0 ? -1 : 0;
                                         var delta = new Vector3I(dx, dy, dz);
-                                        var newp = p-delta*Chunk.CHUNK_SIZE;
+                                        var newp = p-delta*ChunkManager.CHUNK_SIZE;
                                         if (!ChunkBlocksBuffer.TryGetValue(neighbour_chunk+delta, out var neighbour)) {
-                                            neighbour = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
-                                            neighbour[newp.X + newp.Y*Chunk.CHUNKSQ + newp.Z*Chunk.CHUNK_SIZE] = kvp.Value;
+                                            neighbour = new int[ChunkManager.CHUNKSQ*ChunkManager.CHUNK_SIZE*ChunkManager.SUBCHUNKS];
+                                            neighbour[newp.X + newp.Y*ChunkManager.CHUNKSQ + newp.Z*ChunkManager.CHUNK_SIZE] = kvp.Value;
                                         } else {
-                                            var idx = newp.X + newp.Y*Chunk.CHUNKSQ + newp.Z*Chunk.CHUNK_SIZE;
-                                            if (Chunk.IsBlockEmpty(neighbour[idx])) neighbour[idx] = kvp.Value;
+                                            var idx = newp.X + newp.Y*ChunkManager.CHUNKSQ + newp.Z*ChunkManager.CHUNK_SIZE;
+                                            if (ChunkManager.IsBlockEmpty(neighbour[idx])) neighbour[idx] = kvp.Value;
                                         }
                                         ChunkBlocksBuffer[neighbour_chunk+delta] = neighbour;
                                     }
@@ -233,7 +232,7 @@ public void GenerateTest(Vector3I chunkPosition)
                             }
                             var _daminfo = (_damtype<<5) | _damamount;
 
-                            result[block_idx] = Chunk.PackBlockInfo(blockType) | _daminfo;
+                            result[block_idx] = ChunkManager.PackBlockInfo(blockType) | _daminfo;
 
                             if (blockType != 0) filledBlocks.Add(new Vector3I(x, y, z));
 
@@ -268,7 +267,7 @@ public void GenerateTest(Vector3I chunkPosition)
 
                         // add the damage type 
                         int blockinfo = 0;
-                        blockinfo |= Chunk.PackBlockInfo(blockType);
+                        blockinfo |= ChunkManager.PackBlockInfo(blockType);
                         result[block_idx] = blockinfo;
 
                         if (blockType != 0) filledBlocks.Add(new Vector3I(x, y, z));
@@ -283,10 +282,10 @@ public void GenerateTest(Vector3I chunkPosition)
         // add corner and side slopes
         // corner slopes should make the block below the same type
         foreach (var p in filledBlocks) {
-            var i = p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE;
-            if (!Chunk.IsBlockEmpty(result[i]) && BlockIsSlopeCandidate(chunkPosition, p)) {
+            var i = p.X + p.Y*ChunkManager.CHUNKSQ + p.Z*ChunkManager.CHUNK_SIZE;
+            if (!ChunkManager.IsBlockEmpty(result[i]) && BlockIsSlopeCandidate(chunkPosition, p)) {
                 var s = BlockPackSlopeInfo(chunkPosition, p);
-                if (Chunk.GetBlockSlopeType(s) == (int)SlopeType.Corner) {
+                if (ChunkManager.GetBlockSlopeType(s) == (int)SlopeType.Corner) {
                     SetBlockNeighbourIfNotEmpty(chunkPosition, p, Vector3I.Down, result[i]); 
                 }
                 packedSlopeBlockData[p] = s;
@@ -294,7 +293,7 @@ public void GenerateTest(Vector3I chunkPosition)
         }
 
         foreach (var (p, packedSlopeData) in packedSlopeBlockData) {
-            var i = p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE;
+            var i = p.X + p.Y*ChunkManager.CHUNKSQ + p.Z*ChunkManager.CHUNK_SIZE;
             result[i] |= packedSlopeData;
         }
 
@@ -325,7 +324,7 @@ public void GenerateTest(Vector3I chunkPosition)
             sloperot = BlockInvCornerRotation(chunkpos, p);
         }
 
-        return Chunk.PackSlopeData(slopetype, sloperot);
+        return ChunkManager.PackSlopeData(slopetype, sloperot);
     }
 
     public static float TerraceFunc(float x) {
@@ -338,24 +337,63 @@ public void GenerateTest(Vector3I chunkPosition)
     }
 
     public bool BlockIsInvCorner(Vector3I chunkPosition, Vector3I blockPosition) {
-        return BlockIsSurrounded(chunkPosition, blockPosition)&&BlockSingleDiagonalFree(chunkPosition, blockPosition)
-            || BlockIsCorner(chunkPosition, blockPosition)&&IsBlockAbove(chunkPosition, blockPosition)&&!IsDoubleBlockAbove(chunkPosition, blockPosition);
-    }
+            return 
+                (
+                    !IsBlockAbove(chunkPosition, blockPosition)
+                    &&BlockIsSurrounded(chunkPosition, blockPosition)
+                    &&BlockSingleDiagonalFree(chunkPosition, blockPosition)
+                )
+                || 
+                (
+                    IsBlockAbove(chunkPosition, blockPosition)
+                    &&BlockIsCorner(chunkPosition, blockPosition+Vector3I.Up)
+                    &&!IsDoubleBlockAbove(chunkPosition, blockPosition)
+                    &&(BlockSingleDiagonalFree(chunkPosition, blockPosition)||BlockSingleAdjacentFree(chunkPosition, blockPosition))
+                )
+                || 
+                (
+                    IsBlockAbove(chunkPosition, blockPosition)
+                    &&!IsDoubleBlockAbove(chunkPosition, blockPosition)
+                    &&BlockIsCorner(chunkPosition, blockPosition)
+                );
+        }
 
     public int BlockInvCornerRotation(Vector3I chunkPosition, Vector3I blockPosition) {
         // already assume block is inv corner
         Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
         
-        var b1 = !BlockHasNeighbor(chunkPosition, p, Vector3I.Forward+Vector3I.Right);
-        var b2 = !BlockHasNeighbor(chunkPosition, p, Vector3I.Forward+Vector3I.Left);
-        var b3 = !BlockHasNeighbor(chunkPosition, p, Vector3I.Back+Vector3I.Right);
-        var b4 = !BlockHasNeighbor(chunkPosition, p, Vector3I.Back+Vector3I.Left);
+        if 
+        (
+            (
+                !IsBlockAbove(chunkPosition, blockPosition)
+                &&BlockIsSurrounded(chunkPosition, blockPosition)
+                &&BlockSingleDiagonalFree(chunkPosition, blockPosition)
+            )
+            || 
+            (
+                IsBlockAbove(chunkPosition, blockPosition)
+                &&BlockIsCorner(chunkPosition, blockPosition+Vector3I.Up)
+                &&!IsDoubleBlockAbove(chunkPosition, blockPosition)
+                &&BlockSingleDiagonalFree(chunkPosition, blockPosition)
+            )
+        )
+        {
+            var b1 = !BlockHasNeighbor(chunkPosition, p, Vector3I.Forward+Vector3I.Right);
+            var b2 = !BlockHasNeighbor(chunkPosition, p, Vector3I.Forward+Vector3I.Left);
+            var b3 = !BlockHasNeighbor(chunkPosition, p, Vector3I.Back+Vector3I.Right);
+            var b4 = !BlockHasNeighbor(chunkPosition, p, Vector3I.Back+Vector3I.Left);
 
-        if (b1) return 0;
-        if (b2) return 1;
-        if (b4) return 2;
-        if (b3) return 3;
-        return 0;
+            if (b1) return 0;
+            if (b2) return 1;
+            if (b4) return 2;
+            if (b3) return 3;
+            return 0;
+        }
+        else return BlockCornerRotation(chunkPosition, blockPosition+Vector3I.Up);
+    }
+
+    public bool BlockIsSloped(Vector3I chunkPosition, Vector3I blockPosition) {
+        return BlockIsCorner(chunkPosition, blockPosition) || BlockIsSide(chunkPosition, blockPosition) || BlockIsInvCorner(chunkPosition, blockPosition);
     }
 
     public bool BlockIsCorner(Vector3I chunkPosition, Vector3I blockPosition) {
@@ -376,25 +414,25 @@ public void GenerateTest(Vector3I chunkPosition)
         if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Right)) {
             var b1 = GetBlockNeighbour(chunkPosition, p, Vector3I.Forward);
             var b2 = GetBlockNeighbour(chunkPosition, p, Vector3I.Right);
-            if (!Chunk.IsBlockSloped(b1) && !Chunk.IsBlockSloped(b2)) return true;
+            if (!ChunkManager.IsBlockSloped(b1) && !ChunkManager.IsBlockSloped(b2)) return true;
         }
 
         if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left)) {
             var b1 = GetBlockNeighbour(chunkPosition, p, Vector3I.Forward);
             var b2 = GetBlockNeighbour(chunkPosition, p, Vector3I.Left);
-            if (!Chunk.IsBlockSloped(b1) && !Chunk.IsBlockSloped(b2)) return true;
+            if (!ChunkManager.IsBlockSloped(b1) && !ChunkManager.IsBlockSloped(b2)) return true;
         }
 
         if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && BlockHasNeighbor(chunkPosition, p, Vector3I.Right)) {
             var b1 = GetBlockNeighbour(chunkPosition, p, Vector3I.Back);
             var b2 = GetBlockNeighbour(chunkPosition, p, Vector3I.Right);
-            if (!Chunk.IsBlockSloped(b1) && !Chunk.IsBlockSloped(b2)) return true;
+            if (!ChunkManager.IsBlockSloped(b1) && !ChunkManager.IsBlockSloped(b2)) return true;
         }
 
         if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left)) {
             var b1 = GetBlockNeighbour(chunkPosition, p, Vector3I.Back);
             var b2 = GetBlockNeighbour(chunkPosition, p, Vector3I.Left);
-            if (!Chunk.IsBlockSloped(b1) && !Chunk.IsBlockSloped(b2)) return true;
+            if (!ChunkManager.IsBlockSloped(b1) && !ChunkManager.IsBlockSloped(b2)) return true;
         }
 
         return false;
@@ -434,6 +472,18 @@ public void GenerateTest(Vector3I chunkPosition)
         && BlockHasNeighbor(chunkPosition, p, Vector3I.Right);
     }
 
+    public bool BlockSingleAdjacentFree(Vector3I chunkPosition, Vector3I blockPosition) {
+                // already assume block is inv corner
+        Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
+        
+        var b1 = BlockHasNeighbor(chunkPosition, p, Vector3I.Forward);
+        var b2 = BlockHasNeighbor(chunkPosition, p, Vector3I.Back);
+        var b3 =  BlockHasNeighbor(chunkPosition, p, Vector3I.Left);
+        var b4 =  BlockHasNeighbor(chunkPosition, p, Vector3I.Right);
+
+        return (!b1 && b2 && b3 && b4) ^ (b1 && !b2 && b3 && b4) ^ (b1 && b2 && !b3 && b4) ^ (b1 && b2 && b3 && !b4);
+    }
+
     public bool BlockSingleDiagonalFree(Vector3I chunkPosition, Vector3I blockPosition) {
         // already assume block is inv corner
         Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
@@ -446,6 +496,7 @@ public void GenerateTest(Vector3I chunkPosition)
         return (!b1 && b2 && b3 && b4) ^ (b1 && !b2 && b3 && b4) ^ (b1 && b2 && !b3 && b4) ^ (b1 && b2 && b3 && !b4);
     }
 
+    /*
     public int BlockDiagonalsCount(Vector3I chunkPosition, Vector3I blockPosition) {
         Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
         int count = 0;
@@ -455,7 +506,7 @@ public void GenerateTest(Vector3I chunkPosition)
                 }
         }
         return count;
-    }
+    }*/
 
     public int BlockNeighbourCount(Vector3I chunkPosition, Vector3I blockPosition) {
         Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
@@ -530,7 +581,7 @@ public void GenerateTest(Vector3I chunkPosition)
 
     public void SetBlockNeighbourIfNotEmpty(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection, int newBlockInfo)
     {
-        if (!Chunk.IsBlockEmpty(GetBlockNeighbour(chunkPosition,blockPosition,neighborDirection)))
+        if (!ChunkManager.IsBlockEmpty(GetBlockNeighbour(chunkPosition,blockPosition,neighborDirection)))
         {
             SetBlockNeighbour(chunkPosition, blockPosition, neighborDirection, newBlockInfo);
         }
@@ -541,26 +592,26 @@ public void GenerateTest(Vector3I chunkPosition)
         var chunk = ChunkBlocksBuffer[chunkPosition];
         Vector3I p = new(blockPosition.X + neighborDirection.X, blockPosition.Y + neighborDirection.Y, blockPosition.Z + neighborDirection.Z);
 
-        if (p.X < Chunk.CHUNK_SIZE && p.X >= 0
-        &&  p.Y < Chunk.CHUNK_SIZE && p.Y >= 0
-        &&  p.Z < Chunk.CHUNK_SIZE && p.Z >= 0)
+        if (p.X < ChunkManager.CHUNK_SIZE && p.X >= 0
+        &&  p.Y < ChunkManager.CHUNK_SIZE && p.Y >= 0
+        &&  p.Z < ChunkManager.CHUNK_SIZE && p.Z >= 0)
         {
-            chunk[p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE] = newBlockInfo;
+            chunk[p.X + p.Y*ChunkManager.CHUNKSQ + p.Z*ChunkManager.CHUNK_SIZE] = newBlockInfo;
         }
         else
         {
             var neighbour_chunk = new Vector3I(chunkPosition.X, chunkPosition.Y, chunkPosition.Z);
-            var dx = p.X > Chunk.CHUNK_SIZE-1 ? 1 : p.X < 0 ? -1 : 0;
-            var dy = p.Y > Chunk.CHUNK_SIZE-1 ? 1 : p.Y < 0 ? -1 : 0;
-            var dz = p.Z > Chunk.CHUNK_SIZE-1 ? 1 : p.Z < 0 ? -1 : 0;
+            var dx = p.X > ChunkManager.CHUNK_SIZE-1 ? 1 : p.X < 0 ? -1 : 0;
+            var dy = p.Y > ChunkManager.CHUNK_SIZE-1 ? 1 : p.Y < 0 ? -1 : 0;
+            var dz = p.Z > ChunkManager.CHUNK_SIZE-1 ? 1 : p.Z < 0 ? -1 : 0;
             var delta = new Vector3I(dx, dy, dz);
-            var newp = p-delta*Chunk.CHUNK_SIZE;
+            var newp = p-delta*ChunkManager.CHUNK_SIZE;
             if (!ChunkBlocksBuffer.TryGetValue(neighbour_chunk+delta, out var neighbour)) {
-                neighbour = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
+                neighbour = new int[ChunkManager.CHUNKSQ*ChunkManager.CHUNK_SIZE*ChunkManager.SUBCHUNKS];
                 ChunkBlocksBuffer[neighbour_chunk+delta] = neighbour;
             }
 
-            var new_idx = newp.X + newp.Y*Chunk.CHUNKSQ + newp.Z*Chunk.CHUNK_SIZE;
+            var new_idx = newp.X + newp.Y*ChunkManager.CHUNKSQ + newp.Z*ChunkManager.CHUNK_SIZE;
             neighbour[new_idx] = newBlockInfo;
         }
     }
@@ -569,33 +620,33 @@ public void GenerateTest(Vector3I chunkPosition)
         var chunk = ChunkBlocksBuffer[chunkPosition];
         Vector3I p = new(blockPosition.X + neighborDirection.X, blockPosition.Y + neighborDirection.Y, blockPosition.Z + neighborDirection.Z);
 
-        if (p.X < Chunk.CHUNK_SIZE && p.X >= 0
-        &&  p.Y < Chunk.CHUNK_SIZE && p.Y >= 0
-        &&  p.Z < Chunk.CHUNK_SIZE && p.Z >= 0)
+        if (p.X < ChunkManager.CHUNK_SIZE && p.X >= 0
+        &&  p.Y < ChunkManager.CHUNK_SIZE && p.Y >= 0
+        &&  p.Z < ChunkManager.CHUNK_SIZE && p.Z >= 0)
         {
-            var b = chunk[p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE];
-            if (!Chunk.IsBlockEmpty(b)) return b;
+            var b = chunk[p.X + p.Y*ChunkManager.CHUNKSQ + p.Z*ChunkManager.CHUNK_SIZE];
+            if (!ChunkManager.IsBlockEmpty(b)) return b;
         }
         else
         {
             var neighbour_chunk = new Vector3I(chunkPosition.X, chunkPosition.Y, chunkPosition.Z);
-            var dx = p.X > Chunk.CHUNK_SIZE-1 ? 1 : p.X < 0 ? -1 : 0;
-            var dy = p.Y > Chunk.CHUNK_SIZE-1 ? 1 : p.Y < 0 ? -1 : 0;
-            var dz = p.Z > Chunk.CHUNK_SIZE-1 ? 1 : p.Z < 0 ? -1 : 0;
+            var dx = p.X > ChunkManager.CHUNK_SIZE-1 ? 1 : p.X < 0 ? -1 : 0;
+            var dy = p.Y > ChunkManager.CHUNK_SIZE-1 ? 1 : p.Y < 0 ? -1 : 0;
+            var dz = p.Z > ChunkManager.CHUNK_SIZE-1 ? 1 : p.Z < 0 ? -1 : 0;
             var delta = new Vector3I(dx, dy, dz);
-            var newp = p-delta*Chunk.CHUNK_SIZE;
+            var newp = p-delta*ChunkManager.CHUNK_SIZE;
             if (!ChunkBlocksBuffer.TryGetValue(neighbour_chunk+delta, out var neighbour)) {
-                neighbour = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
+                neighbour = new int[ChunkManager.CHUNKSQ*ChunkManager.CHUNK_SIZE*ChunkManager.SUBCHUNKS];
                 ChunkBlocksBuffer[neighbour_chunk+delta] = neighbour;
             }
 
-            var new_idx = newp.X + newp.Y*Chunk.CHUNKSQ + newp.Z*Chunk.CHUNK_SIZE;
-            if (!Chunk.IsBlockEmpty(neighbour[new_idx])) return neighbour[new_idx];
+            var new_idx = newp.X + newp.Y*ChunkManager.CHUNKSQ + newp.Z*ChunkManager.CHUNK_SIZE;
+            if (!ChunkManager.IsBlockEmpty(neighbour[new_idx])) return neighbour[new_idx];
         }
 
         return 0;
     }
-    public static Chunk.ChunkMeshData BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk, float sloperotation, bool flipSlope = false) {
+    public static ChunkManager.ChunkMeshData BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk, float sloperotation, bool flipSlope = false) {
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
@@ -604,8 +655,8 @@ public void GenerateTest(Vector3I chunkPosition)
         for (i=0; i<6; i++) data[i] = new(); // initialize the hash maps for each axis value
         data[i] = new(); // an extra one for sloped blocks
 
-        // add all Chunk.SUBCHUNKS
-        for (i=0; i < Chunk.SUBCHUNKS; i++) GreedyChunkMeshTest(data, chunk_blocks, i);
+        // add all ChunkManager.SUBCHUNKS
+        for (i=0; i < ChunkManager.SUBCHUNKS; i++) GreedyChunkMeshTest(data, chunk_blocks, i);
 
         // construct mesh
         var _st = new SurfaceTool();
@@ -618,13 +669,13 @@ public void GenerateTest(Vector3I chunkPosition)
         for (int axis=0; axis<6;axis++) {
             foreach (var (blockinfo, planeSet) in data[axis]) {
                 foreach (var (k_chunked, binary_plane) in planeSet) {
-                    var blockId = Chunk.GetBlockID(blockinfo);
+                    var blockId = ChunkManager.GetBlockID(blockinfo);
 
                     // sloped blocks are not greedy meshed
                     var greedy_quads = GreedyMeshBinaryPlane(binary_plane);
 
-                    var k = k_chunked % Chunk.Dimensions.Y;
-                    var subchunk = k_chunked/Chunk.Dimensions.Y;
+                    var k = k_chunked % ChunkManager.Dimensions.Y;
+                    var subchunk = k_chunked/ChunkManager.Dimensions.Y;
 
                     foreach (GreedyQuad quad in greedy_quads) {
                         Vector3I quad_offset, quad_delta; // row and col, width and height
@@ -660,7 +711,7 @@ public void GenerateTest(Vector3I chunkPosition)
                         // offset vertical by the current subchunk
                         // note that subchunking isnt even implemented because it turned out slower than just multithreading everything
                         // so SUBCHUNKS should be fixed at 1 and this always adds 0
-                        quad_offset += Vector3I.Up*subchunk*Chunk.Dimensions.Y;
+                        quad_offset += Vector3I.Up*subchunk*ChunkManager.Dimensions.Y;
 
                         // construct vertices and normals for mesh
                         Godot.Vector3[] verts = new Godot.Vector3[4];
@@ -704,7 +755,7 @@ public void GenerateTest(Vector3I chunkPosition)
                         }
                         else
                         {
-                            var blockDamage = Chunk.GetBlockDamageData(blockinfo);
+                            var blockDamage = ChunkManager.GetBlockDamageData(blockinfo);
                             var block_face_texture_idx = BlockManager.BlockTextureArrayPositions(blockId)[axis];
                             var notacolour = new Color(block_face_texture_idx, uv_offset.X, uv_offset.Y, blockDamage)*(1/255f);
                             var metadata = new Color[] {notacolour, notacolour, notacolour};
@@ -730,23 +781,23 @@ public void GenerateTest(Vector3I chunkPosition)
         foreach (var (chunk_idx, blockdata) in data[6][0])
         {
             var blockinfo = (int)blockdata[0];
-            var blockId = Chunk.GetBlockID(blockinfo);
-            var slopeType = Chunk.GetBlockSlopeType(blockinfo);
+            var blockId = ChunkManager.GetBlockID(blockinfo);
+            var slopeType = ChunkManager.GetBlockSlopeType(blockinfo);
 
             // two types of slope, regular slope (id:1) or angled (7 face) corner slope (id:2)
             // all blocks in this set are sloped so it's either going to be 1 or 2
             var regularSlope = slopeType == (int)SlopeType.Side;
             var cornerSlope = slopeType == (int)SlopeType.Corner;
             var invCornerSlope = slopeType == (int)SlopeType.InvCorner;
-            float rotation_angle = Chunk.GetBlockSlopeRotation(blockinfo);
+            float rotation_angle = ChunkManager.GetBlockSlopeRotation(blockinfo);
             //rotation_angle += Mathf.Pi/2;
             while (rotation_angle > Mathf.Pi*2) rotation_angle -= Mathf.Pi*2;
             // DEBUG no flip slope
             //if (flipSlope && !regularSlope) rotation_degrees -= 90f;
 
-            var x = chunk_idx % Chunk.CHUNK_SIZE;
-            var z = (chunk_idx / Chunk.CHUNK_SIZE) % Chunk.CHUNK_SIZE;
-            var y = chunk_idx / Chunk.CHUNKSQ;
+            var x = chunk_idx % ChunkManager.CHUNK_SIZE;
+            var z = (chunk_idx / ChunkManager.CHUNK_SIZE) % ChunkManager.CHUNK_SIZE;
+            var y = chunk_idx / ChunkManager.CHUNKSQ;
             Vector3I pos = new(x,y,z); 
 
             for (int axis=0;axis<6;axis++)
@@ -756,7 +807,7 @@ public void GenerateTest(Vector3I chunkPosition)
 
                 //pos += quad_offset;
 
-                var blockDamage = Chunk.GetBlockDamageData(blockinfo);
+                var blockDamage = ChunkManager.GetBlockDamageData(blockinfo);
                 var block_face_texture_idx = BlockManager.BlockTextureArrayPositions(blockId)[axis];
                 var notacolour = new Color(block_face_texture_idx, 1.0f, 1.0f, blockDamage)*(1/255f);
                 var metadata = new Color[] {notacolour, notacolour, notacolour};
@@ -874,12 +925,12 @@ public void GenerateTest(Vector3I chunkPosition)
         var a2 = _st2.Commit();
         var a3 = grassTopSurfaceTool.Commit();
         
-        var surfaces = new ArrayMesh[Chunk.ChunkMeshData.MAX_SURFACES];
-        surfaces[Chunk.ChunkMeshData.CHUNK_SURFACE] = a1;
-        surfaces[Chunk.ChunkMeshData.LAVA_SURFACE] = a2;
-        surfaces[Chunk.ChunkMeshData.GRASS_SURFACE] = a3;
+        var surfaces = new ArrayMesh[ChunkManager.ChunkMeshData.MAX_SURFACES];
+        surfaces[ChunkManager.ChunkMeshData.CHUNK_SURFACE] = a1;
+        surfaces[ChunkManager.ChunkMeshData.LAVA_SURFACE] = a2;
+        surfaces[ChunkManager.ChunkMeshData.GRASS_SURFACE] = a3;
 
-        return new Chunk.ChunkMeshData(surfaces);
+        return new ChunkManager.ChunkMeshData(surfaces);
     }
 
 private static List<GreedyQuad> GreedyMeshBinaryPlane(UInt32[] data) {
@@ -887,9 +938,9 @@ private static List<GreedyQuad> GreedyMeshBinaryPlane(UInt32[] data) {
         int data_length = data.Length;
         for (int j=0;j<data_length;j++) { // j selects a row from the data[j]
             var i = 0; // i  traverses the bits in current row j
-            while (i < Chunk.CHUNK_SIZE) {
+            while (i < ChunkManager.CHUNK_SIZE) {
                 i += BitOperations.TrailingZeroCount(data[j] >> i);
-                if (i>=Chunk.CHUNK_SIZE) continue;
+                if (i>=ChunkManager.CHUNK_SIZE) continue;
                 var h = BitOperations.TrailingZeroCount(~(data[j] >> i)); // count trailing ones from i upwards
                 UInt32 h_as_mask = 0; // create a mask of h bits
                 for (int xx=0;xx<h;xx++) h_as_mask |= (UInt32)1 << xx;
@@ -948,31 +999,31 @@ private static List<GreedyQuad> GreedyMeshBinaryPlane(UInt32[] data) {
         };
 
 public static void GreedyChunkMeshTest(Dictionary<int, Dictionary<int, UInt32[]>>[] data, int[] chunk_blocks, int subchunk) {
-        var axis_cols = new UInt32[Chunk.CSP3*3];
-        var col_face_masks = new UInt32[Chunk.CSP3*6];
+        var axis_cols = new UInt32[ChunkManager.CSP3*3];
+        var col_face_masks = new UInt32[ChunkManager.CSP3*6];
 
         var slope_blocks = new Dictionary<int, UInt32[]>();
 
         // generate binary 0 1 voxel representation for each axis
-        for (int x=0;x<Chunk.CSP;x++) {
-            for (int y=0;y<Chunk.CSP;y++) {
-                for (int z=0;z<Chunk.CSP;z++) {
+        for (int x=0;x<ChunkManager.CSP;x++) {
+            for (int y=0;y<ChunkManager.CSP;y++) {
+                for (int z=0;z<ChunkManager.CSP;z++) {
                     var pos = new Vector3I(x,y,z)-Vector3I.One; // goofy ahh check for out of bounds
-                    if (pos.X<0||pos.X>=Chunk.CHUNK_SIZE||pos.Y<0||pos.Y>=Chunk.CHUNK_SIZE||pos.Z<0||pos.Z>=Chunk.CHUNK_SIZE) continue; 
-                    var chunk_idx = pos.X + pos.Z*Chunk.CHUNK_SIZE + pos.Y*Chunk.CHUNKSQ;
-                    chunk_idx += subchunk*Chunk.CHUNKSQ*Chunk.CHUNK_SIZE; // move up one subchunk
+                    if (pos.X<0||pos.X>=ChunkManager.CHUNK_SIZE||pos.Y<0||pos.Y>=ChunkManager.CHUNK_SIZE||pos.Z<0||pos.Z>=ChunkManager.CHUNK_SIZE) continue; 
+                    var chunk_idx = pos.X + pos.Z*ChunkManager.CHUNK_SIZE + pos.Y*ChunkManager.CHUNKSQ;
+                    chunk_idx += subchunk*ChunkManager.CHUNKSQ*ChunkManager.CHUNK_SIZE; // move up one subchunk
                     
                     var b = chunk_blocks[chunk_idx];
-                    if (Chunk.IsBlockSloped(b)) {
+                    if (ChunkManager.IsBlockSloped(b)) {
                         // add sloped blocks and IDs to a separate list
                         if (!slope_blocks.TryGetValue(chunk_idx, out _ )) {
                             slope_blocks.Add(chunk_idx, new UInt32[] {(uint)b});
                         }
                     }
-                    else if (!Chunk.IsBlockEmpty(b)) { // if block is solid
-                        axis_cols[x + z*Chunk.CSP] |= (UInt32)1 << y;           // y axis defined by x,z
-                        axis_cols[z + y*Chunk.CSP + Chunk.CSP2] |= (UInt32)1 << x;    // x axis defined by z,y
-                        axis_cols[x + y*Chunk.CSP + Chunk.CSP2*2] |= (UInt32)1 << z;  // z axis defined by x,y
+                    else if (!ChunkManager.IsBlockEmpty(b)) { // if block is solid
+                        axis_cols[x + z*ChunkManager.CSP] |= (UInt32)1 << y;           // y axis defined by x,z
+                        axis_cols[z + y*ChunkManager.CSP + ChunkManager.CSP2] |= (UInt32)1 << x;    // x axis defined by z,y
+                        axis_cols[x + y*ChunkManager.CSP + ChunkManager.CSP2*2] |= (UInt32)1 << z;  // z axis defined by x,y
                     }
                 }
             }
@@ -984,12 +1035,12 @@ public static void GreedyChunkMeshTest(Dictionary<int, Dictionary<int, UInt32[]>
 
         // do face culling for each axis
         for (int axis = 0; axis < 3; axis++) {
-            for (int i=0; i<Chunk.CSP2; i++) {
-                var col = axis_cols[i + axis*Chunk.CSP2];
+            for (int i=0; i<ChunkManager.CSP2; i++) {
+                var col = axis_cols[i + axis*ChunkManager.CSP2];
                 // sample descending axis and set true when air meets solid
-                col_face_masks[Chunk.CSP2*axis*2 + i] = col & ~(col << 1);
+                col_face_masks[ChunkManager.CSP2*axis*2 + i] = col & ~(col << 1);
                 // sample ascending axis and set true when air meets solid
-                col_face_masks[Chunk.CSP2*(axis*2+1) + i] = col & ~(col >> 1);
+                col_face_masks[ChunkManager.CSP2*(axis*2+1) + i] = col & ~(col >> 1);
             }
         }
 
@@ -997,15 +1048,15 @@ public static void GreedyChunkMeshTest(Dictionary<int, Dictionary<int, UInt32[]>
         for (int axis = 0; axis < 6; axis++) {
             // i and j are coords in the binary plane for the given axis
             // i is column, j is row
-            for (int j=0;j<Chunk.CHUNK_SIZE;j++) {
-                for (int i=0;i<Chunk.CHUNK_SIZE;i++) {
+            for (int j=0;j<ChunkManager.CHUNK_SIZE;j++) {
+                for (int i=0;i<ChunkManager.CHUNK_SIZE;i++) {
                     // get column index for col_face_masks
                     // add 1 to i and j because we are skipping the first row and column due to padding
-                    var col_idx = (i+1) + ((j+1) * Chunk.CSP) + (axis * Chunk.CSP2);
+                    var col_idx = (i+1) + ((j+1) * ChunkManager.CSP) + (axis * ChunkManager.CSP2);
 
                     // removes rightmost and leftmost padded bit (it's outside the chunk)
                     var col = col_face_masks[col_idx] >> 1;
-                    col &= ~((UInt32)1 << Chunk.CHUNK_SIZE);
+                    col &= ~((UInt32)1 << ChunkManager.CHUNK_SIZE);
 
                     // now get y coord of faces (it's their bit location in the UInt64, so trailing zeroes can find it)
                     while (col != 0) {
@@ -1021,9 +1072,9 @@ public static void GreedyChunkMeshTest(Dictionary<int, Dictionary<int, UInt32[]>
                             };
                         var blockinfo = chunk_blocks[
                                 voxel_pos.X
-                                + voxel_pos.Z * Chunk.CHUNK_SIZE
-                                + voxel_pos.Y * Chunk.CHUNKSQ
-                                + subchunk*Chunk.CHUNKSQ*Chunk.CHUNK_SIZE
+                                + voxel_pos.Z * ChunkManager.CHUNK_SIZE
+                                + voxel_pos.Y * ChunkManager.CHUNKSQ
+                                + subchunk*ChunkManager.CHUNKSQ*ChunkManager.CHUNK_SIZE
                             ];
 
                         
@@ -1032,9 +1083,9 @@ public static void GreedyChunkMeshTest(Dictionary<int, Dictionary<int, UInt32[]>
                             data[axis].Add(blockinfo, planeSet);
                         }
 
-                        var k_ymod = k+Chunk.Dimensions.Y*subchunk;
+                        var k_ymod = k+ChunkManager.Dimensions.Y*subchunk;
                         if (!planeSet.TryGetValue(k_ymod, out UInt32[] data_entry)) {
-                            data_entry = new UInt32[Chunk.CHUNK_SIZE];
+                            data_entry = new UInt32[ChunkManager.CHUNK_SIZE];
                             planeSet.Add(k_ymod, data_entry);
                         }
                         data_entry[j] |= (UInt32)1 << i;     // push the "row" bit into the "column" UInt32

@@ -12,127 +12,69 @@ public partial class Chunk : StaticBody3D
 
     //[Export] public Grass[] GrassMultiMeshArray {get; set;}
 
-	public const float VOXEL_SCALE = 0.5f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
-    public const float INV_VOXEL_SCALE = 1/VOXEL_SCALE;
-
-    // chunk size is 30, padded chunk size is 32. Can't be increased easily because it uses binary UINT32 to do face culling
-	public const int CHUNK_SIZE = 30; // the chunk size is 62, padded chunk size is 64, // must match size in compute shader
-    public const int CHUNKSQ = CHUNK_SIZE*CHUNK_SIZE;
-    public const int CSP = CHUNK_SIZE+2;
-    public const int CSP2 = CSP*CSP; // squared padded chunk size
-    public const int CSP3 = CSP2*CSP; // cubed padded chunk size
-	public static readonly Vector3I Dimensions = new(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
-
-    // in the Generate() method, noise >= this value doesnt generate blocks
-    public const float NOISE_CUTOFF = 0.2f;
-
-    public const int SUBCHUNKS = 1; // each one is an extra 32x32 chunk in the vertical y direction
-
-
     private static readonly PackedScene _block_break_particles = GD.Load<PackedScene>("res://effects/break_block.tscn");
 
     private static readonly PackedScene _rigid_break = GD.Load<PackedScene>("res://effects/rigid_break2.tscn");
 
-    private readonly Area3D _chunk_area = new() {Position = new Vector3(Dimensions.X,0,Dimensions.Z)*0.5f};
+    private readonly Area3D _chunk_area = new() {Position = new Vector3(ChunkManager.Dimensions.X,0,ChunkManager.Dimensions.Z)*0.5f};
     private readonly CollisionShape3D _chunk_bounding_box = new() {
-            Shape = new BoxShape3D { Size = new Vector3(Dimensions.X, Dimensions.Y, Dimensions.Z) }
+            Shape = new BoxShape3D { Size = new Vector3(ChunkManager.Dimensions.X, ChunkManager.Dimensions.Y, ChunkManager.Dimensions.Z) }
         };
-
-    private ChunkMeshData _chunkMeshData;
 
 	// 3d int array for holding blocks
     // each 32bit int contains packed block info: block type (10 bits), z (5 bits), y (5 bits), x (5 bits) 
     // this leaves 7 bits to implement block health or AO
-	private int[] _blocks = new int[CHUNKSQ*CHUNK_SIZE*SUBCHUNKS];
 	public Vector3I ChunkPosition { get; private set; }
 
 	[Export]
 	public FastNoiseLite WallNoise { get; set; }
 
-public struct ChunkMeshData {
-        public const byte MAX_SURFACES = 3;
-        public const byte CHUNK_SURFACE = 0;
-        public const byte GRASS_SURFACE = 1;
-        public const byte LAVA_SURFACE = 2;
-        private readonly ArrayMesh[] _surfaces;
 
-        public ChunkMeshData(ArrayMesh[] input_surfaces) {
-            _surfaces = new ArrayMesh[MAX_SURFACES];
-            _surfaces[CHUNK_SURFACE] = input_surfaces[CHUNK_SURFACE];
-            _surfaces[GRASS_SURFACE] = input_surfaces[GRASS_SURFACE];
-            _surfaces[LAVA_SURFACE] = input_surfaces[LAVA_SURFACE];
-        }
-
-        public readonly ArrayMesh UnifySurfaces() {
-            var _arraymesh = new ArrayMesh();
-            for (byte type = 0 ; type < MAX_SURFACES ; type ++) {
-                if (HasSurfaceOfType(type)) {
-                    var surface = _surfaces[type];
-                    var _surfmat = type switch {
-                        CHUNK_SURFACE => BlockManager.Instance.ChunkMaterial,
-                        GRASS_SURFACE => BlockManager.Instance.ChunkMaterial,
-                        LAVA_SURFACE => BlockManager.Instance.LavaShader,
-                        _ => BlockManager.Instance.ChunkMaterial
-                    };
-                    _arraymesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, surface.SurfaceGetArrays(0));
-                    _arraymesh.SurfaceSetMaterial(_arraymesh.GetSurfaceCount()-1, _surfmat);
-                }
-            }
-            return _arraymesh;
-        }
-
-        public readonly bool HasSurfaceOfType(byte type) {
-            return _surfaces[type].GetSurfaceCount() > 0;
-        }
-
-        public readonly ArrayMesh GetSurface(byte type) {
-            return _surfaces[type];
-        }
-    }
-
+    #region init
 	public override void _Ready() {
-		Scale = new Godot.Vector3(VOXEL_SCALE, VOXEL_SCALE, VOXEL_SCALE);
+		Scale = new Vector3(ChunkManager.VOXEL_SCALE, ChunkManager.VOXEL_SCALE, ChunkManager.VOXEL_SCALE);
         _chunk_area.AddChild(_chunk_bounding_box);
         AddChild(_chunk_area);
 	}
 
 	public void InitChunk(Vector3I position)
 	{
+        ChunkManager.UpdateChunkBlockData(position);
+        ChunkManager.UpdateChunkMeshData(position);
 		ChunkManager.Instance.UpdateChunkPosition(this, position, ChunkPosition);
 		ChunkPosition = position;
         var newpos = new Vector3(
-            VOXEL_SCALE * ChunkPosition.X * Dimensions.X,
-            VOXEL_SCALE * ChunkPosition.Y * Dimensions.Y * SUBCHUNKS,
-            VOXEL_SCALE * ChunkPosition.Z * Dimensions.Z);
+            ChunkManager.VOXEL_SCALE * ChunkPosition.X * ChunkManager.Dimensions.X,
+            ChunkManager.VOXEL_SCALE * ChunkPosition.Y * ChunkManager.Dimensions.Y * ChunkManager.SUBCHUNKS,
+            ChunkManager.VOXEL_SCALE * ChunkPosition.Z * ChunkManager.Dimensions.Z);
 		
         CallDeferred(Node3D.MethodName.SetGlobalPosition, newpos);
-
-        _blocks = ChunkManager.Generate(ChunkPosition);
-        _chunkMeshData = ChunkManager.BuildChunkMesh(_blocks, ChunkPosition.Y == 0);
 
         // HACK expensive LOD grass is disabled
         //UpdateChunkGrass(new float[] {newpos.X,newpos.Y,newpos.Z});
 
-        var mesh = _chunkMeshData.UnifySurfaces();
-        var collisionHull = mesh.CreateTrimeshShape();
-        Update(mesh, collisionHull);
+        Update();
 	}
+    #endregion
 
-	public async void SetChunkPosition(Vector3I position, int[] blocks)
+    #region set chunk pos
+
+	public void SetChunkPosition(Vector3I position, int[] blocks)
 	{
 		ChunkManager.Instance.UpdateChunkPosition(this, position, ChunkPosition);
 		ChunkPosition = position;
         var newpos = new Vector3(
-            VOXEL_SCALE * ChunkPosition.X * Dimensions.X,
-            VOXEL_SCALE * ChunkPosition.Y * Dimensions.Y * SUBCHUNKS,
-            VOXEL_SCALE * ChunkPosition.Z * Dimensions.Z);
+            ChunkManager.VOXEL_SCALE * ChunkPosition.X * ChunkManager.Dimensions.X,
+            ChunkManager.VOXEL_SCALE * ChunkPosition.Y * ChunkManager.Dimensions.Y * ChunkManager.SUBCHUNKS,
+            ChunkManager.VOXEL_SCALE * ChunkPosition.Z * ChunkManager.Dimensions.Z);
 		
         CallDeferred(Node3D.MethodName.SetGlobalPosition, newpos);
-
+        
+        /*
         _blocks = blocks;
         _chunkMeshData = await Task.Run(()=>{return ChunkManager.BuildChunkMesh(_blocks,ChunkPosition.Y == 0);});
 
-        /* HACK base density expensive grass lod is disabled
+         HACK base density expensive grass lod is disabled
         Grass[] newgrass = GrassMultiMeshArray;
         foreach (Grass grass in newgrass) {
             if (_chunkMeshData.HasSurfaceOfType(Chunk.ChunkMeshData.GRASS_SURFACE)) {
@@ -145,12 +87,15 @@ public struct ChunkMeshData {
         GrassMultiMeshArray = newgrass;
 
         //_chunkMeshData = await Task.Run(()=>{return ChunkManager.BuildChunkMesh(_blocks,ChunkPosition.Y == 0);});
-        */
+       
 
         var mesh = _chunkMeshData.UnifySurfaces();
         var collisionHull = await Task.Run(()=>{return mesh.CreateTrimeshShape();});
-        Update(mesh, collisionHull);
+         */
+
+        Update();
 	}
+    #endregion
 
     // HACK expensive LOD grass is disabled
     /*
@@ -171,101 +116,12 @@ public struct ChunkMeshData {
         foreach (var g in GrassMultiMeshArray) g.Multimesh = null;
     }*/
 
-    // block bits
-    // byte 1-2, 00-15: block type
-    // byte 3,   16-23: block damage info
-    // btye 4,   24-31: block slope orientation
+    #region update
 
-    public static int PackBlockInfo(int blockType) {
-        return blockType;
-    }
-
-    public static int GetBlockID(int blockInfo) {
-        return blockInfo & 0xffff;
-    }
-
-    public static int GetBlockDamageData(int blockInfo) {
-        return (blockInfo>>16) & 0xff;
-    }
-
-    public static int GetBlockDamageInteger(int blockInfo) {
-        return GetBlockDamageData(blockInfo)&0x1f;
-    }
-
-    public static int GetBlockDamageType(int blockInfo) {
-        return GetBlockDamageData(blockInfo) >> 5;
-    }
-
-    public static int GetBlockSlopeData(int blockInfo) {
-        return blockInfo >> 24;
-    }
-
-    public static int GetBlockSlopeType(int blockInfo) {
-        return GetBlockSlopeData(blockInfo) & 0b11;
-    }
-
-    public static float GetBlockSlopeRotation(int blockInfo) {
-        return ((GetBlockSlopeData(blockInfo) >> 2)& 0b11)*Mathf.Pi/2;
-    }
-
-    public static int PackSlopeData(int slopeType, int slopeRotation) {
-        return ((slopeType) | ((slopeRotation) << 2))<<24;
-    }
-
-    public void SetBlock(int blockIndex, int blockType) {
-        _blocks[blockIndex] = (_blocks[blockIndex] & ~0xffff) | blockType;
-    }
-
-    public void SetBlockDamageFlag(int blockIndex, BlockDamageType damtype) {
-        int damMask = damtype switch  {
-            BlockDamageType.Physical => 1<<5,
-            BlockDamageType.Fire => 1<<6,
-            _ => 1<<7
-        };
-        _blocks[blockIndex] |= damMask<<21; // << 16 then << 5, first 5 bits of damage data are reserved for damage percentage
-    }
-
-    public void SetBlockToAir(int blockIndex) {
-        _blocks[blockIndex] = 0;
-    }
-
-    public void SetBlockDamagePercentage(int blockIndex, float percentage) {
-        _blocks[blockIndex] = (_blocks[blockIndex] & ~0x1f0000) | ((((_blocks[blockIndex]>>16) & ~0x1f) | Math.Clamp(Mathf.RoundToInt(percentage*31.0),0,31))<<16);
-    }
-
-    public void SetBlockDamageInteger(int blockIndex, int damage) {
-        _blocks[blockIndex] = (_blocks[blockIndex] & ~0x1f0000) | ((((_blocks[blockIndex]>>16) & ~0x1f) | Math.Clamp(damage,0,31))<<16);
-    }
-
-    public static BlockSpecies GetBlockSpecies(int blockinfo) {
-        return BlockManager.Instance.Blocks[GetBlockID(blockinfo)].Species;
-    }
-
-    public static float GetBlockFragility(int blockinfo) {
-        return BlockManager.Instance.Blocks[GetBlockID(blockinfo)].Fragility;
-    }
-
-    public static bool IsBlockEmpty(int blockInfo) {
-        return GetBlockID(blockInfo) == 0;
-    }
-
-    public static bool IsBlockSloped(int blockInfo) {
-        return GetBlockSlopeType(blockInfo) != 0;
-    }
-
-    public static bool IsBlockInvincible(int blockInfo) {
-        return IsBlockEmpty(blockInfo) || (GetBlockID(blockInfo) == BlockManager.Instance.LavaBlockId);
-    }
-
-	public int GetBlockInfoFromPosition(Vector3I blockPosition)
-	{
-        if (blockPosition.X + blockPosition.Z * CHUNK_SIZE + blockPosition.Y * CHUNKSQ >= _blocks.Length) return -1;
-		return _blocks[blockPosition.X + blockPosition.Z * CHUNK_SIZE + blockPosition.Y * CHUNKSQ];
-	}
-
-	public void Update(Mesh mesh, ConcavePolygonShape3D collisionHull) {
-        MeshInstance.Mesh = mesh;
-        CollisionShape.Shape = collisionHull;
+	public void Update() {
+        var meshdata = ChunkManager.GetChunkMeshData(ChunkPosition);
+        MeshInstance.Mesh = meshdata.UnifySurfaces();
+        CollisionShape.Shape = MeshInstance.Mesh.CreateTrimeshShape();
 
         CallDeferred(MethodName.UpdateRigidBodies);
 	}
@@ -279,43 +135,91 @@ public struct ChunkMeshData {
         }
     }
 
+    #endregion
+
 /*
     // HACK expensive LOD grass disabled for now
     public override void _Process(double delta) {
         if (Player.Instance != null) {
-            var sq_dist = Player.Instance.GlobalPosition.DistanceSquaredTo(GlobalPosition+Vector3.One*VOXEL_SCALE*CHUNK_SIZE/2);
-            var chunk_dist  = Mathf.RoundToInt(sq_dist/(CHUNK_SIZE*CHUNK_SIZE*VOXEL_SCALE*VOXEL_SCALE));
+            var sq_dist = Player.Instance.GlobalPosition.DistanceSquaredTo(GlobalPosition+Vector3.One*VOXEL_SCALE*ChunkManager.CHUNK_SIZE/2);
+            var chunk_dist  = Mathf.RoundToInt(sq_dist/(ChunkManager.CHUNK_SIZE*ChunkManager.CHUNK_SIZE*VOXEL_SCALE*VOXEL_SCALE));
             foreach (var g in GrassMultiMeshArray) g.Visible = false;
             if (chunk_dist < GrassMultiMeshArray.Length) GrassMultiMeshArray[chunk_dist].Visible = true;
         }
     }*/
 
+    #region block setters
+    public void SetBlock(int blockIndex, int blockType) {
+        var _blocks = ChunkManager.GetChunkBlockData(ChunkPosition);
+        _blocks[blockIndex] = (_blocks[blockIndex] & ~0xffff) | blockType;
+        ChunkManager.UpdateChunkBlockData(ChunkPosition, _blocks);
+    }
+
+    public void SetBlockDamageFlag(int blockIndex, BlockDamageType damtype) {
+        var _blocks = ChunkManager.GetChunkBlockData(ChunkPosition);
+        int damMask = damtype switch  {
+            BlockDamageType.Physical => 1<<5,
+            BlockDamageType.Fire => 1<<6,
+            _ => 1<<7
+        };
+        _blocks[blockIndex] |= damMask<<21; // << 16 then << 5, first 5 bits of damage data are reserved for damage percentage
+        ChunkManager.UpdateChunkBlockData(ChunkPosition, _blocks);
+    }
+
+    public void SetBlockToAir(int blockIndex) {
+        var _blocks = ChunkManager.GetChunkBlockData(ChunkPosition);
+        _blocks[blockIndex] = 0;
+        ChunkManager.UpdateChunkBlockData(ChunkPosition, _blocks);
+    }
+
+    public void SetBlockDamagePercentage(int blockIndex, float percentage) {
+        var _blocks = ChunkManager.GetChunkBlockData(ChunkPosition);
+        _blocks[blockIndex] = (_blocks[blockIndex] & ~0x1f0000) | ((((_blocks[blockIndex]>>16) & ~0x1f) | Math.Clamp(Mathf.RoundToInt(percentage*31.0),0,31))<<16);
+        ChunkManager.UpdateChunkBlockData(ChunkPosition, _blocks);
+    }
+
+    public void SetBlockDamageInteger(int blockIndex, int damage) {
+        var _blocks = ChunkManager.GetChunkBlockData(ChunkPosition);
+        _blocks[blockIndex] = (_blocks[blockIndex] & ~0x1f0000) | ((((_blocks[blockIndex]>>16) & ~0x1f) | Math.Clamp(damage,0,31))<<16);
+        ChunkManager.UpdateChunkBlockData(ChunkPosition, _blocks);
+    }
+
+	public int GetBlockInfoFromPosition(Vector3I blockPosition)
+	{
+        var _blocks = ChunkManager.GetChunkBlockData(ChunkPosition);
+        if (blockPosition.X + blockPosition.Z * ChunkManager.CHUNK_SIZE + blockPosition.Y * ChunkManager.CHUNKSQ >= _blocks.Length) return -1;
+		return _blocks[blockPosition.X + blockPosition.Z * ChunkManager.CHUNK_SIZE + blockPosition.Y * ChunkManager.CHUNKSQ];
+	}
+    #endregion
+
+    #region block damage
 	public void DamageBlocks(List<(Vector3I, int)> blockDamages)
 	{ 
         // output dictionary of block positions where particles need to be spawned (for destroyed blocks) and textures for spawned particles
         var particle_spawn_list = new Godot.Collections.Dictionary<Vector3I,int>();
+        var _blocks = ChunkManager.GetChunkBlockData(ChunkPosition);
 
         // array of tuples with block global position as Item1 and damage as Item2
 		foreach ((Vector3I,int) blockdamage in blockDamages)
 		{
-			if (blockdamage.Item1.X < 0 || blockdamage.Item1.X >= Dimensions.X) continue;
-			if (blockdamage.Item1.Y < 0 || blockdamage.Item1.Y >= Dimensions.Y*SUBCHUNKS) continue;
-			if (blockdamage.Item1.Z < 0 || blockdamage.Item1.Z >= Dimensions.Z) continue;
+			if (blockdamage.Item1.X < 0 || blockdamage.Item1.X >= ChunkManager.Dimensions.X) continue;
+			if (blockdamage.Item1.Y < 0 || blockdamage.Item1.Y >= ChunkManager.Dimensions.Y*ChunkManager.SUBCHUNKS) continue;
+			if (blockdamage.Item1.Z < 0 || blockdamage.Item1.Z >= ChunkManager.Dimensions.Z) continue;
             
             var block_idx = blockdamage.Item1.X
-                + blockdamage.Item1.Z * Dimensions.X
-                + blockdamage.Item1.Y * Dimensions.X * Dimensions.Z;
+                + blockdamage.Item1.Z * ChunkManager.Dimensions.X
+                + blockdamage.Item1.Y * ChunkManager.Dimensions.X * ChunkManager.Dimensions.Z;
 
             var blockinfo = _blocks[block_idx];
 
             //GD.Print("checking if block empty: ", BlockManager.BlockName(blockid));
 
-            if (IsBlockInvincible(blockinfo)) continue; // dont damage air blocks or invincible blocks
+            if (ChunkManager.IsBlockInvincible(blockinfo)) continue; // dont damage air blocks or invincible blocks
 
 
             // increase block damage percentage
-            var block_damaged = (float)GetBlockDamageInteger(blockinfo);
-            block_damaged += blockdamage.Item2*GetBlockFragility(blockinfo);
+            var block_damaged = (float)ChunkManager.GetBlockDamageInteger(blockinfo);
+            block_damaged += blockdamage.Item2*ChunkManager.GetBlockFragility(blockinfo);
             var dam_rounded = Mathf.RoundToInt(block_damaged);
             SetBlockDamageInteger(block_idx, dam_rounded);
             SetBlockDamageFlag(block_idx, BlockDamageType.Physical);
@@ -328,16 +232,18 @@ public struct ChunkMeshData {
 		}
 
         // update mesh and collision shape
-        _chunkMeshData = ChunkManager.BuildChunkMesh(_blocks,ChunkPosition.Y == 0);
-        var mesh = _chunkMeshData.UnifySurfaces();
+        ChunkManager.UpdateChunkBlockData(ChunkPosition, _blocks);
+        ChunkManager.UpdateChunkMeshData(ChunkPosition);
+
 
         // HACK expensive LOD grass is disabled
         //CallDeferred(nameof(Chunk.UpdateChunkGrass), null);
 
-        var shape = mesh.CreateTrimeshShape();
-		Update(mesh, shape);
+		Update();
         SpawnBlockParticles(particle_spawn_list);
 	}
+
+
 
     public void SpawnBlockParticles(Godot.Collections.Dictionary<Vector3I, int> positionsAndBlockInfo) {
         if (positionsAndBlockInfo.Count == 0) return;
@@ -359,17 +265,18 @@ public struct ChunkMeshData {
 
         // spawn particles from closest to fartherest from player
         // the particles spawned first have more detail and more expensive collisions\
+        var _blocks = ChunkManager.GetChunkBlockData(ChunkPosition);
         var blocks_being_destroyed = positionsAndBlockInfo.Count;
         var blockCount = 0;
         var partcount = GetTree().GetNodesInGroup("RigidBreak").Count;
         foreach (var (pos, block_info) in positionsAndBlockInfo) {
             var is_block_above = false;
             var block_idx = Mathf.FloorToInt(pos.X)
-            + Mathf.FloorToInt(pos.Z) * CHUNK_SIZE
-            + Mathf.FloorToInt(pos.Y) * CHUNKSQ;
-            var block_above_idx = block_idx + CHUNKSQ;
+            + Mathf.FloorToInt(pos.Z) * ChunkManager.CHUNK_SIZE
+            + Mathf.FloorToInt(pos.Y) * ChunkManager.CHUNKSQ;
+            var block_above_idx = block_idx + ChunkManager.CHUNKSQ;
             if (block_above_idx <=_blocks.Length) {
-                var block_above_id = GetBlockID(_blocks[block_above_idx]);
+                var block_above_id = ChunkManager.GetBlockID(_blocks[block_above_idx]);
                 if (block_above_id != 0) is_block_above = true;
             }
             //if (is_block_above) GD.Print("block above");
@@ -461,6 +368,6 @@ public struct ChunkMeshData {
         }
 
     }
-
+    #endregion
 
 }
