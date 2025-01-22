@@ -17,6 +17,8 @@ public partial class ChunkTextureTest : Node3D
 
     public Dictionary<Vector3I, int[]> ChunkBlocksBuffer = new();
 
+    public HashSet<(int,int,int)> allGeneratedChunks = new();
+
     private static readonly Godot.Vector3 SlopedNormalNegZ = new(0, INVSQRT2, -INVSQRT2);
     private static readonly Godot.Vector3 SlopedCornerNormalNegZ = new(INVSQRT2, INVSQRT2, -INVSQRT2);
 
@@ -36,6 +38,12 @@ public partial class ChunkTextureTest : Node3D
 	};
 
 	public static readonly Noise NOISE = new FastNoiseLite();
+
+    public static readonly Noise HEIGHTNOISE = new FastNoiseLite(){
+        NoiseType = FastNoiseLite.NoiseTypeEnum.Simplex,
+        Frequency = 0.01f,
+        FractalType = FastNoiseLite.FractalTypeEnum.None
+    };
 
     [Export] public MeshInstance3D ChunkMesh {get; set;}
 
@@ -79,10 +87,11 @@ public partial class ChunkTextureTest : Node3D
         var camera_position = EditorInterface.Singleton.GetEditorViewport3D(0).GetCamera3D().GlobalPosition;
 
         if (_prevChunkPosition != chunkpos && ChunkMesh != null && ChunkMesh is MeshInstance3D mesh && BlockManager.Instance != null) {
-            if (!ChunkBlocksBuffer.TryGetValue(chunkpos, out var blocks)) {
-                GenerateTest(chunkpos);
-            }
-            blocks = ChunkBlocksBuffer[chunkpos];
+            GD.Print($"prev chunk position {_prevChunkPosition}, chunk position {chunkpos}");
+            _prevChunkPosition = chunkpos;
+
+            GenerateTest(chunkpos);
+            var blocks = ChunkBlocksBuffer[chunkpos];
             var chunkmeshdata = BuildChunkMeshTest(blocks, false, SlopeRotationDegrees, _flipslope);
             mesh.Mesh = chunkmeshdata.UnifySurfaces();
 
@@ -96,7 +105,7 @@ public partial class ChunkTextureTest : Node3D
             } else GrassMultiMesh.TerrainMesh = null;
             GrassMultiMesh.Rebuild();*/
 
-            _prevChunkPosition = chunkpos;
+            
         }
 
         // grass mesh LOD
@@ -123,7 +132,7 @@ public void GenerateTest(Vector3I chunkPosition)
         if (CantorPairing.Contains(chunkPosition)) {
             GD.Print("cantor pairing says Chunk already generated at ", chunkPosition);
             return;
-        } 
+        }
         else GD.Print("Generating chunk at ", chunkPosition);
 
         if (!ChunkBlocksBuffer.TryGetValue(chunkPosition, out var result)) {
@@ -243,9 +252,10 @@ public void GenerateTest(Vector3I chunkPosition)
                         }
                         else
                         {
-                            var noise3d = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y, globalBlockPosition.Z);
-                            var noiseabove = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y+1, globalBlockPosition.Z);
-                            var noisebelow = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y-1, globalBlockPosition.Z);
+                            var height = TerraceFunc(globalBlockPosition.Y);
+                            var noise3d = NOISE.GetNoise3D(globalBlockPosition.X, height, globalBlockPosition.Z);
+                            var noiseabove = NOISE.GetNoise3D(globalBlockPosition.X, height+1, globalBlockPosition.Z);
+                            var noisebelow = NOISE.GetNoise3D(globalBlockPosition.X, height-1, globalBlockPosition.Z);
                             if (noise3d >= cutoff)
                             {
                                 if (noiseabove < cutoff) {
@@ -262,35 +272,22 @@ public void GenerateTest(Vector3I chunkPosition)
                         result[block_idx] = blockinfo;
 
                         if (blockType != 0) filledBlocks.Add(new Vector3I(x, y, z));
-                        
-                        // add slope
-                        /*
-                        if (y>2) {
-                            var altblockinfo = result[block_idx-2*Chunk.CHUNKSQ];
-                            if (!Chunk.IsBlockEmpty(altblockinfo)) {
-                                altblockinfo &= ~(0xff<<24);
-                                ChunkBlocksBuffer[chunkPosition] = result;
-                                var neighbour_bits = GetBlockNeighborBits(chunkPosition, new(x, y-2, z));
-                                altblockinfo |= PackSlopeInfo(neighbour_bits);
-                                result[block_idx-2*Chunk.CHUNKSQ] = altblockinfo;
-                            }
-                        }*/
                     }
                 }
             }
         }
 
-        // loop over all blocks again, add slopes
+        // loop over all filled blocks again, add slopes
         Dictionary<Vector3I,int> packedSlopeBlockData = new();
 
         // add corner and side slopes
+        // corner slopes should make the block below the same type
         foreach (var p in filledBlocks) {
             var i = p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE;
             if (!Chunk.IsBlockEmpty(result[i]) && BlockIsSlopeCandidate(chunkPosition, p)) {
                 var s = BlockPackSlopeInfo(chunkPosition, p);
                 if (Chunk.GetBlockSlopeType(s) == (int)SlopeType.Corner) {
-                    var newidx = p.X + (p.Y-1)*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE;
-                    if (newidx >= 0) result[newidx] = result[i];
+                    SetBlockNeighbourIfNotEmpty(chunkPosition, p, Vector3I.Down, result[i]); 
                 }
                 packedSlopeBlockData[p] = s;
             }
@@ -323,7 +320,6 @@ public void GenerateTest(Vector3I chunkPosition)
             slopetype = 1;
             sloperot = BlockSideRotation(chunkpos, p);
         }
-
         if (BlockIsInvCorner(chunkpos, p)) {
             slopetype = 3;
             sloperot = BlockInvCornerRotation(chunkpos, p);
@@ -332,13 +328,18 @@ public void GenerateTest(Vector3I chunkPosition)
         return Chunk.PackSlopeData(slopetype, sloperot);
     }
 
+    public static float TerraceFunc(float x) {
+        return Mathf.Pow(Mathf.Sin((x - Mathf.Round(x)) * 2.45f),11) + Mathf.Round(x);
+    }
+
     public bool BlockIsSlopeCandidate(Vector3I chunkPosition, Vector3I blockPosition) {
         Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
-        return IsBlockBelow(chunkPosition, p) && !IsBlockAbove(chunkPosition, p) && (!BlockIsSurrounded(chunkPosition, p)||BlockSingleDiagonalFree(chunkPosition, p));
+        return IsBlockBelow(chunkPosition, p) && (!(IsBlockAbove(chunkPosition, p)||BlockIsSurrounded(chunkPosition, p)) || BlockIsInvCorner(chunkPosition, p));
     }
 
     public bool BlockIsInvCorner(Vector3I chunkPosition, Vector3I blockPosition) {
-        return BlockIsSurrounded(chunkPosition, blockPosition)&&BlockSingleDiagonalFree(chunkPosition, blockPosition);
+        return BlockIsSurrounded(chunkPosition, blockPosition)&&BlockSingleDiagonalFree(chunkPosition, blockPosition)
+            || BlockIsCorner(chunkPosition, blockPosition)&&IsBlockAbove(chunkPosition, blockPosition)&&!IsDoubleBlockAbove(chunkPosition, blockPosition);
     }
 
     public int BlockInvCornerRotation(Vector3I chunkPosition, Vector3I blockPosition) {
@@ -364,10 +365,10 @@ public void GenerateTest(Vector3I chunkPosition)
 
         if (
                 ! (
-                    (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsBlockAbove(chunkPosition, p+Vector3I.Forward) && !IsBlockAbove(chunkPosition, p+Vector3I.Right))
-                    ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsBlockAbove(chunkPosition, p+Vector3I.Forward) && !IsBlockAbove(chunkPosition, p+Vector3I.Left))
-                    ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsBlockAbove(chunkPosition, p+Vector3I.Back) && !IsBlockAbove(chunkPosition, p+Vector3I.Right))
-                    ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsBlockAbove(chunkPosition, p+Vector3I.Back) && !IsBlockAbove(chunkPosition, p+ Vector3I.Left))
+                    (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Forward) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Right))
+                    ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Forward) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Left))
+                    ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Back) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Right))
+                    ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Back) && !IsTripleBlockAbove(chunkPosition, p+ Vector3I.Left))
                 )
             ) return false;
 
@@ -411,6 +412,14 @@ public void GenerateTest(Vector3I chunkPosition)
 
     public bool IsBlockAbove(Vector3I chunkPosition, Vector3I blockPosition) {
         return BlockHasNeighbor(chunkPosition, blockPosition, Vector3I.Up);
+    }
+
+    public bool IsDoubleBlockAbove(Vector3I chunkPosition, Vector3I blockPosition) {
+        return IsBlockAbove(chunkPosition, blockPosition)&&IsBlockAbove(chunkPosition, blockPosition+Vector3I.Up);
+    }
+
+    public bool IsTripleBlockAbove(Vector3I chunkPosition, Vector3I blockPosition) {
+        return IsBlockAbove(chunkPosition, blockPosition)&&IsBlockAbove(chunkPosition, blockPosition+Vector3I.Up)&&IsBlockAbove(chunkPosition, blockPosition+2*Vector3I.Up);
     }
 
     public bool IsBlockBelow(Vector3I chunkPosition, Vector3I blockPosition) {
@@ -466,24 +475,24 @@ public void GenerateTest(Vector3I chunkPosition)
 
         if (BlockNeighbourCount(chunkPosition, p) == 1) {
             return
-                (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && !IsBlockAbove(chunkPosition, p+Vector3I.Forward))
-                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && !IsBlockAbove(chunkPosition, p+Vector3I.Back))
-                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsBlockAbove(chunkPosition, p+Vector3I.Left))
-                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsBlockAbove(chunkPosition, p+Vector3I.Right));
+                (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Forward))
+                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Back))
+                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Left))
+                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Right));
         }
 
         if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Back))
         {
             return
-                (BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsBlockAbove(chunkPosition, p+Vector3I.Left))
-                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsBlockAbove(chunkPosition, p+Vector3I.Right));
+                (BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Left))
+                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Right));
 
         }
         else if (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left))
         {
             return
-                (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && !IsBlockAbove(chunkPosition, p+Vector3I.Forward))
-                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && !IsBlockAbove(chunkPosition, p+Vector3I.Back));
+                (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Forward))
+                ^ (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Back));
         }
 
         return false;
@@ -494,21 +503,21 @@ public void GenerateTest(Vector3I chunkPosition)
         Vector3I p = new(blockPosition.X, blockPosition.Y, blockPosition.Z);
 
         if (BlockNeighbourCount(chunkPosition, p) == 1) {
-            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && !IsBlockAbove(chunkPosition, p+Vector3I.Forward)) return 2;
-            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && !IsBlockAbove(chunkPosition, p+Vector3I.Back)) return 0;
-            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsBlockAbove(chunkPosition, p+Vector3I.Left)) return 3;
-            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsBlockAbove(chunkPosition, p+Vector3I.Right)) return 1;
+            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Forward)) return 2;
+            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Back)) return 0;
+            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Left)) return 3;
+            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Right)) return 1;
         }
 
         if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && BlockHasNeighbor(chunkPosition, p, Vector3I.Back))
         {
-            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsBlockAbove(chunkPosition, p+Vector3I.Right)) return 1;
-            else if (BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsBlockAbove(chunkPosition, p+Vector3I.Left)) return 3;  
+            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Right)) return 1;
+            else if (BlockHasNeighbor(chunkPosition, p, Vector3I.Left) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Left)) return 3;  
         }
         else if (BlockHasNeighbor(chunkPosition, p, Vector3I.Right) && BlockHasNeighbor(chunkPosition, p, Vector3I.Left))
         {
-            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && !IsBlockAbove(chunkPosition, p+Vector3I.Forward)) return 2;
-            else if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && !IsBlockAbove(chunkPosition, p+Vector3I.Back)) return 0;
+            if (BlockHasNeighbor(chunkPosition, p, Vector3I.Forward) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Forward)) return 2;
+            else if (BlockHasNeighbor(chunkPosition, p, Vector3I.Back) && !IsTripleBlockAbove(chunkPosition, p+Vector3I.Back)) return 0;
         }
     
 
@@ -517,6 +526,43 @@ public void GenerateTest(Vector3I chunkPosition)
 
     public bool BlockHasNeighbor(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection) {
         return GetBlockNeighbour(chunkPosition, blockPosition, neighborDirection) != 0;
+    }
+
+    public void SetBlockNeighbourIfNotEmpty(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection, int newBlockInfo)
+    {
+        if (!Chunk.IsBlockEmpty(GetBlockNeighbour(chunkPosition,blockPosition,neighborDirection)))
+        {
+            SetBlockNeighbour(chunkPosition, blockPosition, neighborDirection, newBlockInfo);
+        }
+    }
+
+    public void SetBlockNeighbour(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection, int newBlockInfo)
+    {
+        var chunk = ChunkBlocksBuffer[chunkPosition];
+        Vector3I p = new(blockPosition.X + neighborDirection.X, blockPosition.Y + neighborDirection.Y, blockPosition.Z + neighborDirection.Z);
+
+        if (p.X < Chunk.CHUNK_SIZE && p.X >= 0
+        &&  p.Y < Chunk.CHUNK_SIZE && p.Y >= 0
+        &&  p.Z < Chunk.CHUNK_SIZE && p.Z >= 0)
+        {
+            chunk[p.X + p.Y*Chunk.CHUNKSQ + p.Z*Chunk.CHUNK_SIZE] = newBlockInfo;
+        }
+        else
+        {
+            var neighbour_chunk = new Vector3I(chunkPosition.X, chunkPosition.Y, chunkPosition.Z);
+            var dx = p.X > Chunk.CHUNK_SIZE-1 ? 1 : p.X < 0 ? -1 : 0;
+            var dy = p.Y > Chunk.CHUNK_SIZE-1 ? 1 : p.Y < 0 ? -1 : 0;
+            var dz = p.Z > Chunk.CHUNK_SIZE-1 ? 1 : p.Z < 0 ? -1 : 0;
+            var delta = new Vector3I(dx, dy, dz);
+            var newp = p-delta*Chunk.CHUNK_SIZE;
+            if (!ChunkBlocksBuffer.TryGetValue(neighbour_chunk+delta, out var neighbour)) {
+                neighbour = new int[Chunk.CHUNKSQ*Chunk.CHUNK_SIZE*Chunk.SUBCHUNKS];
+                ChunkBlocksBuffer[neighbour_chunk+delta] = neighbour;
+            }
+
+            var new_idx = newp.X + newp.Y*Chunk.CHUNKSQ + newp.Z*Chunk.CHUNK_SIZE;
+            neighbour[new_idx] = newBlockInfo;
+        }
     }
 
     public int GetBlockNeighbour(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection) {
@@ -803,8 +849,21 @@ public void GenerateTest(Vector3I chunkPosition)
                         }
                         break;
                     default: // bottom face is always drawn
-                        _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                        _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                        if (cornerSlope)
+                        {
+                            /*
+                            triangle1 = new Godot.Vector3[] {verts[1], verts[2], verts[3]};
+                            triangle2 = new Godot.Vector3[] {verts[2], verts[3], verts[0]};
+                            uvTriangle1 = new Godot.Vector2[] { uvC, uvB, uvA };
+                            uvTriangle2 = new Godot.Vector2[] { uvD, uvC, uvA };*/
+                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            //_st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                        }
+                        else
+                        {
+                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                        }
                         break;
                 }
             }

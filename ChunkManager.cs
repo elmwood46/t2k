@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -12,6 +13,9 @@ public partial class ChunkManager : Node
 	public static ChunkManager Instance { get; private set; }
 	private Dictionary<Chunk, Vector3I> _chunkToPosition = new();
 	private Dictionary<Vector3I, Chunk> _positionToChunk = new();
+
+	public ConcurrentDictionary<Vector3I, int[]> ChunkCache = new();
+	public ConcurrentDictionary<Vector3I, int[]> ChunkMeshDataCache = new();
 
 	private List<Chunk> _chunks;
 
@@ -88,6 +92,8 @@ public partial class ChunkManager : Node
 
 	private Godot.Vector3 _playerPosition;
 	private object _playerPositionLock = new();
+
+	private object _cantorSetLock = new();
 
 	public override void _Ready()
 	{
