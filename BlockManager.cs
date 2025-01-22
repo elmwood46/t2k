@@ -85,10 +85,6 @@ public partial class BlockManager : Node
 		return Instance.Blocks[blockID].BakedTextureArrayPositions;
 	}
 
-	public static int InitBlockInfo(int blockID) {
-		return blockID << 15;
-	}
-
 	private int[] GetBlockTextureArrayPositions(int blockID) {
 		var texarray = Instance.Blocks[blockID].Textures;
 		var result = new int[texarray.Length];
