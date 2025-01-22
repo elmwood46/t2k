@@ -69,7 +69,7 @@ public partial class BlockManager : Node
 		return Instance.Blocks[blockID].Species;
 	}
 
-		public static BlockSpecies BlockSpecies(string blockName) {
+	public static BlockSpecies BlockSpecies(string blockName) {
 		return Instance.Blocks[BlockID(blockName)].Species;
 	}
 

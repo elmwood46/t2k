@@ -18,7 +18,6 @@ config/icon="res://icon.svg"
 [autoload]
 
 SaveManager="*res://SaveManager.cs"
-CantorPairing="*res://CantorPairing.cs"
 
 [dotnet]
 

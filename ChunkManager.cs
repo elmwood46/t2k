@@ -7,7 +7,6 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 
-[Tool]
 public partial class ChunkManager : Node
 {
 	public static ChunkManager Instance { get; private set; }
@@ -22,8 +21,8 @@ public partial class ChunkManager : Node
 	[Export] public PackedScene ChunkScene { get; set; }
 
 	// this is the number of chunks rendered in the x and z direction, centered around the player
-	private int _width = 8;
-	private int _y_width = 4;
+	private int _width = 6;
+	private int _y_width = 6;
 	public int Width
 	{
 		get => _width;
@@ -62,7 +61,7 @@ public partial class ChunkManager : Node
 
 
 
-	public const float VOXEL_SCALE = 0.5f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
+	public const float VOXEL_SCALE = 1f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
     public const float INV_VOXEL_SCALE = 1/VOXEL_SCALE;
 
     // chunk size is 30, padded chunk size is 32. Can't be increased easily because it uses binary UINT32 to do face culling
@@ -78,6 +77,13 @@ public partial class ChunkManager : Node
 
     public const int SUBCHUNKS = 1; // each one is an extra 32x32 chunk in the vertical y direction
 
+	public static readonly Vector3I[] NeighbourVectors = new Vector3I[]
+	{
+		new(0, 0, 1),
+		new(0, 0, -1),
+		new(1, 0, 0),
+		new(-1, 0, 0),
+	};
 
 	// surface tools
 
@@ -128,6 +134,13 @@ public partial class ChunkManager : Node
 			_chunks.Add(chunk);
 		}
 
+		GD.Print("chunks: ", _chunks.Count);
+
+		InitChunks();
+	}
+
+	public void InitChunks()
+	{
 		//Vector2I playerChunk;
 		//playerChunk = !SaveManager.Instance.SaveFileExists() ? new Vector2I(0,0)
 		// = new Vector2I(Mathf.FloorToInt(Player.Instance.Position.X),Mathf.FloorToInt(Player.Instance.Position.Z));
@@ -145,9 +158,18 @@ public partial class ChunkManager : Node
 						//var blocks = Generate(pos);
 						//var mesh = BuildChunkMesh(blocks);
 						//var hull = mesh.CreateTrimeshShape();
-						_chunks[index].InitChunk(pos);
+						//UpdateChunkBlockData(pos);
+						//UpdateChunkMeshData(pos);
+						var chunk = _chunks[index];
+						chunk.SetChunkPosition(pos);
+                    	InitChunkData(pos);
 					}
 				}
+		}
+
+		foreach (var chunk in _chunks)
+		{
+			chunk.UpdateChunkPosition(chunk.ChunkPosition);
 		}
 
 		if (!Engine.IsEditorHint())
@@ -156,6 +178,13 @@ public partial class ChunkManager : Node
 		}
 	}
 	#endregion
+
+
+	public static void InitChunkData(Vector3I position)
+	{
+        UpdateChunkBlockData(position);
+        UpdateChunkMeshData(position);
+	}
 
 	#region manipulate blocks
 
@@ -246,15 +275,22 @@ public partial class ChunkManager : Node
 
 	public static void UpdateChunkBlockData(Vector3I chunkPosition, int[] blockData = null) {
 		Instance.Generate(chunkPosition);
-		if (blockData != null) Instance.ChunkCache[chunkPosition] = blockData;
+		if (blockData != null) {
+			if (Instance.ChunkMeshDataCache.TryRemove(chunkPosition, out _)) {
+				Instance.ChunkCache.TryAdd(chunkPosition,blockData);
+			}
+		}
 	}
 
 	public static void UpdateChunkMeshData(Vector3I chunkPosition)
 	{
 		if (Instance.ChunkCache.TryGetValue(chunkPosition, out var cachedBlocks)) {
-			Instance.ChunkMeshDataCache[chunkPosition] = BuildChunkMesh(cachedBlocks);
+			Instance.ChunkMeshDataCache.TryRemove(chunkPosition, out _);
+			Instance.ChunkMeshDataCache.TryAdd(chunkPosition, BuildChunkMesh(cachedBlocks));
 		}
-		else throw new Exception("Tried to generate chunk mesh without cached blocks.");
+		else {
+			GD.Print("Tried to update chunk mesh data without block data.");
+		}
 	}
 
 	public static int[] GetChunkBlockData(Vector3I chunkPosition)
@@ -286,7 +322,7 @@ public partial class ChunkManager : Node
 		{
 			UpdateChunkBlockData(newPosition);
 			UpdateChunkMeshData(newPosition);
-			chunk.CallDeferred(nameof(Chunk.SetChunkPosition), newPosition);
+			chunk.CallDeferred(nameof(Chunk.UpdateChunkPosition), newPosition);
 		}
 		return Task.CompletedTask;
 	}

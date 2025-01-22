@@ -290,26 +290,26 @@ public partial class ChunkManager : Node
         var chunk = ChunkCache[chunkPosition];
         Vector3I p = new(blockPosition.X + neighborDirection.X, blockPosition.Y + neighborDirection.Y, blockPosition.Z + neighborDirection.Z);
 
-        if (p.X < CHUNK_SIZE && p.X >= 0
-        &&  p.Y < CHUNK_SIZE && p.Y >= 0
-        &&  p.Z < CHUNK_SIZE && p.Z >= 0)
+        if (p.X < CSP && p.X >= 0
+        &&  p.Y < CSP && p.Y >= 0
+        &&  p.Z < CSP && p.Z >= 0)
         {
-            chunk[p.X + p.Y*CHUNKSQ + p.Z*CHUNK_SIZE] = newBlockInfo;
+            chunk[p.X + p.Y*CSP2 + p.Z*CSP] = newBlockInfo;
         }
         else
         {
             var neighbour_chunk = new Vector3I(chunkPosition.X, chunkPosition.Y, chunkPosition.Z);
-            var dx = p.X > CHUNK_SIZE-1 ? 1 : p.X < 0 ? -1 : 0;
-            var dy = p.Y > CHUNK_SIZE-1 ? 1 : p.Y < 0 ? -1 : 0;
-            var dz = p.Z > CHUNK_SIZE-1 ? 1 : p.Z < 0 ? -1 : 0;
+            var dx = p.X > CSP-1 ? 1 : p.X < 0 ? -1 : 0;
+            var dy = p.Y > CSP-1 ? 1 : p.Y < 0 ? -1 : 0;
+            var dz = p.Z > CSP-1 ? 1 : p.Z < 0 ? -1 : 0;
             var delta = new Vector3I(dx, dy, dz);
-            var newp = p-delta*CHUNK_SIZE;
+            var newp = p-delta*CSP;
             if (!ChunkCache.TryGetValue(neighbour_chunk+delta, out var neighbour)) {
-                neighbour = new int[CHUNKSQ*CHUNK_SIZE*SUBCHUNKS];
+                neighbour = new int[CSP2*CSP*SUBCHUNKS];
                 ChunkCache[neighbour_chunk+delta] = neighbour;
             }
 
-            var new_idx = newp.X + newp.Y*CHUNKSQ + newp.Z*CHUNK_SIZE;
+            var new_idx = newp.X + newp.Y*CSP2 + newp.Z*CSP;
             neighbour[new_idx] = newBlockInfo;
         }
     }
@@ -318,27 +318,27 @@ public partial class ChunkManager : Node
         var chunk = ChunkCache[chunkPosition];
         Vector3I p = new(blockPosition.X + neighborDirection.X, blockPosition.Y + neighborDirection.Y, blockPosition.Z + neighborDirection.Z);
 
-        if (p.X < CHUNK_SIZE && p.X >= 0
-        &&  p.Y < CHUNK_SIZE && p.Y >= 0
-        &&  p.Z < CHUNK_SIZE && p.Z >= 0)
+        if (p.X < CSP && p.X >= 0
+        &&  p.Y < CSP && p.Y >= 0
+        &&  p.Z < CSP && p.Z >= 0)
         {
-            var b = chunk[p.X + p.Y*CHUNKSQ + p.Z*CHUNK_SIZE];
+            var b = chunk[p.X + p.Y*CSP2 + p.Z*CSP];
             if (!IsBlockEmpty(b)) return b;
         }
         else
         {
             var neighbour_chunk = new Vector3I(chunkPosition.X, chunkPosition.Y, chunkPosition.Z);
-            var dx = p.X > CHUNK_SIZE-1 ? 1 : p.X < 0 ? -1 : 0;
-            var dy = p.Y > CHUNK_SIZE-1 ? 1 : p.Y < 0 ? -1 : 0;
-            var dz = p.Z > CHUNK_SIZE-1 ? 1 : p.Z < 0 ? -1 : 0;
+            var dx = p.X > CSP-1 ? 1 : p.X < 0 ? -1 : 0;
+            var dy = p.Y > CSP-1 ? 1 : p.Y < 0 ? -1 : 0;
+            var dz = p.Z > CSP-1 ? 1 : p.Z < 0 ? -1 : 0;
             var delta = new Vector3I(dx, dy, dz);
-            var newp = p-delta*CHUNK_SIZE;
+            var newp = p-delta*CSP;
             if (!ChunkCache.TryGetValue(neighbour_chunk+delta, out var neighbour)) {
-                neighbour = new int[CHUNKSQ*CHUNK_SIZE*SUBCHUNKS];
+                neighbour = new int[CSP2*CSP*SUBCHUNKS];
                 ChunkCache[neighbour_chunk+delta] = neighbour;
             }
 
-            var new_idx = newp.X + newp.Y*CHUNKSQ + newp.Z*CHUNK_SIZE;
+            var new_idx = newp.X + newp.Y*CSP2 + newp.Z*CSP;
             if (!IsBlockEmpty(neighbour[new_idx])) return neighbour[new_idx];
         }
 

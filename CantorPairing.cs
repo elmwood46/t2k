@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-public class CantorPairing
+public partial class CantorPairing : Node
 {
     private readonly HashSet<uint> _used = new();
     private readonly object _lock = new();

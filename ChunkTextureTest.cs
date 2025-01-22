@@ -173,7 +173,7 @@ public void GenerateTest(Vector3I chunkPosition)
                             else if (y == 3 && block_idx-ChunkManager.CHUNKSQ > 0 && !ChunkManager.IsBlockEmpty(result[block_idx-ChunkManager.CHUNKSQ]) && rnd.Randf() > 0.99)
                             {
                                 // spawn tree or totem
-                                result[block_idx-ChunkManager.CHUNKSQ] = BlockManager.InitBlockInfo(BlockManager.BlockID("Dirt"));
+                                result[block_idx-ChunkManager.CHUNKSQ] = ChunkManager.PackBlockInfo(BlockManager.BlockID("Dirt"));
                                 var blockSet = rnd.Randf() > 0.5 ? GenStructure.GenerateTotem(rnd.RandiRange(3,15)) : GenStructure.GenerateTree();
 
                                 // blockset is a dictionary of block positions and block info ints (with all bits initialized)

@@ -64,15 +64,15 @@ public struct ChunkMeshData {
     public void Generate(Vector3I chunkPosition)
 	{
         if (CantorPairing.Contains(chunkPosition)) {
-            GD.Print("cantor pairing says Chunk already generated at ", chunkPosition);
+            //GD.Print("cantor pairing says Chunk already generated at ", chunkPosition);
             return;
         }
-        else GD.Print("Generating chunk at ", chunkPosition);
+       // else GD.Print("Generating chunk at ", chunkPosition);
 
         if (!ChunkCache.TryGetValue(chunkPosition, out var result)) {
-            result = new int[CHUNKSQ*CHUNK_SIZE*SUBCHUNKS];
-            ChunkCache[chunkPosition] = result;
-        };
+            result = new int[CSP2*CSP*SUBCHUNKS];
+            ChunkCache.TryAdd(chunkPosition, result);
+        }
 
         var rnd = new RandomNumberGenerator();
 
@@ -80,35 +80,37 @@ public struct ChunkMeshData {
         var cutoff = 0.2f;
 
         List<Vector3I> filledBlocks = new();
+
+        var scalefactor = 0.5f;
         
         for (int subchunk = 0; subchunk < SUBCHUNKS; subchunk++) {
-            for (int x=0;x<CHUNK_SIZE;x++) {
-                for (int y=0;y<CHUNK_SIZE;y++) {
-                    for (int z=0;z<CHUNK_SIZE;z++) {
-                        int block_idx = x + y * CHUNKSQ + z * CHUNK_SIZE + subchunk*CHUNKSQ*CHUNK_SIZE;
+            for (int x=0;x<CSP;x++) {
+                for (int y=0;y<CSP;y++) {
+                    for (int z=0;z<CSP;z++) {
+                        int block_idx = x + y * CSP2 + z * CSP + subchunk*CSP3;
                         if (block_idx >= result.Length) continue;
 
                         var globalBlockPosition = chunkPosition * new Vector3I(Dimensions.X, Dimensions.Y*SUBCHUNKS, Dimensions.Z)
-                            + new Vector3I(x, y + Dimensions.Y*subchunk, z);
+                            + new Vector3I(x, y + CSP2*subchunk, z) - Vector3I.One;
 
                         int blockType = result[block_idx];
                         
                         // generate highest level differently
-                        if (chunkPosition.Y == 3)
+                        if (chunkPosition.Y == 5)
                         {
-                            var noise3d = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y, globalBlockPosition.Z);
+                            var noise3d = NOISE.GetNoise3D(scalefactor*globalBlockPosition.X, scalefactor*globalBlockPosition.Y, scalefactor*globalBlockPosition.Z);
                             if (y == 0 && noise3d >= cutoff) 
                             {
                                 blockType = BlockManager.BlockID("Check2");
                             }
-                            else if (y < 3 && block_idx-CHUNKSQ > 0 && !IsBlockEmpty(result[block_idx-CHUNKSQ]))
+                            else if (y < 3 && block_idx-CSP2 > 0 && !IsBlockEmpty(result[block_idx-CSP2]))
                             {
                                 blockType = BlockManager.BlockID("Check1");
                             }
-                            else if (y == 3 && block_idx-CHUNKSQ > 0 && !IsBlockEmpty(result[block_idx-CHUNKSQ]) && rnd.Randf() > 0.99)
+                            else if (y == 3 && block_idx-CSP2 > 0 && !IsBlockEmpty(result[block_idx-CSP2]) && rnd.Randf() > 0.99)
                             {
                                 // spawn tree or totem
-                                result[block_idx-CHUNKSQ] = BlockManager.InitBlockInfo(BlockManager.BlockID("Dirt"));
+                                result[block_idx-CSP2] = PackBlockInfo(BlockManager.BlockID("Dirt"));
                                 var blockSet = rnd.Randf() > 0.5 ? GenStructure.GenerateTotem(rnd.RandiRange(3,15)) : GenStructure.GenerateTree();
 
                                 // blockset is a dictionary of block positions and block info ints (with all bits initialized)
@@ -116,16 +118,17 @@ public struct ChunkMeshData {
                                 {
                                     Vector3I p = new(x + kvp.Key.X, y + kvp.Key.Y, z + kvp.Key.Z);
 
-                                    if (p.X < CHUNK_SIZE && p.X >= 0
-                                    &&  p.Y < CHUNK_SIZE && p.Y >= 0
-                                    &&  p.Z < CHUNK_SIZE && p.Z >= 0)
+                                    if (p.X < CSP && p.X >= 0
+                                    &&  p.Y < CSP && p.Y >= 0
+                                    &&  p.Z < CSP && p.Z >= 0)
                                     {
                                         if (IsBlockEmpty(kvp.Value)) continue;
-                                        result[p.X + p.Y*CHUNKSQ + p.Z*CHUNK_SIZE] = kvp.Value;
+                                        result[p.X + p.Y*CSP2 + p.Z*CSP] = kvp.Value;
                                         filledBlocks.Add(new Vector3I(p.X, p.Y, p.Z));
 
                                         // randomly damage some blocks, but not leaves
-                                        if (GetBlockSpecies(kvp.Value) == BlockSpecies.Leaves) continue;
+                                        //GetBlockSpecies(kvp.Value) == BlockSpecies.Leaves
+                                        if (p.Y>=3) continue;
                                         var dam_amount = 0;
                                         var dam_type = 0;
                                         if (rnd.Randf() < 0.5)
@@ -133,25 +136,27 @@ public struct ChunkMeshData {
                                             dam_type = rnd.RandiRange(1, 7);
                                             dam_amount = rnd.RandiRange(0, 31);
                                         }
-                                        var dam_info = (dam_type<<5) | dam_amount;
+                                        var dam_info = PackBlockDamageInfo(dam_type, dam_amount);
 
                                         // add the damage type 
-                                        result[p.X + p.Y*CHUNKSQ + p.Z*CHUNK_SIZE] |= dam_info;
+                                        result[p.X + p.Y*CSP2 + p.Z*CSP] |= dam_info;
                                     } else {
                                         var neighbour_chunk = new Vector3I(chunkPosition.X, chunkPosition.Y, chunkPosition.Z);
-                                        var dx = p.X > CHUNK_SIZE-1 ? 1 : p.X < 0 ? -1 : 0;
-                                        var dy = p.Y > CHUNK_SIZE-1 ? 1 : p.Y < 0 ? -1 : 0;
-                                        var dz = p.Z > CHUNK_SIZE-1 ? 1 : p.Z < 0 ? -1 : 0;
+                                        var dx = p.X > CSP-1 ? 1 : p.X < 0 ? -1 : 0;
+                                        var dy = p.Y > CSP-1 ? 1 : p.Y < 0 ? -1 : 0;
+                                        var dz = p.Z > CSP-1 ? 1 : p.Z < 0 ? -1 : 0;
                                         var delta = new Vector3I(dx, dy, dz);
-                                        var newp = p-delta*CHUNK_SIZE;
+                                        var newp = (p+delta)-delta*CSP;
+                                        var idx = newp.X + newp.Y*CSP2 + newp.Z*CSP;
                                         if (!ChunkCache.TryGetValue(neighbour_chunk+delta, out var neighbour)) {
-                                            neighbour = new int[CHUNKSQ*CHUNK_SIZE*SUBCHUNKS];
-                                            neighbour[newp.X + newp.Y*CHUNKSQ + newp.Z*CHUNK_SIZE] = kvp.Value;
+                                            neighbour = new int[CSP2*CSP*SUBCHUNKS];
+                                            neighbour[idx] = kvp.Value;
+                                            ChunkCache.TryAdd(neighbour_chunk+delta,neighbour);
                                         } else {
-                                            var idx = newp.X + newp.Y*CHUNKSQ + newp.Z*CHUNK_SIZE;
                                             if (IsBlockEmpty(neighbour[idx])) neighbour[idx] = kvp.Value;
+                                            ChunkCache.TryRemove(neighbour_chunk+delta,out var _);
+                                            ChunkCache.TryAdd(neighbour_chunk+delta,neighbour);
                                         }
-                                        ChunkCache[neighbour_chunk+delta] = neighbour;
                                     }
                                 }
                                 continue;
@@ -159,37 +164,49 @@ public struct ChunkMeshData {
                             if (y>=3) continue; // skip here so we dont overwrite the tree with new blocks
 
                             // apply damage to upper layer blocks
+                            
                             int _damamount = 0, _damtype = 0;
                             if (rnd.Randf() < 0.5)
                             {
                                 _damtype = rnd.RandiRange(1, 7);
                                 _damamount = rnd.RandiRange(0, 31);
                             }
-                            var _daminfo = (_damtype<<5) | _damamount;
-
+                            var _daminfo = PackBlockDamageInfo(_damtype, _damamount);
+                            
                             result[block_idx] = PackBlockInfo(blockType) | _daminfo;
 
                             if (blockType != 0) filledBlocks.Add(new Vector3I(x, y, z));
 
                             continue;
                         }
+                        else if (chunkPosition.Y == 4) {
+                            var noise3d = NOISE.GetNoise3D(globalBlockPosition.X, globalBlockPosition.Y, globalBlockPosition.Z);
+                            if (y == 0 && noise3d >= cutoff) 
+                            {
+                                blockType = BlockManager.BlockID("Check2");
+                            } 
+                            else if (y > 0 && block_idx-CSP2 > 0 && !IsBlockEmpty(result[block_idx-CSP2]))
+                            {
+                                blockType = BlockManager.BlockID("Check2");
+                            }
+                        }
 
                         // generate other levels
                         var noise = CELLNOISE.GetNoise2D(globalBlockPosition.X, globalBlockPosition.Z);
-                        var groundheight = (int)(10*(noise+1)/2);
-                        if (chunkPosition.Y == 0 && globalBlockPosition.Y <= groundheight)
+                        var groundheight = (int)(1*(noise+1)/2);
+                        if (chunkPosition.Y == 0)
                         {
-                            if (y==0) blockType = BlockManager.Instance.LavaBlockId;
+                            if (y<2) blockType = BlockManager.Instance.LavaBlockId;
                             else if (globalBlockPosition.Y == groundheight) blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
                             else if (globalBlockPosition.Y > groundheight - 3) blockType = BlockManager.BlockID("Dirt");
                             else blockType = rnd.Randf() > 0.9 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Stone");
                         }
-                        else
+                        else if (chunkPosition.Y != 4 && chunkPosition.Y != 6)
                         {
-                            var height = TerraceFunc(globalBlockPosition.Y);
-                            var noise3d = NOISE.GetNoise3D(globalBlockPosition.X, height, globalBlockPosition.Z);
-                            var noiseabove = NOISE.GetNoise3D(globalBlockPosition.X, height+1, globalBlockPosition.Z);
-                            var noisebelow = NOISE.GetNoise3D(globalBlockPosition.X, height-1, globalBlockPosition.Z);
+                            //var height = TerraceFunc(globalBlockPosition.Y*scalefactor);
+                            var noise3d = NOISE.GetNoise3D(globalBlockPosition.X*scalefactor, globalBlockPosition.Y*scalefactor, globalBlockPosition.Z*scalefactor);
+                            var noiseabove = NOISE.GetNoise3D(globalBlockPosition.X*scalefactor, globalBlockPosition.Y*scalefactor+1, globalBlockPosition.Z*scalefactor);
+                            var noisebelow = NOISE.GetNoise3D(globalBlockPosition.X*scalefactor, globalBlockPosition.Y*scalefactor-1, globalBlockPosition.Z*scalefactor);
                             if (noise3d >= cutoff)
                             {
                                 if (noiseabove < cutoff) {
@@ -199,10 +216,10 @@ public struct ChunkMeshData {
                                 else blockType = BlockManager.BlockID("Dirt");
                             }
                         }
+                        
 
                         // add the damage type 
-                        int blockinfo = 0;
-                        blockinfo |= PackBlockInfo(blockType);
+                        var blockinfo = PackBlockInfo(blockType);
                         result[block_idx] = blockinfo;
 
                         if (blockType != 0) filledBlocks.Add(new Vector3I(x, y, z));
@@ -217,22 +234,27 @@ public struct ChunkMeshData {
         // add corner and side slopes
         // corner slopes should make the block below the same type
         foreach (var p in filledBlocks) {
-            var i = p.X + p.Y*CHUNKSQ + p.Z*CHUNK_SIZE;
-            if (!IsBlockEmpty(result[i]) && BlockIsSlopeCandidate(chunkPosition, p)) {
+            var i = p.X + p.Y*CSP2 + p.Z*CSP;
+            if (!IsBlockEmpty(result[i]) && GetBlockSpecies(result[i])!=BlockSpecies.Leaves && BlockIsSlopeCandidate(chunkPosition, p)) {
                 var s = BlockPackSlopeInfo(chunkPosition, p);
                 if (GetBlockSlopeType(s) == (int)SlopeType.Corner) {
-                    SetBlockNeighbourIfNotEmpty(chunkPosition, p, Vector3I.Down, result[i]); 
+                    if (GetBlockID(GetBlockNeighbour(chunkPosition, p, Vector3I.Down))!=BlockManager.Instance.LavaBlockId)
+                        SetBlockNeighbourIfNotEmpty(chunkPosition, p, Vector3I.Down, result[i]); 
                 }
                 packedSlopeBlockData[p] = s;
             }
         }
 
         foreach (var (p, packedSlopeData) in packedSlopeBlockData) {
-            var i = p.X + p.Y*CHUNKSQ + p.Z*CHUNK_SIZE;
+            var i = p.X + p.Y*CSP2 + p.Z*CSP;
             result[i] |= packedSlopeData;
         }
 
-        ChunkCache[chunkPosition] = result;
+        if (ChunkCache.TryRemove(chunkPosition, out var _)) 
+        {
+            ChunkCache.TryAdd(chunkPosition, result);
+        }
+
         CantorPairing.Add(chunkPosition);
 	}
 
@@ -243,10 +265,21 @@ public struct ChunkMeshData {
     #endregion
 
     #region GreedyChunkMesh
-    public static void GreedyChunkMesh(Dictionary<int, Dictionary<int, UInt32[]>>[] data, int[] chunk_blocks, int subchunk) {
+    public static void GreedyChunkMesh(Dictionary<int, Dictionary<int, UInt32[]>>[] data, int[] chunk_blocks_padded, int subchunk) {
+        var chunk_blocks = new int[CHUNKSQ*CHUNK_SIZE];
+        for (int x=1;x<=CHUNK_SIZE;x++) {
+            for (int y=1;y<=CHUNK_SIZE;y++) {
+                for (int z=1;z<=CHUNK_SIZE;z++) {
+                    var chunk_idx = x-1 + (z-1)*CHUNK_SIZE + (y-1)*CHUNKSQ;
+                    if (chunk_idx >= chunk_blocks_padded.Length) continue;
+                    var chunk_pad_idx = x + z*CSP + y*CSP2;
+                    chunk_blocks[chunk_idx] = chunk_blocks_padded[chunk_pad_idx];
+                }
+            }
+        }
+
         var axis_cols = new UInt32[CSP3*3];
         var col_face_masks = new UInt32[CSP3*6];
-
         var slope_blocks = new Dictionary<int, UInt32[]>();
 
         // generate binary 0 1 voxel representation for each axis
@@ -660,6 +693,10 @@ public struct ChunkMeshData {
     #region block info getters
     public static int PackBlockInfo(int blockType) {
         return blockType;
+    }
+
+    public static int PackBlockDamageInfo(int damageType, int damageAmount) {
+        return ((damageType<<5) | damageAmount)<<16;
     }
 
     public static int GetBlockID(int blockInfo) {

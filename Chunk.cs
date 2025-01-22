@@ -29,37 +29,14 @@ public partial class Chunk : StaticBody3D
 	[Export]
 	public FastNoiseLite WallNoise { get; set; }
 
-
-    #region init
 	public override void _Ready() {
 		Scale = new Vector3(ChunkManager.VOXEL_SCALE, ChunkManager.VOXEL_SCALE, ChunkManager.VOXEL_SCALE);
         _chunk_area.AddChild(_chunk_bounding_box);
         AddChild(_chunk_area);
 	}
 
-	public void InitChunk(Vector3I position)
-	{
-        ChunkManager.UpdateChunkBlockData(position);
-        ChunkManager.UpdateChunkMeshData(position);
-		ChunkManager.Instance.UpdateChunkPosition(this, position, ChunkPosition);
-		ChunkPosition = position;
-        var newpos = new Vector3(
-            ChunkManager.VOXEL_SCALE * ChunkPosition.X * ChunkManager.Dimensions.X,
-            ChunkManager.VOXEL_SCALE * ChunkPosition.Y * ChunkManager.Dimensions.Y * ChunkManager.SUBCHUNKS,
-            ChunkManager.VOXEL_SCALE * ChunkPosition.Z * ChunkManager.Dimensions.Z);
-		
-        CallDeferred(Node3D.MethodName.SetGlobalPosition, newpos);
-
-        // HACK expensive LOD grass is disabled
-        //UpdateChunkGrass(new float[] {newpos.X,newpos.Y,newpos.Z});
-
-        Update();
-	}
-    #endregion
-
     #region set chunk pos
-
-	public void SetChunkPosition(Vector3I position, int[] blocks)
+	public void SetChunkPosition(Vector3I position)
 	{
 		ChunkManager.Instance.UpdateChunkPosition(this, position, ChunkPosition);
 		ChunkPosition = position;
@@ -95,6 +72,11 @@ public partial class Chunk : StaticBody3D
 
         Update();
 	}
+
+    public void UpdateChunkPosition(Vector3I position) {
+        SetChunkPosition(position);
+        CallDeferred(MethodName.Update);
+    }
     #endregion
 
     // HACK expensive LOD grass is disabled
@@ -118,10 +100,12 @@ public partial class Chunk : StaticBody3D
 
     #region update
 
-	public void Update() {
-        var meshdata = ChunkManager.GetChunkMeshData(ChunkPosition);
-        MeshInstance.Mesh = meshdata.UnifySurfaces();
-        CollisionShape.Shape = MeshInstance.Mesh.CreateTrimeshShape();
+	public async void Update() {
+        var meshdata = await Task.Run(()=>{return ChunkManager.GetChunkMeshData(ChunkPosition);});
+        var mesh = meshdata.UnifySurfaces();
+        var shape = await Task.Run(()=>{return mesh.CreateTrimeshShape();});
+        MeshInstance.Mesh = mesh;
+        CollisionShape.Shape = shape;
 
         CallDeferred(MethodName.UpdateRigidBodies);
 	}
@@ -187,8 +171,8 @@ public partial class Chunk : StaticBody3D
 	public int GetBlockInfoFromPosition(Vector3I blockPosition)
 	{
         var _blocks = ChunkManager.GetChunkBlockData(ChunkPosition);
-        if (blockPosition.X + blockPosition.Z * ChunkManager.CHUNK_SIZE + blockPosition.Y * ChunkManager.CHUNKSQ >= _blocks.Length) return -1;
-		return _blocks[blockPosition.X + blockPosition.Z * ChunkManager.CHUNK_SIZE + blockPosition.Y * ChunkManager.CHUNKSQ];
+        if (blockPosition.X + blockPosition.Z * ChunkManager.CSP + blockPosition.Y * ChunkManager.CSP2 >= _blocks.Length) return -1;
+		return _blocks[blockPosition.X + blockPosition.Z * ChunkManager.CSP + blockPosition.Y * ChunkManager.CSP2];
 	}
     #endregion
 
@@ -272,9 +256,9 @@ public partial class Chunk : StaticBody3D
         foreach (var (pos, block_info) in positionsAndBlockInfo) {
             var is_block_above = false;
             var block_idx = Mathf.FloorToInt(pos.X)
-            + Mathf.FloorToInt(pos.Z) * ChunkManager.CHUNK_SIZE
-            + Mathf.FloorToInt(pos.Y) * ChunkManager.CHUNKSQ;
-            var block_above_idx = block_idx + ChunkManager.CHUNKSQ;
+            + Mathf.FloorToInt(pos.Z) * ChunkManager.CSP
+            + Mathf.FloorToInt(pos.Y) * ChunkManager.CSP2;
+            var block_above_idx = block_idx + ChunkManager.CSP2;
             if (block_above_idx <=_blocks.Length) {
                 var block_above_id = ChunkManager.GetBlockID(_blocks[block_above_idx]);
                 if (block_above_id != 0) is_block_above = true;
