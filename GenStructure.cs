@@ -23,7 +23,7 @@ public static class GenStructure
                 _ => BlockManager.BlockID("GoldOre"),
             };
             if (i == height-1) blocktype = BlockManager.BlockID("Emerald");
-            ret[new Vector3I(0,i,0)] = ChunkManager.PackBlockInfo(blocktype);
+            ret[new Vector3I(0,i,0)] = ChunkManager.PackBlockType(blocktype);
         }
 
         return ret;
@@ -62,7 +62,7 @@ public static class GenStructure
                     if (x * x + z * z <= _trunkRadius * _trunkRadius)
                     {
                         var blocktype = BlockManager.BlockID("Trunk");
-                        _blocks[new Vector3I(x, y, z)] = ChunkManager.PackBlockInfo(blocktype);
+                        _blocks[new Vector3I(x, y, z)] = ChunkManager.PackBlockType(blocktype);
                     }
                 }
             }
@@ -80,7 +80,7 @@ public static class GenStructure
             {
                 Vector3I branchPos = branchStart + new Vector3I(rand.Next(0, 2)==0 ? -1 : 1,1,rand.Next(0, 2)==0 ? -1 : 1);
                 var blocktype = BlockManager.BlockID("Trunk");
-                _blocks[new Vector3I(branchPos.X,branchPos.Y,branchPos.Z)] = ChunkManager.PackBlockInfo(blocktype);
+                _blocks[new Vector3I(branchPos.X,branchPos.Y,branchPos.Z)] = ChunkManager.PackBlockType(blocktype);
             }
         }
 
@@ -93,7 +93,7 @@ public static class GenStructure
                 {
                     if (x * x + z * z + (y - _trunkHeight) * (y - _trunkHeight) <= _leafClusterSize * _leafClusterSize)
                     {   
-                        _blocks[new Vector3I(x, y, z)] = ChunkManager.PackBlockInfo(_leafcolourblock);
+                        _blocks[new Vector3I(x, y, z)] = ChunkManager.PackBlockType(_leafcolourblock);
                     }
                 }
             }

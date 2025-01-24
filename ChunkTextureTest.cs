@@ -62,7 +62,7 @@ public partial class ChunkTextureTest : Node3D
             GenerateTest((Vector3I)ChunkMesh.GlobalPosition);
             var blocks = ChunkBlocksBuffer[(Vector3I)ChunkMesh.GlobalPosition];
             var chunkmeshdata = BuildChunkMeshTest(blocks, false, _slope_rotate_degrees, _flipslope);
-            ChunkMesh.Mesh = chunkmeshdata.UnifySurfaces();
+            ChunkMesh.Mesh = chunkmeshdata.GetUnifiedSurfaces();
         }
     }
     private float _slope_rotate_degrees = 0.0f;
@@ -92,7 +92,7 @@ public partial class ChunkTextureTest : Node3D
             GenerateTest(chunkpos);
             var blocks = ChunkBlocksBuffer[chunkpos];
             var chunkmeshdata = BuildChunkMeshTest(blocks, false, SlopeRotationDegrees, _flipslope);
-            mesh.Mesh = chunkmeshdata.UnifySurfaces();
+            mesh.Mesh = chunkmeshdata.GetUnifiedSurfaces();
 
             /*
             if (chunkmeshdata.HasSurfaceOfType(ChunkManager.ChunkMeshData.GRASS_SURFACE)) {
@@ -173,7 +173,7 @@ public void GenerateTest(Vector3I chunkPosition)
                             else if (y == 3 && block_idx-ChunkManager.CHUNKSQ > 0 && !ChunkManager.IsBlockEmpty(result[block_idx-ChunkManager.CHUNKSQ]) && rnd.Randf() > 0.99)
                             {
                                 // spawn tree or totem
-                                result[block_idx-ChunkManager.CHUNKSQ] = ChunkManager.PackBlockInfo(BlockManager.BlockID("Dirt"));
+                                result[block_idx-ChunkManager.CHUNKSQ] = ChunkManager.PackBlockType(BlockManager.BlockID("Dirt"));
                                 var blockSet = rnd.Randf() > 0.5 ? GenStructure.GenerateTotem(rnd.RandiRange(3,15)) : GenStructure.GenerateTree();
 
                                 // blockset is a dictionary of block positions and block info ints (with all bits initialized)
@@ -232,7 +232,7 @@ public void GenerateTest(Vector3I chunkPosition)
                             }
                             var _daminfo = (_damtype<<5) | _damamount;
 
-                            result[block_idx] = ChunkManager.PackBlockInfo(blockType) | _daminfo;
+                            result[block_idx] = ChunkManager.PackBlockType(blockType) | _daminfo;
 
                             if (blockType != 0) filledBlocks.Add(new Vector3I(x, y, z));
 
@@ -267,7 +267,7 @@ public void GenerateTest(Vector3I chunkPosition)
 
                         // add the damage type 
                         int blockinfo = 0;
-                        blockinfo |= ChunkManager.PackBlockInfo(blockType);
+                        blockinfo |= ChunkManager.PackBlockType(blockType);
                         result[block_idx] = blockinfo;
 
                         if (blockType != 0) filledBlocks.Add(new Vector3I(x, y, z));
@@ -324,7 +324,7 @@ public void GenerateTest(Vector3I chunkPosition)
             sloperot = BlockInvCornerRotation(chunkpos, p);
         }
 
-        return ChunkManager.PackSlopeData(slopetype, sloperot);
+        return ChunkManager.PackSlopeData(slopetype, sloperot, 0);
     }
 
     public static float TerraceFunc(float x) {
@@ -646,7 +646,7 @@ public void GenerateTest(Vector3I chunkPosition)
 
         return 0;
     }
-    public static ChunkManager.ChunkMeshData BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk, float sloperotation, bool flipSlope = false) {
+    public static ChunkMeshData BuildChunkMeshTest(int[] chunk_blocks, bool isLowestChunk, float sloperotation, bool flipSlope = false) {
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
@@ -925,12 +925,12 @@ public void GenerateTest(Vector3I chunkPosition)
         var a2 = _st2.Commit();
         var a3 = grassTopSurfaceTool.Commit();
         
-        var surfaces = new ArrayMesh[ChunkManager.ChunkMeshData.MAX_SURFACES];
-        surfaces[ChunkManager.ChunkMeshData.CHUNK_SURFACE] = a1;
-        surfaces[ChunkManager.ChunkMeshData.LAVA_SURFACE] = a2;
-        surfaces[ChunkManager.ChunkMeshData.GRASS_SURFACE] = a3;
+        var surfaces = new ArrayMesh[3];
+        surfaces[ChunkMeshData.CHUNK_SURFACE] = a1;
+        surfaces[ChunkMeshData.LAVA_SURFACE] = a2;
+        surfaces[ChunkMeshData.GRASS_SURFACE] = a3;
 
-        return new ChunkManager.ChunkMeshData(surfaces);
+        return new ChunkMeshData(surfaces);
     }
 
 private static List<GreedyQuad> GreedyMeshBinaryPlane(UInt32[] data) {

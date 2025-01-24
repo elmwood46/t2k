@@ -98,7 +98,7 @@ public partial class TestPlayer : CharacterBody3D
 
                     break;
                 }
-                if (ChunkManager.IsBlockEmpty(chunk.GetBlockInfoFromPosition(intBlockPosition + new Vector3I(0,i,0)))) { // CHANGED FROM AIR CHECK
+                if (ChunkManager.IsBlockEmpty(ChunkManager.TryGetBlockInfoFromGlobalBlockPosition(intBlockPosition + new Vector3I(0,i,0)))) { // CHANGED FROM AIR CHECK
 
                     canJump = false;
                     break;

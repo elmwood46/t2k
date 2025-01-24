@@ -36,6 +36,9 @@ public enum BlockDamageType {
 [Tool]
 public partial class BlockManager : Node
 {
+	// blocks have 5 bits to store their damage level and break when it's >= 31, maxed out (11111 = 31)
+	public const int BLOCK_BREAK_DAMAGE_THRESHOLD = 31;
+
 	// note the code assumes that block 0 is the empty (air) block
 	// but this has to be set manually
 	[Export] public Array<Block> Blocks { get; set; }

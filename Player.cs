@@ -173,7 +173,7 @@ public partial class Player : CharacterBody3D
 
 			if (Input.IsActionJustPressed("Break"))
 			{
-				int b = chunk.GetBlockInfoFromPosition((Vector3I)(intBlockPosition - chunk.GlobalPosition*inv_vox_size));
+				//int b = ChunkManager.TryGetBlockInfoFromGlobalBlockPosition(intBlockPosition);
 				Dictionary<Vector3I,int> d = new()
 				{
 					[intBlockPosition] = 5000
@@ -201,7 +201,7 @@ public partial class Player : CharacterBody3D
 								}
 							}
 						}
-						ChunkManager.Instance.DamageBlocks(blockDamages);
+						ChunkManager.DamageBlocks(blockDamages);
 
                     // SPHERICAL BLOCK DAMAGE PATTERN
 					/*List<Vector3I> blocksInSphere = new();
@@ -229,7 +229,7 @@ public partial class Player : CharacterBody3D
 
 			if (Input.IsActionJustPressed("Place"))
 			{
-				ChunkManager.Instance.SetBlock((Vector3I)(intBlockPosition + RayCast.GetCollisionNormal()), BlockManager.BlockID("Stone"));
+				ChunkManager.TrySetBlock((Vector3I)(intBlockPosition + RayCast.GetCollisionNormal()), BlockManager.BlockID("Stone"));
 			}
 		}
 		else

@@ -16,19 +16,22 @@ public partial class CantorPairing : Node
 
     public static bool Contains(Vector3I coords)
     {
-        var paired = Pair3D(MapToNatural(coords.X), MapToNatural(coords.Y), MapToNatural(coords.Z));
         lock (Instance._lock)
         {
-            return Instance._used.Contains(paired);
+            return Instance._used.Contains(GetCantorNumber(coords));
         }
     }
 
     public static void Add(Vector3I coords)
     {
-        var paired = Pair3D(MapToNatural(coords.X), MapToNatural(coords.Y), MapToNatural(coords.Z));
         lock (Instance._lock)
         {
-            Instance._used.Add(paired);
+            Instance._used.Add(GetCantorNumber(coords));
         }
+    }
+
+    public static uint GetCantorNumber(Vector3I coords)
+    {
+        return Pair3D(MapToNatural(coords.X), MapToNatural(coords.Y), MapToNatural(coords.Z));
     }
 }
