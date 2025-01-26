@@ -28,14 +28,14 @@ uniform int _damage_data;
 void fragment() {
 	// use top face as the broken block texture
 	vec3 coords = vec3(UV,float(_tex_array_idx[1]));
-	vec2 uv = coords.xy;
+	vec2 uv = UV;
 	vec4 basecol = texture(_albedo,coords);
 	float damageratio = 1.0;
 	bool physicaldamage = (_damage_data>>5 & 1) == 1;
 	bool firedamage = (_damage_data>>6 & 1) == 1;
 	bool aciddamage = (_damage_data>>7 & 1) == 1;
 
-	vec3[2] res = ApplyDamageShaders(uv, UV, damageratio, physicaldamage, firedamage, aciddamage, basecol.rgb);
+	vec3[2] res = ApplyDamageShaders(uv, UV, damageratio, physicaldamage, firedamage, aciddamage, basecol.rgb, true);
 
 	ALBEDO = res[0];
 	EMISSION = res[1];
@@ -44,13 +44,13 @@ void fragment() {
 
 	if (aciddamage || physicaldamage)
 	{
-		NORMAL_MAP = texture(_normalmap, 0.2*uv).rgb;
+		NORMAL_MAP = texture(_normalmap, uv).rgb;
 		NORMAL_MAP_DEPTH = normscale;
 	}
 
 	if (aciddamage)
 	{
 		SPECULAR = 1.0;
-		ROUGHNESS = texture(_roughness, 0.2*uv).r * normscale;
+		ROUGHNESS = texture(_roughness, uv).r * normscale;
 	}
 }

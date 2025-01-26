@@ -116,6 +116,12 @@ public partial class ChunkManager : Node {
                             continue;
                         }
 
+                        // max height has empty block
+                        if (chunkPosition.Y == Instance._y_width-1 && y == CSP-1) {
+                            result[block_idx] = PackAllBlockInfo(0,0,0,0,0,0);
+                            continue;
+                        }
+
                         // generate highest level differently
                         if (chunkPosition.Y == 3)
                         {
@@ -189,7 +195,7 @@ public partial class ChunkManager : Node {
                             var noise3d = NOISE.GetNoise3D(globalBlockPosition.X*Instance._scalefactor, globalBlockPosition.Y*Instance._scalefactor, globalBlockPosition.Z*Instance._scalefactor);
                             var noiseabove = NOISE.GetNoise3D(globalBlockPosition.X*Instance._scalefactor, globalBlockPosition.Y*Instance._scalefactor+1, globalBlockPosition.Z*Instance._scalefactor);
                             var noisebelow = NOISE.GetNoise3D(globalBlockPosition.X*Instance._scalefactor, globalBlockPosition.Y*Instance._scalefactor-1, globalBlockPosition.Z*Instance._scalefactor);
-                            if (noise3d*(1.0f-(globalBlockPosition.Y/60.0f))+0.001 >= Instance._cutoff)
+                            if (noise3d*(1.0f-(globalBlockPosition.Y/58.0f))+0.001 >= Instance._cutoff)
                             {
                                 if (noiseabove < Instance._cutoff) {
                                     blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
@@ -259,8 +265,8 @@ public partial class ChunkManager : Node {
                     
                     if (prev_delta != delta) {
                         if (!Instance.BLOCKCACHE.TryGetValue(chunk_index+delta, out var new_chunk)) {
-                            new_chunk = new int[CSP3];
-                            Instance.BLOCKCACHE[chunk_index+delta] = new_chunk;
+                            new_chunk = chunk_blocks;
+                            delta *= 0;
                         }
                         targ_chunk = new_chunk;
                     }
@@ -269,7 +275,10 @@ public partial class ChunkManager : Node {
                     var idx = BlockIndex(block_pos);
                     idx += subchunk*CSP3; // move up one subchunk
                     var blockinfo = targ_chunk[idx];
-                    if (targ_chunk != chunk_blocks) chunk_blocks[BlockIndex(new Vector3I(x,y,z))] = blockinfo;
+
+                    // HACK set blockinfo to zero to prevent sloped air blocks bug
+                    if (IsBlockEmpty(blockinfo)) blockinfo = 0;
+                    chunk_blocks[BlockIndex(new Vector3I(x,y,z))] = blockinfo;
 
                     if (IsBlockSloped(blockinfo)) {
                         if (dx != 0 || dy != 0 || dz != 0) continue;  // dont add sloped blocks if we are in padded space

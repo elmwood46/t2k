@@ -3,12 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 
-public enum SlopeType {
-    None=0,
-    Side=1,
-    Corner=2,
-    InvCorner=3
-}
 
 [Tool]
 public partial class ChunkTextureTest : Node3D

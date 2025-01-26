@@ -18,8 +18,8 @@ public partial class ChunkManager : Node
 	[Export] public PackedScene ChunkScene { get; set; }
 	// this is the number of chunks rendered in the x and z direction, centered around the player
 	// the "render distance"
-	private int _width = 3;
-	private int _y_width = 1;
+	private int _width = 12;
+	private int _y_width = 4;
 	public const float VOXEL_SCALE = 1.0f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
 
 	// a chunk 32x32x32 blocks, and 1 integer for each block holds packed block data
@@ -152,7 +152,7 @@ public partial class ChunkManager : Node
 
 		lock(Instance._playerPositionLock) {
 			playerBlockPosition = GlobalPositionToLocalBlockPosition(Instance._playerPosition);
-		} 
+		}
 
 		// need to update neighbour chunks if a block is destroyed in this chunk, or else the neighbour mesh can be exposed
 		foreach (var (chunkTilePosition, blockList) in chunkBlockMapping)
@@ -169,7 +169,7 @@ public partial class ChunkManager : Node
 
 				//GD.Print("checking if block empty: ", BlockManager.BlockName(blockid));
 
-				if (blockinfo == 0 || IsBlockInvincible(blockinfo)) continue; // don't damage air blocks or invincible blocks
+				if (IsBlockEmpty(blockinfo) || IsBlockInvincible(blockinfo)) continue; // don't damage air blocks or invincible blocks
 
 				// increase block damage percentage
 				var block_damaged = (float)GetBlockDamageInteger(blockinfo);
@@ -181,7 +181,7 @@ public partial class ChunkManager : Node
 
 				if (dam_rounded >= BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD)
 				{
-					_blocks[block_idx] = RepackDamageData(blockinfo, packedDamageType, BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD);
+					blockinfo = RepackDamageData(blockinfo, packedDamageType, BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD);
 
 					// go from padded chunk position to chunk position
 					if (!chunkDestroyedBlocksLists.TryGetValue(chunkTilePosition, out var particle_spawn_list))
@@ -189,7 +189,7 @@ public partial class ChunkManager : Node
 						particle_spawn_list = new Dictionary<Vector3I, int>();
 						chunkDestroyedBlocksLists[chunkTilePosition] = particle_spawn_list;
 					}
-					particle_spawn_list[blockToDamage] = _blocks[block_idx];              
+					particle_spawn_list[blockToDamage] = blockinfo;              
 					_blocks[block_idx] = 0;
 				}
 				else
@@ -197,6 +197,8 @@ public partial class ChunkManager : Node
 					_blocks[block_idx] = RepackDamageData(blockinfo, packedDamageType, dam_rounded);
 				}
 			}
+
+			TryUpdateOrGenerateChunkBlockData(chunkTilePosition,_blocks);
 
 			// update mesh and collision shape
 			// recalculate mesh slopes
@@ -226,7 +228,7 @@ public partial class ChunkManager : Node
 
 				tasks.Add(Task.Run(()=>
 				{
-					GD.Print("updating single where blocks were broken ",chunkTilePosition);
+					//GD.Print("updating single where blocks were broken ",chunkTilePosition);
 					_blocks = BatchUpdateBlockSlopeData(chunkTilePosition,slopeUpdateSet.ToList(),_blocks,true);
 					TryUpdateChunkBlocksAndMesh(chunkTilePosition,_blocks);
 					return Task.CompletedTask;
@@ -234,21 +236,24 @@ public partial class ChunkManager : Node
 			}
 			else
 			{
+				//updateNeighbourChunks.Add(chunkTilePosition);
+				
 				tasks.Add(Task.Run(()=>
 				{
-					GD.Print("updating single chunk, no damages ",chunkTilePosition);
+					//GD.Print("updating single chunk, no damages ",chunkTilePosition);
 					TryUpdateChunkBlocksAndMesh(chunkTilePosition,_blocks);
 					return Task.CompletedTask;
 				}));
 			}
 		}
+		await Task.WhenAll(tasks);
 
 		// update any neighborning chunks which now have exposed faces, and were not included in previous pass
 		var neighboursToUpdate = updateNeighbourChunks.Where(chunkTilePosition => chunkTilePosition.Y < Instance._y_width && chunkTilePosition.Y >= 0 && !chunkDestroyedBlocksLists.ContainsKey(chunkTilePosition));
 		foreach (var chunkTilePosition in neighboursToUpdate) {
 			tasks.Add(Task.Run(()=>
 			{
-				GD.Print("updating neighbour chunk ",chunkTilePosition);
+				//GD.Print("updating neighbour chunk ",chunkTilePosition);
 				TryUpdateChunkMeshData(chunkTilePosition);
 				return Task.CompletedTask;
 			}));

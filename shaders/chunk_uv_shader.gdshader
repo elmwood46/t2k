@@ -58,7 +58,7 @@ void fragment() {
 	}
 	else
 	{
-		vec3[2] res = ApplyDamageShaders(uv, UV, damageratio, physicaldamage, firedamage, aciddamage, basecol.rgb);
+		vec3[2] res = ApplyDamageShaders(uv, UV, damageratio, physicaldamage, firedamage, aciddamage, basecol.rgb, false);
 
 		ALBEDO = res[0];
 		EMISSION = res[1];

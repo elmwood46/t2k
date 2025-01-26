@@ -1,0 +1,154 @@
+[gd_scene load_steps=13 format=4 uid="uid://ckabmnp2u5mwt"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dpuc2"]
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_mijeo"]
+_surfaces = [{
+"aabb": AABB(-0.205141, -0.0955912, -0.424265, 0.74965, 0.37467, 0.624443),
+"format": 34896613377,
+"index_count": 36,
+"index_data": PackedByteArray("BAABAAMABAACAAEAAQAFAAMAAQAGAAUABwAFAAYAAAAFAAcABQAEAAMABQAAAAQAAgAEAAAABgAAAAcAAAABAAIAAAAGAAEA"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("//8AAP//AAAAAAAAxPwAAAAAAAD//wAAekzzmEKEAAANgP////8AAPA4j3EpVQAAMwAAAEWZAADBKgAAAAAAAA==")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_kc6y1"]
+resource_name = "fracture-corner-3_Cube_cell_007"
+_surfaces = [{
+"aabb": AABB(-0.205141, -0.0955912, -0.424265, 0.74965, 0.37467, 0.624443),
+"attribute_data": PackedByteArray("/5//P/+f/z//n/8/B3EHEQVwBRAFcAUQpMFQU/+fBSj5t/8/TcWqWiGQITD2x/Zn9sf2ZwmGA4D//7FPTbCxT///9wcH+PcHE/73B7bC/////7bC8/f/////8/dJiPf3"),
+"format": 34896613399,
+"index_count": 36,
+"index_data": PackedByteArray("DQAQAA4ADQASABAAEQATAA8AEQAVABMAFwAUABYAAgAJAAwACQAIAAYACQACAAgABAAHAAAACgABAAsAAQADAAUAAQAKAAMA"),
+"material": SubResource("StandardMaterial3D_dpuc2"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("//8AAP///7///wAA//9MDf//AAD//5bxAAAAAMT8TA0AAAAA////vwAAAAD///+/ekzzmEKEnPENgP//////vw2A/////5bx8DiPcSlVlvEzAAAARZlMDcEqAAAAAEwNwSoAAAAAlvENgP////+p6XpM85hChKnpekzzmEKEcNkAAAAAxPyp6QAAAADE/HDZAAAAAP//qenwOI9xKVVw2fA4j3EpVWfPMwAAAEWZcNkzAAAARZlnz8EqAAAAAGfP/////3xywUZBQnEbfHLBRv////8AAP9/OEJ7G/////9BQnEbQUJxG3xywUZ8csFGQUJxGwXqADUF6gA1DnogxQXqADUOeiDFBeoANQ56IMXSkWzVDnogxdKRbNXSkWzV")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_mijeo")
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_0d7pl"]
+points = PackedVector3Array(-0.0799551, -0.0955912, -0.424265, -0.204628, -0.0955912, -0.0504302, -0.038422, 0.0705823, -0.216565, 0.544509, -0.0955912, 0.200178, -0.205141, -0.0955912, 0.192293, 0.018741, 0.128235, -0.101713, 0.16983, 0.279078, 0.200178, -0.205141, -0.0955912, 0.200178)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bcsvu"]
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_mei56"]
+_surfaces = [{
+"aabb": AABB(-0.267279, -0.267916, -0.273415, 0.624132, 0.9993, 0.415923),
+"format": 34896613377,
+"index_count": 30,
+"index_data": PackedByteArray("AgAGAAUAAgADAAQAAgAFAAMAAAAEAAMAAAABAAQAAAADAAUAAQAFAAYAAQAAAAUABgAEAAEABgACAAQA"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 7,
+"vertex_data": PackedByteArray("/GUAAP//AAD//yhg//8AAJ6IYlX5MgAACGYAAAZnAACuquUqAAAAAAAAAAD//wAAFAD/////AAA=")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_pbsbp"]
+resource_name = "fracture-corner-3_Cube_cell_008"
+_surfaces = [{
+"aabb": AABB(-0.267279, -0.267916, -0.273415, 0.624132, 0.9993, 0.415923),
+"attribute_data": PackedByteArray("8W/yD/Fv8g//n/knBbj/P6XKUVXDj8MvVcWeWgdgCAAIYAgA/58LAPPf/z/69wQI//8ECAwG///z+f7/EubymQjm9yFRV///raj//3bCiD3//4g94PlqDA=="),
+"format": 34896613399,
+"index_count": 30,
+"index_data": PackedByteArray("EgAVAA4AEQAMABQAEQANAAwAEAATAAsAEAAPABMAAQAFAAgAAgAHAAkAAgAAAAcACgAGAAMACgAEAAYA"),
+"material": SubResource("StandardMaterial3D_bcsvu"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 22,
+"vertex_data": PackedByteArray("/GUAAP///7/8ZQAA////v///KGD///+///8oYP//lvGeiGJV+TKX8QhmAAAGZ/+/rqrlKgAAlvEAAAAA////vwAAAAD///+/FAD//////78UAP////+W8QhmAAAGZxXzCGYAAAZnPvcAAAAA//+O9gAAAAD//5Lh//8oYP//NvH8ZQAA///U8Z6IYlX5Mk/4nohiVfkykuGuquUqAAC78a6q5SoAAHD5FAD/////kuH/////AAD/f/////9BQnEbQEJzGwAA/39BQnEb/////wAA/3//////QUJxG+gc7NEG6gS1fOgatuxjSdiYG53QBxwM0W7sULPsY0nY9hv70AjvebHsY0nY")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_mei56")
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_235ai"]
+points = PackedVector3Array(-0.267279, -0.267916, 0.142509, -0.0185672, -0.267916, -0.106044, -0.0186894, -0.267916, 0.142509, -0.267096, 0.731384, 0.142509, 0.065742, 0.0653471, -0.190605, 0.148829, -0.100551, -0.273415, 0.356853, 0.107408, 0.142509)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_grivw"]
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_80udi"]
+_surfaces = [{
+"aabb": AABB(-0.210226, -0.171096, -0.632803, 0.416192, 0.99899, 0.999232),
+"format": 34896613377,
+"index_count": 36,
+"index_data": PackedByteArray("BgAEAAMABgAFAAQABQAGAAcAAAACAAEAAwABAAIAAwAEAAEAAAADAAIAAwAHAAYAAwAAAAcABwAEAAUABAAAAAEABAAHAAAA"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("AAAAAAAAAAAAAAAA//8AAAAA///v/wAA6fQDNAKaAADElQAAncEAAGqZAAAXwAAA//++KlyVAABe5gAA818AAA==")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_yqg2s"]
+resource_name = "fracture-corner-3_Cube_cell_003"
+_surfaces = [{
+"aabb": AABB(-0.210226, -0.171096, -0.632803, 0.416192, 0.99899, 0.999232),
+"attribute_data": PackedByteArray("/9//f//f/3//X/+/9f/g+YgM2vmDxoZZ2I7ZLvyP/S9cxa9aBsgHaAbIB2gYYBkA/1/y///fEEDun+7///9qyJQ3asj//+n5FQbp+V89/////189/Af//////AfdhyGA"),
+"format": 34896613399,
+"index_count": 36,
+"index_data": PackedByteArray("EwASABAAEwAVABIAFgAUABcAAgAOAAwADwADAAQADwARAAMAAQAFAA0ABQAKAAgABQABAAoACQAGAAcABgAAAAsABgAJAAAA"),
+"material": SubResource("StandardMaterial3D_grivw"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("AAAAAAAA/78AAAAAAACW8QAAAAAAAFTVAAAAAP//f7wAAP//7//6xen0AzQCmpbxxJUAAJ3B/79qmQAAF8D/v///vipclZbxXuYAAPNf/79e5gAA81+W8QAAAAD///+/AAAAAP//VNUAAP//7/+W8QAA///v/1TV6fQDNAKarbvp9AM0AppEqMSVAACdwf2fxJUAAJ3BRKj//74qXJVEqP//vipclZrAapkAABfARKhqmQAAF8CawF7mAADzX5rAAAD/f0FCcRtU1VTVBptHXP6cAWNBQnEbAAD/fwAA/39BQnEbAAD/f0FCcRsAAP9/VNVU1UFCcRtU1VTV1ZqfW109oRPrfwIAXT2hE109oRObHig5XT2hE5seKDmbHig5")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_80udi")
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_0nm3f"]
+points = PackedVector3Array(-0.210226, -0.171096, -0.632803, 0.16429, -0.171096, -0.258287, -0.210226, -0.171096, 0.366429, -0.210226, 0.827894, 0.366136, 0.187919, 0.0318112, -0.0317575, 0.205925, -0.0043699, -0.0498524, 0.0391797, -0.171096, 0.116914, 0.0332318, -0.171096, 0.122881)
+
+[node name="fracture-corner-3" type="Node3D"]
+transform = Transform3D(1, 0, 1.74846e-07, 0, 1, 0, -1.74846e-07, 0, 1, 0, 0, 0)
+
+[node name="@RigidBody3D@194760" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0685773, 0.113547, 0.282822)
+collision_layer = 0
+collision_mask = 0
+mass = 20.0
+freeze = true
+freeze_mode = 1
+
+[node name="Cube_cell" type="MeshInstance3D" parent="@RigidBody3D@194760"]
+mesh = SubResource("ArrayMesh_kc6y1")
+skeleton = NodePath("")
+
+[node name="@CollisionShape3D@194761" type="CollisionShape3D" parent="@RigidBody3D@194760"]
+shape = SubResource("ConvexPolygonShape3D_0d7pl")
+
+[node name="@RigidBody3D@194762" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.256284, 0.285872, 0.340491)
+collision_layer = 0
+collision_mask = 0
+mass = 20.0
+freeze = true
+freeze_mode = 1
+
+[node name="Cube_cell_001" type="MeshInstance3D" parent="@RigidBody3D@194762"]
+mesh = SubResource("ArrayMesh_pbsbp")
+skeleton = NodePath("")
+
+[node name="@CollisionShape3D@194763" type="CollisionShape3D" parent="@RigidBody3D@194762"]
+shape = SubResource("ConvexPolygonShape3D_235ai")
+
+[node name="@RigidBody3D@194764" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.313843, 0.189052, 0.115803)
+collision_layer = 0
+collision_mask = 0
+mass = 20.0
+freeze = true
+freeze_mode = 1
+
+[node name="Cube_cell_002" type="MeshInstance3D" parent="@RigidBody3D@194764"]
+mesh = SubResource("ArrayMesh_yqg2s")
+skeleton = NodePath("")
+
+[node name="@CollisionShape3D@194765" type="CollisionShape3D" parent="@RigidBody3D@194764"]
+shape = SubResource("ConvexPolygonShape3D_0nm3f")

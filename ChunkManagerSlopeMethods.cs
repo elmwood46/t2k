@@ -2,6 +2,13 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
+public enum SlopeType {
+    None=0,
+    Side=1,
+    Corner=2,
+    InvCorner=3
+}
+
 public partial class ChunkManager : Node
 {
     const float INVSQRT2 = 0.70710678118f;
@@ -147,7 +154,7 @@ public partial class ChunkManager : Node
             if (b3) return 3;
             return 0;
         }
-        else return BlockCornerRotation(chunkPosition, blockPosition+Vector3I.Up);
+        else return (BlockCornerRotation(chunkPosition, blockPosition+Vector3I.Up)+1)%4;
     }
 
     public static bool BlockIsCorner(Vector3I chunkPosition, Vector3I blockPosition) {

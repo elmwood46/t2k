@@ -6,7 +6,8 @@ vec3[2] ApplyDamageShaders(
 	bool physicaldamage,
 	bool firedamage,
 	bool aciddamage,
-	vec3 base_albedo)
+	vec3 base_albedo,
+	bool broken_block_mode)
 {
 	// for some reason the curve textures are fucky with high input values of damageratio
 	damageratio = min(damageratio,0.999);
@@ -80,7 +81,9 @@ vec3[2] ApplyDamageShaders(
 		float cracks = texture(_cracks_texture, 0.15*uv).r;
 		float cracksExtra = 1.0;
 		if (damageratio > 0.5) {
-			cracksExtra = texture(_cracks_texture, vec2(0.95,-1.0)+0.15*uv).r;
+			vec2 uvscaled = uv;
+			if (!broken_block_mode) uvscaled *= 0.15f;
+			cracksExtra = texture(_cracks_texture, vec2(0.95,-1.0)+uvscaled).r;
 			cracksExtra = mix(1.0,cracksExtra,(damageratio-0.5)/0.5);
 		}
 		cracks = pow(cracks*cracksExtra, mix(0.0,20,damageratio));
