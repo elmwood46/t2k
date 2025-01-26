@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://GreedyMeshTest.cs" id="1_vma6d"]
 [ext_resource type="PackedScene" uid="uid://bj06w0107prkf" path="res://props/interactable_component.tscn" id="2_lei15"]
 [ext_resource type="Script" path="res://ThreadDemo.cs" id="3_sah0w"]
-[ext_resource type="PackedScene" uid="uid://c4rhmia48c1pu" path="res://props/DestructibleCube.tscn" id="3_w6ovg"]
+[ext_resource type="PackedScene" uid="uid://c4rhmia48c1pu" path="res://props/breakable/DestructibleCube.tscn" id="3_w6ovg"]
 [ext_resource type="Shader" path="res://props/treasure/cut_b.gdshader" id="6_6iqls"]
 [ext_resource type="Shader" path="res://props/treasure/CoinShader.gdshader" id="6_be58e"]
 [ext_resource type="Texture2D" uid="uid://bicky6ugq6oog" path="res://props/treasure/coinC_2.png" id="6_eskjp"]

@@ -147,7 +147,7 @@ public partial class BlockManager : Node
 		ChunkMaterial.SetShaderParameter("_acidcol", acid_colour);
 		ChunkMaterial.SetShaderParameter("_acidedge", acid_edge);
 
-		BrokenBlockShader = ResourceLoader.Load("res://shaders/broken_block_shader_wholeblock.tres") as ShaderMaterial;
+		BrokenBlockShader = ResourceLoader.Load("res://shaders/RIGID_BREAK_SHADER.tres") as ShaderMaterial;
 		BrokenBlockShader.SetShaderParameter("_albedo", TextureArray);
 		BrokenBlockShader.SetShaderParameter("_displacement", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_DISPa.png"));
 		BrokenBlockShader.SetShaderParameter("_roughness", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_ROUGH.jpg"));
@@ -162,6 +162,7 @@ public partial class BlockManager : Node
 		BrokenBlockShader.SetShaderParameter("_burncol", burned_colour);
 		BrokenBlockShader.SetShaderParameter("_acidcol", acid_colour);
 		BrokenBlockShader.SetShaderParameter("_acidedge", acid_edge);
+		
 		 // Save the image to a file (PNG format)
         /*
 		GD.Print($"Block textures: {blockTextures.Length}");

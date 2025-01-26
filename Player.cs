@@ -178,10 +178,10 @@ public partial class Player : CharacterBody3D
 				{
 					[intBlockPosition] = 5000
 				};
-				//ChunkManager.Instance.DamageBlocks(d);
+				ChunkManager.DamageBlocks(d);
 			
 
-				if (true) {
+				if (false) {
 					//ChunkManager.Instance.DamageBlocks(new Vector3I[] {(Vector3I)(intBlockPosition - chunk.GlobalPosition)}, 5);
 
 						// LINE ATTACK PATTERN

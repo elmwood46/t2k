@@ -19,7 +19,8 @@ public partial class ChunkManager : Node
             if (
                 IsBlockEmpty(block)
                 || GetBlockID(block)==BlockManager.Instance.LavaBlockId
-                || (excludeSlopes&&IsBlockSloped(block)) // useful when damaging
+                // useful when damaging blocks - don't update corner or inv corner slopes, but still update side slopes
+                || (excludeSlopes&&IsBlockSloped(block)&&!BlockIsSide(chunkPosition,blockPosition)) 
                 || GetBlockSpecies(block)==BlockSpecies.Leaves) 
             continue;
 
@@ -27,9 +28,9 @@ public partial class ChunkManager : Node
             //var blockbelow = GetBlockNeighbour(chunkPosition, blockPosition, Vector3I.Down)!=0;
             var blockflip = false;//IsTripleBlockAbove(chunkPosition, blockPosition) && !IsBlockBelow(chunkPosition, blockPosition);
 
-            var blockinfo = Instance.ChunkCache[chunkPosition][BlockIndex(blockPosition)];
+            var blockinfo = Instance.BLOCKCACHE[chunkPosition][BlockIndex(blockPosition)];
             blockinfo = RepackSlopeData(blockinfo,GetBlockSlopeType(blockinfo),GetBlockSlopeRotationBits(blockinfo),blockflip?1:0);
-            Instance.ChunkCache[chunkPosition][BlockIndex(blockPosition)] = blockinfo;
+            Instance.BLOCKCACHE[chunkPosition][BlockIndex(blockPosition)] = blockinfo;
             
             var _flip = 1;
             if (blockflip) _flip = -1;
@@ -129,8 +130,8 @@ public partial class ChunkManager : Node
             || 
             (
                 IsBlockAbove(chunkPosition, blockPosition)
-                &&BlockIsCorner(chunkPosition, blockPosition+Vector3I.Up)
                 &&!IsDoubleBlockAbove(chunkPosition, blockPosition)
+                &&BlockIsCorner(chunkPosition, blockPosition+Vector3I.Up)
                 &&BlockSingleDiagonalFree(chunkPosition, blockPosition)
             )
         )
@@ -333,7 +334,7 @@ public partial class ChunkManager : Node
     public static bool BlockIsFlipped(Vector3I chunkPosition, Vector3I blockPosition) {
         var idx = BlockIndex(blockPosition);
         if (idx <0 || idx >= CSP3) return false;
-        if (!Instance.ChunkCache.TryGetValue(chunkPosition, out var chunk)) return false;
+        if (!Instance.BLOCKCACHE.TryGetValue(chunkPosition, out var chunk)) return false;
         var blockinfo = chunk[BlockIndex(blockPosition)];
         return GetBlockSlopeFlip(blockinfo);
     }
@@ -375,7 +376,7 @@ public partial class ChunkManager : Node
 
     public static void SetBlockNeighbour(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection, int newBlockInfo)
     {
-        if (!Instance.ChunkCache.TryGetValue(chunkPosition, out var chunk))
+        if (!Instance.BLOCKCACHE.TryGetValue(chunkPosition, out var chunk))
         {
             chunk = new int[CSP3*SUBCHUNKS];
         }
@@ -386,7 +387,7 @@ public partial class ChunkManager : Node
         &&  p.Z < CSP && p.Z >= 0)
         {
             chunk[BlockIndex(p)] = newBlockInfo;
-            Instance.ChunkCache[chunkPosition] = chunk;
+            Instance.BLOCKCACHE[chunkPosition] = chunk;
         }
         else
         {
@@ -396,41 +397,47 @@ public partial class ChunkManager : Node
             var dz = p.Z >= CSP ? 1 : p.Z < 0 ? -1 : 0;
             var delta = new Vector3I(dx, dy, dz);
             var newp = p-delta*CSP;
-            if (!Instance.ChunkCache.TryGetValue(neighbour_chunk+delta, out var neighbour)) {
+            if (!Instance.BLOCKCACHE.TryGetValue(neighbour_chunk+delta, out var neighbour)) {
                 neighbour = new int[CSP3*SUBCHUNKS];
             }
 
             var new_idx = BlockIndex(newp);
             neighbour[new_idx] = newBlockInfo;
-            Instance.ChunkCache[neighbour_chunk+delta] = neighbour;
+            Instance.BLOCKCACHE[neighbour_chunk+delta] = neighbour;
         }
     }
 
     public static int GetBlockNeighbour(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection) {
-        if (!Instance.ChunkCache.TryGetValue(chunkPosition, out var chunk)) return 0;
+        if (!Instance.BLOCKCACHE.TryGetValue(chunkPosition, out var chunk)) return 0;
         Vector3I p = new(blockPosition.X + neighborDirection.X, blockPosition.Y + neighborDirection.Y, blockPosition.Z + neighborDirection.Z);
 
-        if (p.X < CSP && p.X >= 0
-        &&  p.Y < CSP && p.Y >= 0
-        &&  p.Z < CSP && p.Z >= 0)
+        if (p.X < CSP-1 && p.X >= 1
+        &&  p.Y < CSP-1 && p.Y >= 1
+        &&  p.Z < CSP-1 && p.Z >= 1)
         {
-            var b = chunk[BlockIndex(p)];
-            if (!IsBlockEmpty(b)) return b;
+            return chunk[BlockIndex(p)];
         }
         else
         {
-            var neighbour_chunk = new Vector3I(chunkPosition.X, chunkPosition.Y, chunkPosition.Z);
-            var dx = p.X >= CSP ? 1 : p.X < 0 ? -1 : 0;
-            var dy = p.Y >= CSP ? 1 : p.Y < 0 ? -1 : 0;
-            var dz = p.Z >= CSP ? 1 : p.Z < 0 ? -1 : 0;
+            var dx = p.X >= CSP-1 ? 1 : p.X < 1 ? -1 : 0;
+            var dy = p.Y >= CSP-1 ? 1 : p.Y < 1 ? -1 : 0;
+            var dz = p.Z >= CSP-1 ? 1 : p.Z < 1 ? -1 : 0;
             var delta = new Vector3I(dx, dy, dz);
-            var newp = p-delta*CSP;
-            if (!Instance.ChunkCache.TryGetValue(neighbour_chunk+delta, out var neighbour)) return 0;
 
+            // return local neighbour if there is no generated neighbour
+            if (!Instance.BLOCKCACHE.TryGetValue(chunkPosition+delta, out var neighbour)) {
+                if (!(p.X >= CSP || p.X < 0
+                ||  p.Y >= CSP || p.Y < 0
+                ||  p.Z >= CSP || p.Z < 0))
+                {
+                     return chunk[BlockIndex(p)];
+                } else return 0;
+            }
+
+            var newp = p-delta*CHUNK_SIZE;
+            
             var new_idx = BlockIndex(newp);
-            if (!IsBlockEmpty(neighbour[new_idx])) return neighbour[new_idx];
+            return neighbour[new_idx];
         }
-
-        return 0;
     }
 }

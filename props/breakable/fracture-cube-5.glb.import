@@ -3,25 +3,25 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://cal0notx0oy2i"
-path="res://.godot/imported/cubefrag_broken.glb-d90cee841fcabcac06234b5c489a5b4e.scn"
+uid="uid://cnd5h71th6li2"
+path="res://.godot/imported/fracture-cube-5.glb-a2d9bc7a4be02d640806744dcd95f8bb.scn"
 
 [deps]
 
-source_file="res://props/cubefrag_broken.glb"
-dest_files=["res://.godot/imported/cubefrag_broken.glb-d90cee841fcabcac06234b5c489a5b4e.scn"]
+source_file="res://props/breakable/fracture-cube-5.glb"
+dest_files=["res://.godot/imported/fracture-cube-5.glb-a2d9bc7a4be02d640806744dcd95f8bb.scn"]
 
 [params]
 
-nodes/root_type="Node3D"
-nodes/root_name="breakable_cube_broke"
+nodes/root_type=""
+nodes/root_name=""
 nodes/apply_root_scale=true
 nodes/root_scale=1.0
 nodes/import_as_skeleton_bones=false
 meshes/ensure_tangents=true
 meshes/generate_lods=true
 meshes/create_shadow_meshes=true
-meshes/light_baking=3
+meshes/light_baking=1
 meshes/lightmap_texel_size=0.2
 meshes/force_disable_compression=false
 skins/use_named_skins=true

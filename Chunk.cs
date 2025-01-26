@@ -91,8 +91,8 @@ public partial class Chunk : StaticBody3D
             if (blocks_being_destroyed > 1) { // destroying more than one block at once
                 if (partcount + blockCount < 1) particles.BlockDivisions = 3;
             } else {
-                if (partcount + blockCount < 15) particles.BlockDivisions = 3;
-                if (partcount + blockCount < 5) particles.BlockDivisions = 4;
+                if (partcount + blockCount < 15) particles.BlockDivisions = 4;
+                if (partcount + blockCount < 5) particles.BlockDivisions = 20;
             }
 
             var mult = 3.0f;
@@ -108,12 +108,12 @@ public partial class Chunk : StaticBody3D
             // add 1/BLockDivisions to center the particles in the grid (since pos is floored block position)
             // and subtract a small amount to avoid z-fighting with top particles as well as keep them in their block
             // also subtract one to go from padded chunk pos to actual chunk pos
-            particles.Position = pos - Vector3.One + Vector3.One*(1/particles.BlockDivisions) - Vector3.Up*0.0625f; 
-
+            particles.Scale = Vector3.One*0.999f*ChunkManager.VOXEL_SCALE;
+            particles.Position = pos - Vector3.One /*-Vector3.One + Vector3.One*(1/particles.BlockDivisions)*/ - Vector3.Up*0.0625f; 
 
             if (is_block_above) particles.NoUpwardsImpulse = true;
 
-            particles.BlockInfo = block_info;           
+            particles.BlockInfo = block_info;
             
             AddChild(particles);
             var impulse_pos = (particles.GlobalTransform.Origin - Player.Instance.GlobalTransform.Origin).Normalized() * 100.0f; 
