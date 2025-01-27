@@ -14,6 +14,11 @@ public partial class ChunkManager : Node
 	private Dictionary<Vector3I, Chunk> _positionToChunk = new();
 	public ConcurrentDictionary<Vector3I, int[]> BLOCKCACHE = new();
 	public ConcurrentDictionary<Vector3I, ChunkMeshData> MESHCACHE = new();
+
+	// deferred mesh updates also holds a list of which blocks were filled in the chunk
+	// this allows for more efficient processing of sloped blocks when we mesh the chunk
+	public ConcurrentDictionary<Vector3I, List<Vector3I>> DeferredMeshUpdates = new();
+
 	private List<Chunk> _chunks;
 	[Export] public PackedScene ChunkScene { get; set; }
 	// this is the number of chunks rendered in the x and z direction, centered around the player
@@ -92,18 +97,34 @@ public partial class ChunkManager : Node
 
 					tasks.Add(Task.Run(() =>
 					{
-						TryUpdateChunkBlocksAndMesh(pos);
-						chunk.CallDeferred(nameof(chunk.UpdateChunkPosition),pos);
+						SetBlocksAndDeferMeshUpdates(pos);
+						chunk.CallDeferred(nameof(chunk.SetChunkPosition),pos);
 						return Task.CompletedTask;
 					}));
 
-					//await Task.Run(()=>{TryUpdateChunkBlocksAndMesh(pos);});
+					//await Task.Run(()=>{SetBlocksAndDeferMeshUpdates(pos);});
 					//chunk.UpdateChunkPosition(pos);
 				}
 			}
 		}
 
 		await Task.WhenAll(tasks);
+
+		tasks.Clear();
+		foreach (var chunk_mesh_id in Instance.DeferredMeshUpdates.Keys) {
+			tasks.Add(Task.Run(() => {
+				TryUpdateChunkMeshData(chunk_mesh_id);
+				return Task.CompletedTask;
+			}));
+		}
+		await Task.WhenAll(tasks);
+
+		foreach (var chunk in _chunks)
+		{
+			chunk.CallDeferred(nameof(chunk.Update));
+		}
+
+		Instance.DeferredMeshUpdates.Clear();
 
 		if (!Engine.IsEditorHint())
 		{
@@ -114,6 +135,7 @@ public partial class ChunkManager : Node
 
 	#region change blocks
 
+	// DEBUG setting blocks, untested
 	public static void TrySetBlock(Vector3I globalPosition, int block_type)
 	{
 		var chunkTilePosition = GlobalPositionToChunkPosition(globalPosition);
@@ -121,7 +143,14 @@ public partial class ChunkManager : Node
 			var blockpos = GlobalPositionToLocalBlockPosition(globalPosition);
 			var _blockidx = BlockIndex(blockpos);
 			_blocks[_blockidx] = RepackBlockType(_blocks[_blockidx], block_type);
-			TryUpdateChunkBlocksAndMesh(chunkTilePosition,_blocks);
+
+			Instance.BLOCKCACHE[chunkTilePosition] = _blocks;
+			Instance.MESHCACHE[chunkTilePosition] = BuildChunkMesh(chunkTilePosition);
+			lock (Instance._positionToChunk) {
+				if (Instance._positionToChunk.TryGetValue(chunkTilePosition, out var chunk)) {
+					chunk.CallDeferred(nameof(chunk.Update));
+				}
+			}
 		} else GD.Print($"Tried to SET block at global position {globalPosition} but block data was not found in dictionary.");
 	}
 
@@ -132,6 +161,7 @@ public partial class ChunkManager : Node
 		var tasks = new List<Task>();
 		var chunkDestroyedBlocksLists = new Dictionary<Vector3I,Dictionary<Vector3I,int>>();
 		var updateNeighbourChunks = new HashSet<Vector3I>();
+		var slopeUpdateSet = new Dictionary<Vector3I,List<Vector3I>>();
 
 		foreach (var (globalPosition, damage) in blockAndDamage)
 		{
@@ -204,7 +234,6 @@ public partial class ChunkManager : Node
 			// recalculate mesh slopes
 			if (chunkDestroyedBlocksLists.TryGetValue(chunkTilePosition, out var spawnList)) {
 				// collect neighbour positions for updating slopes at the border of destroyed blocks
-				var slopeUpdateSet = new HashSet<Vector3I>();
 				foreach (var key in spawnList.Keys) {
 					foreach(var v in VECTOR_NEIGHBOUR_SET) { // add neighbour block to slope update list if it's not already in the list
 						var neighbour = key + v;
@@ -222,15 +251,20 @@ public partial class ChunkManager : Node
 
 						if (spawnList.ContainsKey(neighbour)) continue;
 						if (playerBlockPosition == neighbour) continue;
-						if (BlockHasNeighbor(chunkTilePosition,key,v)) slopeUpdateSet.Add(neighbour);
+						if (BlockHasNeighbor(chunkTilePosition,key,v)) {
+							if (!slopeUpdateSet.TryGetValue(chunkTilePosition, out var set)) {
+								set = new();
+								slopeUpdateSet[chunkTilePosition] = set;
+							}
+							slopeUpdateSet[chunkTilePosition].Add(neighbour);
+						}
 					}
 				}
 
 				tasks.Add(Task.Run(()=>
 				{
 					//GD.Print("updating single where blocks were broken ",chunkTilePosition);
-					_blocks = BatchUpdateBlockSlopeData(chunkTilePosition,slopeUpdateSet.ToList(),_blocks,true);
-					TryUpdateChunkBlocksAndMesh(chunkTilePosition,_blocks);
+					Instance.BLOCKCACHE[chunkTilePosition] = _blocks;
 					return Task.CompletedTask;
 				}));
 			}
@@ -241,7 +275,7 @@ public partial class ChunkManager : Node
 				tasks.Add(Task.Run(()=>
 				{
 					//GD.Print("updating single chunk, no damages ",chunkTilePosition);
-					TryUpdateChunkBlocksAndMesh(chunkTilePosition,_blocks);
+					Instance.BLOCKCACHE[chunkTilePosition] = _blocks;
 					return Task.CompletedTask;
 				}));
 			}
@@ -250,10 +284,16 @@ public partial class ChunkManager : Node
 
 		// update any neighborning chunks which now have exposed faces, and were not included in previous pass
 		var neighboursToUpdate = updateNeighbourChunks.Where(chunkTilePosition => chunkTilePosition.Y < Instance._y_width && chunkTilePosition.Y >= 0 && !chunkDestroyedBlocksLists.ContainsKey(chunkTilePosition));
-		foreach (var chunkTilePosition in neighboursToUpdate) {
+		foreach (var chunkTilePosition in neighboursToUpdate.Union(chunkBlockMapping.Keys))
+		{
 			tasks.Add(Task.Run(()=>
 			{
 				//GD.Print("updating neighbour chunk ",chunkTilePosition);
+				if (slopeUpdateSet.TryGetValue(chunkTilePosition, out var slopeUpdateList)) {
+					Instance.MESHCACHE[chunkTilePosition] = BuildChunkMesh(chunkTilePosition, slopeUpdateList);
+				} else {
+					Instance.MESHCACHE[chunkTilePosition] = BuildChunkMesh(chunkTilePosition);
+				}
 				TryUpdateChunkMeshData(chunkTilePosition);
 				return Task.CompletedTask;
 			}));
@@ -291,7 +331,12 @@ public partial class ChunkManager : Node
 		{
 			lock (_playerPositionLock)
 			{
+				//var chunkpos = GlobalPositionToChunkPosition(_playerPosition);
 				_playerPosition = Player.Instance.GlobalPosition;
+				/*if (GlobalPositionToChunkPosition(_playerPosition) != chunkpos)
+				{
+					GD.Print("player chunk position: ", GlobalPositionToChunkPosition(_playerPosition));
+				}*/
 			}
 		}
 	}
@@ -311,10 +356,10 @@ public partial class ChunkManager : Node
 
 	// called from the thread when a chunk needs to rebuild its mesh or is generating a new chunk
 	// also when initializing chunks at start
-	public static void TryUpdateChunkBlocksAndMesh(Vector3I chunkPosition, int[] blockData = null)
+	public static void SetBlocksAndDeferMeshUpdates(Vector3I chunkPosition, int[] blockData = null)
 	{
+		Instance.DeferredMeshUpdates.TryAdd(chunkPosition, new());
         TryUpdateOrGenerateChunkBlockData(chunkPosition,blockData);
-        TryUpdateChunkMeshData(chunkPosition);
 	}
 
 	public static void TryUpdateOrGenerateChunkBlockData(Vector3I chunkPosition, int[] updateBlockDataWith = null) {
@@ -358,10 +403,7 @@ public partial class ChunkManager : Node
 		{
 			return meshData;
 		}
-		else
-		{
-			throw new Exception("Tried to get chunk mesh data that doesn't exist.");
-		}
+		return null;
 	}
 	#endregion
 
@@ -415,7 +457,7 @@ public partial class ChunkManager : Node
 
 					tasks.Add(Task.Run(() => {
 						if (!CantorPairing.Contains(newPosition)) {
-							TryUpdateChunkBlocksAndMesh(newPosition);
+							SetBlocksAndDeferMeshUpdates(newPosition);
 						}
 						return Task.CompletedTask;
 					}));
@@ -426,7 +468,29 @@ public partial class ChunkManager : Node
 			}
 			await Task.WhenAll(tasks);
 
-			foreach ( (var chunk, var pos) in newPositions) {
+			tasks.Clear();
+			foreach (var pos in Instance.DeferredMeshUpdates.Keys) {
+				tasks.Add(Task.Run(() => {
+					TryUpdateChunkMeshData(pos);
+					return Task.CompletedTask;
+				}));
+				Thread.Sleep(3);
+			}
+			await Task.WhenAll(tasks);
+
+			// update chunks which need a deferred mesh update and aren't covered by the new positions
+			lock (_positionToChunk) {
+				foreach (var pos in  Instance.DeferredMeshUpdates.Keys.Except(newPositions.Values)) {
+					if (_positionToChunk.ContainsKey(pos)) {
+						_positionToChunk[pos].CallDeferred(nameof(Chunk.Update));
+						Thread.Sleep(10);
+					}
+				}
+			}
+			Instance.DeferredMeshUpdates.Clear();
+
+			// update chunks which changed position
+			foreach ((var chunk, var pos) in newPositions) {
 				chunk.CallDeferred(nameof(Chunk.UpdateChunkPosition), pos);
 				Thread.Sleep(10);
 			}
@@ -561,7 +625,7 @@ public partial class ChunkManager : Node
 
 
 	public static Vector3I BlockIndexToVector(int blockIndex) {
-		return new Vector3I(blockIndex%CSP,blockIndex/(CSP2*SUBCHUNKS),(blockIndex/CSP)%CSP);
+		return new Vector3I(blockIndex%CSP,blockIndex/(CSP2*SUBCHUNKS),blockIndex/CSP%CSP);
 	}
 
 	public static int TryGetBlockInfoFromGlobalBlockPosition(Vector3I globalBlockPosition)

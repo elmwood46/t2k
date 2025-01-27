@@ -23,6 +23,7 @@ glow_enabled = true
 glow_bloom = 0.04
 fog_mode = 1
 fog_light_color = Color(0.685914, 0.660551, 0.67663, 1)
+fog_density = 1.0
 fog_depth_end = 200.0
 volumetric_fog_density = 0.15
 volumetric_fog_emission = Color(1, 1, 1, 1)

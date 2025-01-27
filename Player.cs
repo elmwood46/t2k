@@ -267,9 +267,14 @@ public partial class Player : CharacterBody3D
 		}
 
 		// jump
-		if (Input.IsActionJustPressed("Jump"))// && (IsOnFloor() || _snappedToStairsLastFrame))
+		// DEBUG we increase jump speed
+		if (Input.IsActionPressed("Jump"))// && (IsOnFloor() || _snappedToStairsLastFrame))
 		{
 			velocity.Y = JumpVelocity;
+		} else {
+			if (velocity.Y > JumpVelocity) {
+				velocity.Y = JumpVelocity;
+			}
 		}
 
         // set direction
@@ -287,6 +292,7 @@ public partial class Player : CharacterBody3D
 		HandleCrouch((float)delta);
 
         // check for sprint speed adjustment
+		// DEBUG we increase sprint speed
         if (Input.IsActionPressed("Sprint") && !_is_crouched) {
             _movespeed = SprintSpeed;
         } else {

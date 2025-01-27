@@ -12,11 +12,8 @@ public enum SlopeType {
 public partial class ChunkManager : Node
 {
     const float INVSQRT2 = 0.70710678118f;
-
     private static readonly Vector3 SlopedNormalNegZ = new(0, INVSQRT2, -INVSQRT2);
     private static readonly Vector3 SlopedCornerNormalNegZ = new(INVSQRT2, INVSQRT2, -INVSQRT2);
-
-
     public static int[] BatchUpdateBlockSlopeData(Vector3I chunkPosition, List<Vector3I> blockPositions, int[] chunk, bool excludeSlopes = false) {
         Dictionary<Vector3I,int> packedSlopeBlockData = new();
         foreach (var blockPosition in blockPositions) {
@@ -28,7 +25,7 @@ public partial class ChunkManager : Node
                 || GetBlockID(block)==BlockManager.Instance.LavaBlockId
                 // useful when damaging blocks - don't update corner or inv corner slopes, but still update side slopes
                 || (excludeSlopes&&IsBlockSloped(block)&&!BlockIsSide(chunkPosition,blockPosition)) 
-                || GetBlockSpecies(block)==BlockSpecies.Leaves) 
+                || GetBlockSpecies(block)==BlockSpecies.Leaves)
             continue;
 
             // set whether block is flipped or not
@@ -39,17 +36,20 @@ public partial class ChunkManager : Node
             blockinfo = RepackSlopeData(blockinfo,GetBlockSlopeType(blockinfo),GetBlockSlopeRotationBits(blockinfo),blockflip?1:0);
             Instance.BLOCKCACHE[chunkPosition][BlockIndex(blockPosition)] = blockinfo;
             
-            var _flip = 1;
-            if (blockflip) _flip = -1;
+            //var _flip = 1;
+            //if (blockflip) _flip = -1;
 
             if (!BlockIsSlopeCandidate(chunkPosition, blockPosition)) continue;
 
             var s = BlockPackSlopeInfo(chunkPosition, blockPosition, blockflip);
             
-            if ((s&0b11) == (int)SlopeType.Corner) {//corners set the block below themselves to same type
-                var neighbid = GetBlockID(GetBlockNeighbour(chunkPosition, blockPosition, Vector3I.Down * _flip));
-                if (neighbid !=0 && neighbid != BlockManager.Instance.LavaBlockId) {
-                    SetBlockNeighbour(chunkPosition, blockPosition, Vector3I.Down* _flip, block);
+            // HACK disabled setting block below - this possibly causes a meshing bug cause we have such fucked up algorithm for slope gneeration and its all fucked lolololol
+            if ((s&0b11) == (int)SlopeType.Corner) {
+                //corners set the block below themselves to same type
+                // TODO corners can cause aesthetic clashing if block below is not same type. this should possibly be fixed up better
+                var neighbid = GetBlockID(GetBlockNeighbour(chunkPosition, blockPosition, Vector3I.Down));
+                if (neighbid != BlockManager.Instance.LavaBlockId) {
+                    SetBlockNeighbour(chunkPosition, blockPosition, Vector3I.Down, block);
                 }
             }
             packedSlopeBlockData[blockPosition] = s;
@@ -365,11 +365,23 @@ public partial class ChunkManager : Node
         var dx = p.X > CHUNK_SIZE ? 1 : p.X < 1 ? -1 : 0;
         var dy = p.Y > CHUNK_SIZE ? 1 : p.Y < 1 ? -1 : 0;
         var dz = p.Z > CHUNK_SIZE ? 1 : p.Z < 1 ? -1 : 0;
+        if (dx == 0 && dy == 0 && dz == 0) {
+            SetBlockNeighbour(chunkPosition, blockPosition, neighborDirection, newBlockInfo);
+            return;
+        }
+
         var delta = new Vector3I(dx, dy, dz);
-        var newp = p-delta*CHUNK_SIZE;
-        SetBlockNeighbour(chunkPosition+delta, newp, Vector3I.Zero, newBlockInfo);
+        // set neighbour chunk block to this
+        SetBlockNeighbour(chunkPosition+delta, p-delta*CHUNK_SIZE, Vector3I.Zero, newBlockInfo);
+
+        // set neighbour padded block to this
+        // SetBlockNeighbour(chunkPosition+delta, p-delta*CHUNK_SIZE, -delta, newBlockInfo);
+
+        Instance.DeferredMeshUpdates.TryAdd(chunkPosition, new());
+        Instance.DeferredMeshUpdates.TryAdd(chunkPosition+delta, new());
     }
 
+    /*
     public static void GetBlockChunkNeighbour(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection, out int blockInfo)
     {
         Vector3I p = new(blockPosition.X + neighborDirection.X, blockPosition.Y + neighborDirection.Y, blockPosition.Z + neighborDirection.Z);
@@ -380,6 +392,7 @@ public partial class ChunkManager : Node
         var newp = p-delta*CHUNK_SIZE;
         blockInfo = GetBlockNeighbour(chunkPosition+delta, newp, Vector3I.Zero);
     }
+    */
 
     public static void SetBlockNeighbour(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection, int newBlockInfo)
     {
@@ -393,24 +406,26 @@ public partial class ChunkManager : Node
         &&  p.Y < CSP && p.Y >= 0
         &&  p.Z < CSP && p.Z >= 0)
         {
+            // set block to new block info
             chunk[BlockIndex(p)] = newBlockInfo;
             Instance.BLOCKCACHE[chunkPosition] = chunk;
         }
         else
         {
-            var neighbour_chunk = new Vector3I(chunkPosition.X, chunkPosition.Y, chunkPosition.Z);
             var dx = p.X >= CSP ? 1 : p.X < 0 ? -1 : 0;
             var dy = p.Y >= CSP ? 1 : p.Y < 0 ? -1 : 0;
             var dz = p.Z >= CSP ? 1 : p.Z < 0 ? -1 : 0;
             var delta = new Vector3I(dx, dy, dz);
             var newp = p-delta*CSP;
-            if (!Instance.BLOCKCACHE.TryGetValue(neighbour_chunk+delta, out var neighbour)) {
+            if (!Instance.BLOCKCACHE.TryGetValue(chunkPosition+delta, out var neighbour)) {
                 neighbour = new int[CSP3*SUBCHUNKS];
             }
 
             var new_idx = BlockIndex(newp);
             neighbour[new_idx] = newBlockInfo;
-            Instance.BLOCKCACHE[neighbour_chunk+delta] = neighbour;
+            Instance.BLOCKCACHE[chunkPosition+delta] = neighbour;
+            Instance.DeferredMeshUpdates.TryAdd(chunkPosition+delta,new());
+            Instance.DeferredMeshUpdates.TryAdd(chunkPosition,new());
         }
     }
 
@@ -418,31 +433,26 @@ public partial class ChunkManager : Node
         if (!Instance.BLOCKCACHE.TryGetValue(chunkPosition, out var chunk)) return 0;
         Vector3I p = new(blockPosition.X + neighborDirection.X, blockPosition.Y + neighborDirection.Y, blockPosition.Z + neighborDirection.Z);
 
-        if (p.X < CSP-1 && p.X >= 1
-        &&  p.Y < CSP-1 && p.Y >= 1
-        &&  p.Z < CSP-1 && p.Z >= 1)
+        if (p.X < CSP && p.X >= 0
+        &&  p.Y < CSP && p.Y >= 0
+        &&  p.Z < CSP && p.Z >= 0)
         {
             return chunk[BlockIndex(p)];
         }
         else
         {
-            var dx = p.X >= CSP-1 ? 1 : p.X < 1 ? -1 : 0;
-            var dy = p.Y >= CSP-1 ? 1 : p.Y < 1 ? -1 : 0;
-            var dz = p.Z >= CSP-1 ? 1 : p.Z < 1 ? -1 : 0;
+            var dx = p.X >= CSP ? 1 : p.X < 0 ? -1 : 0;
+            var dy = p.Y >= CSP ? 1 : p.Y < 0 ? -1 : 0;
+            var dz = p.Z >= CSP ? 1 : p.Z < 0 ? -1 : 0;
             var delta = new Vector3I(dx, dy, dz);
 
             // return local neighbour if there is no generated neighbour
             if (!Instance.BLOCKCACHE.TryGetValue(chunkPosition+delta, out var neighbour)) {
-                if (!(p.X >= CSP || p.X < 0
-                ||  p.Y >= CSP || p.Y < 0
-                ||  p.Z >= CSP || p.Z < 0))
-                {
-                     return chunk[BlockIndex(p)];
-                } else return 0;
+                neighbour = new int[CSP3*SUBCHUNKS];
+                Instance.BLOCKCACHE[chunkPosition+delta] = neighbour;
             }
 
-            var newp = p-delta*CHUNK_SIZE;
-            
+            var newp = p-delta*CSP;
             var new_idx = BlockIndex(newp);
             return neighbour[new_idx];
         }

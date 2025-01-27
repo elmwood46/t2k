@@ -49,7 +49,7 @@ public partial class Chunk : StaticBody3D
 
     public void UpdateChunkPosition(Vector3I position) {
         SetChunkPosition(position);
-        CallDeferred(MethodName.Update);
+        Update();
     }
 
     #endregion
@@ -59,8 +59,10 @@ public partial class Chunk : StaticBody3D
 	public void Update() {
         var meshdata = ChunkManager.TryGetChunkMeshData(ChunkPosition);
         if (meshdata == null) return;
+
         MeshInstance.Mesh = meshdata.GetUnifiedSurfaces();
         CollisionShape.Shape = meshdata.GetTrimeshShape();
+        
         CallDeferred(MethodName.UpdateRigidBodies);
 	}
 
