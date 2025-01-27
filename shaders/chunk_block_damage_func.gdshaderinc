@@ -60,8 +60,6 @@ vec3[2] ApplyDamageShaders(
 	    float noise = texture(_noise,noisecoord).r;
 	    noisediscard += noise*0.05;
 
-
-
 		if (noisediscard < fire_ratio) {
 			float noiseval = texture(_spot_noise,uv).r;
 			noiseval += 0.05*sin(TIME);
@@ -78,11 +76,16 @@ vec3[2] ApplyDamageShaders(
 	}
 
 	if (physicaldamage) {
-		float cracks = texture(_cracks_texture, 0.15*uv).r;
+		// we have "broken block mode" which sets the scale of cracks
+		// it's scaled up by 6x for chunk blocks, because they are 
+		// textured per-face (each face the UV goes 0.0-1.0)
+		// while broken blocks have one texture which is spread across the 6 faces
+		
+		vec2 uvscaled = uv;
+		if (!broken_block_mode) uvscaled *= 0.16666667f;
+		float cracks = texture(_cracks_texture, uvscaled).r;
 		float cracksExtra = 1.0;
 		if (damageratio > 0.5) {
-			vec2 uvscaled = uv;
-			if (!broken_block_mode) uvscaled *= 0.15f;
 			cracksExtra = texture(_cracks_texture, vec2(0.95,-1.0)+uvscaled).r;
 			cracksExtra = mix(1.0,cracksExtra,(damageratio-0.5)/0.5);
 		}

@@ -4,7 +4,8 @@ public class ChunkMeshData {
     public const byte CHUNK_SURFACE = 0;
     public const byte GRASS_SURFACE = 1;
     public const byte LAVA_SURFACE = 2;
-    public const byte ALL_SURFACES = 3;
+    public const byte GOLD_SURFACE = 3;
+    public const byte ALL_SURFACES = 4; // must be equal to the number of surfaces
 
     private readonly ArrayMesh[] _surfaces = new ArrayMesh[ALL_SURFACES + 1];
     private readonly ConcavePolygonShape3D _trimesh_shape;
@@ -13,6 +14,7 @@ public class ChunkMeshData {
         _surfaces[CHUNK_SURFACE] = input_surfaces[CHUNK_SURFACE];
         _surfaces[GRASS_SURFACE] = input_surfaces[GRASS_SURFACE];
         _surfaces[LAVA_SURFACE] = input_surfaces[LAVA_SURFACE];
+        _surfaces[GOLD_SURFACE] = input_surfaces[GOLD_SURFACE];
         _surfaces[ALL_SURFACES] = new ArrayMesh();
         UnifySurfaces();
         _trimesh_shape = _surfaces[ALL_SURFACES].CreateTrimeshShape();
@@ -43,6 +45,7 @@ public class ChunkMeshData {
                     CHUNK_SURFACE => BlockManager.Instance.ChunkMaterial,
                     GRASS_SURFACE => BlockManager.Instance.ChunkMaterial,
                     LAVA_SURFACE => BlockManager.Instance.LavaShader,
+                    GOLD_SURFACE => BlockManager.Instance.ChunkMaterialDamagePulse,
                     _ => BlockManager.Instance.ChunkMaterial
                 };
                 _surfaces[ALL_SURFACES].AddSurfaceFromArrays(

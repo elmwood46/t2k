@@ -447,6 +447,28 @@ public partial class ChunkManager : Node {
 
     #region BuildChunkMesh
     public static ChunkMeshData BuildChunkMesh(Vector3I chunk_index, List<Vector3I> filledBlocks = null) {
+
+
+        static int get_surface_tool_index(int blockinfo, int axis) {
+            var blockId = GetBlockID(blockinfo);
+            if (blockId == BlockManager.Instance.LavaBlockId)
+            {
+                return ChunkMeshData.LAVA_SURFACE;
+            }
+            else if (blockId == BlockManager.BlockID("GoldOre"))
+            {
+                return ChunkMeshData.GOLD_SURFACE;
+            }
+            else if (blockId == BlockManager.BlockID("Grass") && axis == 1)
+            {
+                return ChunkMeshData.GRASS_SURFACE;
+            }
+            else
+            {
+                return ChunkMeshData.CHUNK_SURFACE;
+            }
+        }
+
         // data is an array of dictionaries, one for each axis
         // each dictionary is a hash map of block types to a set binary planes
         // we need to group by block type like this so we can batch the meshing and texture blocks correctly
@@ -459,12 +481,11 @@ public partial class ChunkManager : Node {
         for (i=0; i < SUBCHUNKS; i++) GreedyChunkMesh(data, chunk_index, i, filledBlocks);
 
         // construct mesh
-        var _st = new SurfaceTool();
-        var _st2 = new SurfaceTool();
-        var grassTopSurfaceTool = new SurfaceTool();
-        _st.Begin(Mesh.PrimitiveType.Triangles);
-        _st2.Begin(Mesh.PrimitiveType.Triangles);
-        grassTopSurfaceTool.Begin(Mesh.PrimitiveType.Triangles);
+        var surfToolArray = new SurfaceTool[ChunkMeshData.ALL_SURFACES];
+        for (var s=0; s<ChunkMeshData.ALL_SURFACES; s++) {
+            surfToolArray[s] = new();
+            surfToolArray[s].Begin(Mesh.PrimitiveType.Triangles);
+        } 
 
         for (int axis=0; axis<6;axis++) {
             foreach (var (blockinfo, planeSet) in data[axis]) {
@@ -540,11 +561,12 @@ public partial class ChunkManager : Node {
                         var uvTriangle1 = new Godot.Vector2[] { uvA, uvB, uvC };
 		                var uvTriangle2 = new Godot.Vector2[] { uvA, uvC, uvD };
 
-                        // add the quad to the mesh
-                        if (blockId == BlockManager.Instance.LavaBlockId)
+                        var surfidx = get_surface_tool_index(blockinfo, axis);
+                        if (surfidx == ChunkMeshData.LAVA_SURFACE)
                         {
-                            _st2.AddTriangleFan(triangle1, uvTriangle1, normals: normals);
-                            _st2.AddTriangleFan(triangle2, uvTriangle2, normals: normals);
+                            // lava surface has no metadata
+                            surfToolArray[surfidx].AddTriangleFan(triangle1, uvTriangle1, normals: normals);
+                            surfToolArray[surfidx].AddTriangleFan(triangle2, uvTriangle2, normals: normals);
                         }
                         else
                         {
@@ -552,17 +574,8 @@ public partial class ChunkManager : Node {
                             var block_face_texture_idx = BlockManager.BlockTextureArrayPositions(blockId)[axis];
                             var notacolour = new Color(block_face_texture_idx, uv_offset.X, uv_offset.Y, blockDamage)*(1/255f);
                             var metadata = new Color[] {notacolour, notacolour, notacolour};
-
-                            if (blockId == BlockManager.BlockID("Grass") && axis == 1)
-                            {
-                                grassTopSurfaceTool.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                                grassTopSurfaceTool.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
-                            }
-                            else
-                            {
-                                _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                                _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
-                            }
+                            surfToolArray[surfidx].AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            surfToolArray[surfidx].AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
                         }
                     }
                 }
@@ -648,25 +661,26 @@ public partial class ChunkManager : Node {
                 var uvTriangle1 = new Godot.Vector2[] { uvA, uvB, uvC };
                 var uvTriangle2 = new Godot.Vector2[] { uvA, uvC, uvD };
 
+                var surfidx = get_surface_tool_index(blockinfo, axis);
                 switch (axis)
                 {
                     case 1: // top face - modify normals
-                        if (invCornerSlope) _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                        if (invCornerSlope) surfToolArray[surfidx].AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
                         
                         var normrotate = SlopedNormalNegZ;
                         if (cornerSlope || invCornerSlope) normrotate = SlopedCornerNormalNegZ;
                         if (flipSlope) normrotate = normrotate.Rotated(Godot.Vector3.Forward, Mathf.Pi);
                         normrotate = normrotate.Rotated(Godot.Vector3.Up, rotation_angle);
                         normals = new Godot.Vector3[] {normrotate,normrotate,normrotate};
-                        if (regularSlope || invCornerSlope) _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                        if (regularSlope || invCornerSlope) surfToolArray[surfidx].AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
 
-                        if (!invCornerSlope) _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                        if (!invCornerSlope) surfToolArray[surfidx].AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
                         break;
                     case 2: // side face, only add one of the triangles
-                        if (regularSlope || cornerSlope) _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                        if (regularSlope || cornerSlope) surfToolArray[surfidx].AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
                         else if (invCornerSlope) {
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals); 
+                            surfToolArray[surfidx].AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            surfToolArray[surfidx].AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals); 
                         }
                         break;
                     case 3: // obverse side face, only add one of the triangles and adjust its vertices accordingly
@@ -675,36 +689,36 @@ public partial class ChunkManager : Node {
                         //if (invCornerSlope) uvTriangle1 = new Godot.Vector2[] { uvC, uvB, uvA };
                         if (regularSlope || invCornerSlope) {
                             uvTriangle1 = new Godot.Vector2[] { uvC, uvB, uvA };
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            surfToolArray[surfidx].AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
                         }
                         break;
                     case 4: // facing -z, front, corner slopes only add one triangle, else normal
                         if (regularSlope) {
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            surfToolArray[surfidx].AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            surfToolArray[surfidx].AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
                         }
-                        else if (invCornerSlope) _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                        else if (invCornerSlope) surfToolArray[surfidx].AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
                         break;
                     case 5:
                         if (regularSlope || invCornerSlope) {
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            surfToolArray[surfidx].AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            surfToolArray[surfidx].AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
                         }
                         if (cornerSlope) {
                             triangle1 = new Godot.Vector3[] {verts[1], verts[2], verts[3]};
                             uvTriangle1 = new Godot.Vector2[] { uvC, uvB, uvA };
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            surfToolArray[surfidx].AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
                         }
                         break;
                     default: // bottom face is always drawn, corner slopes only have 1 triangle
                         if (cornerSlope)
                         {
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            surfToolArray[surfidx].AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
                         }
                         else
                         {
-                            _st.AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
-                            _st.AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
+                            surfToolArray[surfidx].AddTriangleFan(triangle1, uvTriangle1, colors: metadata, normals: normals);
+                            surfToolArray[surfidx].AddTriangleFan(triangle2, uvTriangle2, colors: metadata, normals: normals);
                         }
                         break;
                 }
@@ -712,15 +726,13 @@ public partial class ChunkManager : Node {
         }
         #endregion
 
-        grassTopSurfaceTool.Index();
-        var a1 = _st.Commit();
-        var a2 = _st2.Commit();
-        var a3 = grassTopSurfaceTool.Commit();
-        
-        var surfaces = new ArrayMesh[3];
-        surfaces[ChunkMeshData.CHUNK_SURFACE] = a1;
-        surfaces[ChunkMeshData.LAVA_SURFACE] = a2;
-        surfaces[ChunkMeshData.GRASS_SURFACE] = a3;
+        // index grass surface
+        surfToolArray[ChunkMeshData.GRASS_SURFACE].Index();        
+        var surfaces = new ArrayMesh[ChunkMeshData.ALL_SURFACES];
+        surfaces[ChunkMeshData.CHUNK_SURFACE] = surfToolArray[ChunkMeshData.CHUNK_SURFACE].Commit();
+        surfaces[ChunkMeshData.LAVA_SURFACE] = surfToolArray[ChunkMeshData.LAVA_SURFACE].Commit();
+        surfaces[ChunkMeshData.GRASS_SURFACE] = surfToolArray[ChunkMeshData.GRASS_SURFACE].Commit();
+        surfaces[ChunkMeshData.GOLD_SURFACE] = surfToolArray[ChunkMeshData.GOLD_SURFACE].Commit();
 
         return new ChunkMeshData(surfaces);
     }

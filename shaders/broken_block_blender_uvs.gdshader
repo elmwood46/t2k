@@ -25,33 +25,37 @@ uniform int _damage_data;
 
 #include "res://shaders/chunk_block_damage_func.gdshaderinc"
 
-vec3 Boxmesh_UV_To_Voxel_UV(vec2 box_uv) {
-	//vec3 normal = NORMAL;
-	// assume boxmesh has 3x2 uv layout
-	float facex = min(box_uv.x,0.999999f)*3.0;
-	float facey = min(box_uv.y,0.999999f)*2.0;
-
-	// get idx of uv wrapped around boxmesh
-	int idx = int(floor(facex) + floor(facey)*3.0);
-	// transform the boxmesh index to the indexing style of our blocks
-	// (looking from +y, boxmesh starts at +z and wraps around anticlockwise (so +z, +x, -z, -x) before doing top then bottom)
-	// (our blocks go bottom,top,left,right,back,front)
-	switch (idx) {
-		case 0: idx = 5; break;
-		case 1: idx = 3; break;
-		case 2: idx = 4; break;
-		case 3: idx = 2; break;
-		case 4: idx = 1; break;
-		case 5: default : idx = 0; break;
-	};
+vec3 Blender_UV_To_Voxel_UV(vec2 box_uv) {
+	// top face by default
+	int idx = 1;
+	
+	if (box_uv.x<0.375) // bottom face
+	{
+		idx = 0;
+	}
+	else if (box_uv.x < 0.625) // central face
+	{
+		int yidx = int(floor((box_uv.y-0.0001)/0.25));
+		switch (yidx) {
+			case 0: idx = 2; break;
+			case 1: idx = 5; break;
+			case 2: idx = 3; break;
+			case 3: idx = 4; break;
+			default: idx = 1; break;
+		}
+	}
+	else // top face
+	{
+		idx = 1;
+	}
 
 	float texture_frame = float(_tex_array_idx[idx]);
 
-	return vec3(fract(facex),fract(facey),texture_frame);
+	return vec3(box_uv,texture_frame);
 }
 
 void fragment() {
-	vec3 coords = Boxmesh_UV_To_Voxel_UV(UV);
+	vec3 coords = Blender_UV_To_Voxel_UV(UV);
 	vec2 uv = coords.xy;
 	vec4 basecol = texture(_albedo,coords);
 	float damageratio = 1.0;
@@ -59,22 +63,22 @@ void fragment() {
 	bool firedamage = (_damage_data>>6 & 1) == 1;
 	bool aciddamage = (_damage_data>>7 & 1) == 1;
 
+	const float normscale = 1.0;
+	const float uvscale = 1.0; //0.2 for default box mesh 
+
 	vec3[2] res = ApplyDamageShaders(
-		uv,
+		UV,
 		UV,
 		damageratio,
 		physicaldamage,
 		firedamage,
 		aciddamage,
 		basecol.rgb,
-		false
+		true
 		);
 
 	ALBEDO = res[0];
 	EMISSION = res[1];
-
-	const float normscale = 3.0;
-	const float uvscale = 0.2; //0.2 for default box mesh 
 
 	if (aciddamage || physicaldamage)
 	{

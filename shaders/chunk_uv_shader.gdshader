@@ -10,6 +10,10 @@ uniform sampler2D _noise;
 uniform sampler2D _spot_noise;
 uniform sampler2D _acidcurvetex;
 uniform sampler2D _firecurvetex;
+uniform sampler2D _damage_pulse_curvetex;
+
+group_uniforms Damage_Pulse;
+uniform bool _pulse_when_damaged;
 
 group_uniforms Colours;
 uniform vec4 _bordercol : source_color;
@@ -17,6 +21,8 @@ uniform vec4 _emissioncol : source_color;
 uniform vec3 _burncol : source_color;
 uniform vec3 _acidcol : source_color;
 uniform vec3 _acidedge : source_color;
+uniform vec3 _pulsecol : source_color;
+
 
 group_uniforms Debug;
 uniform bool ENABLE_DEBUG = false;
@@ -76,5 +82,14 @@ void fragment() {
 			SPECULAR = mix(0.0,1.0,damageratio);
 			ROUGHNESS = texture(_roughness, 0.15*uv).r * normscale;
 		}
+	}
+	
+	if (_pulse_when_damaged)
+	{
+		float damageTick = fract(TIME*(1.0+3.0*damageratio));
+		float pulseRatio = texture(_damage_pulse_curvetex, vec2(damageTick,0.0)).r;
+		pulseRatio = mix(0, pulseRatio, damageratio);
+		ALBEDO = mix(ALBEDO, _pulsecol,pulseRatio);
+		EMISSION += pulseRatio*0.2;
 	}
 }

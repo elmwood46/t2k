@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 [Tool]
@@ -78,14 +79,25 @@ public partial class Chunk : StaticBody3D
     #endregion
 
     #region broken block particles
-    public void SpawnBlockParticles(Dictionary<Vector3I, int> positionsAndBlockInfo) {
+    public void SpawnBlockParticles(Dictionary<Vector3I, int> positionsAndBlockInfo, Vector3I playerBlockPosition) {
         if (positionsAndBlockInfo.Count == 0) return;
 
         // the particles spawned first have more detail and more expensive collisions\
         var blocks_being_destroyed = positionsAndBlockInfo.Count;
         var blockCount = 0;
         var partcount = GetTree().GetNodesInGroup("RigidBreak").Count;
-        foreach (var (pos, block_info) in positionsAndBlockInfo) {
+
+        var sortedList = positionsAndBlockInfo.Keys.ToList();
+
+        sortedList.Sort((a, b) =>
+        {
+            float distanceA = a.DistanceSquaredTo(playerBlockPosition);
+            float distanceB = b.DistanceSquaredTo(playerBlockPosition);
+            return distanceA.CompareTo(distanceB);
+        });
+
+        foreach (var pos in sortedList) {
+            var block_info = positionsAndBlockInfo[pos];
             var is_block_above = ChunkManager.IsBlockAbove(ChunkPosition,pos);
             var particles = _rigid_break.Instantiate() as RigidBreak;
 
@@ -110,8 +122,8 @@ public partial class Chunk : StaticBody3D
             // add 1/BLockDivisions to center the particles in the grid (since pos is floored block position)
             // and subtract a small amount to avoid z-fighting with top particles as well as keep them in their block
             // also subtract one to go from padded chunk pos to actual chunk pos
-            particles.Scale = Vector3.One*0.999f*ChunkManager.VOXEL_SCALE;
-            particles.Position = pos - Vector3.One /*-Vector3.One + Vector3.One*(1/particles.BlockDivisions)*/ - Vector3.Up*0.0625f; 
+            particles.Scale = Vector3.One*0.99f;
+            particles.Position = pos - Vector3.One; /*-Vector3.One + Vector3.One*(1/particles.BlockDivisions) - Vector3.Up*0.0625f;*/ 
 
             if (is_block_above) particles.NoUpwardsImpulse = true;
 

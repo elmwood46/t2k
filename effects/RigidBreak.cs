@@ -14,21 +14,29 @@ public partial class RigidBreak : Node3D
 
     private Node3D _BrokenScene { get; set; }
 
-    public static readonly PackedScene CubeBroken20Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/fracture-cube-20.tscn");
+
     public static readonly PackedScene CubeBroken3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/fracture-cube-3.tscn");
-    public static readonly PackedScene CubeBroken4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/fracture-cube-4.tscn");
-    public static readonly PackedScene CubeBroken5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/fracture-cube-5.tscn");
-    public static readonly PackedScene SideSlope3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-sideslope-3.tscn");
-    public static readonly PackedScene SideSlope4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-sideslope-4.tscn");
-    public static readonly PackedScene SideSlope5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-sideslope-5.tscn");
+    public static readonly PackedScene CubeBroken4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/fracture-cube-3.tscn");
+    public static readonly PackedScene CubeBroken5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/fracture-cube-4.tscn");
+
+    // the UV scale for fracture cube 20 is wrong btw, probably because it was the first one I made
+    public static readonly PackedScene CubeBroken20Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/fracture-cube-20.tscn");
+
+    // HACK set all the sideslopes to 20 because it's the only one where the UVs aren't fucky
+    // this was due to some blender exporting error no doubt
+    // it may be simply because there were more subdivisions the UVs didnt get sliced up weirdly
+    // uvs arent broken for other fragments, just the sideslopes 3-5
+    public static readonly PackedScene SideSlope3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-sideslope-20-3-alt.tscn");
+    public static readonly PackedScene SideSlope4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-sideslope-20-3-alt.tscn");
+    public static readonly PackedScene SideSlope5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-sideslope-20-3-alt.tscn");
     public static readonly PackedScene SideSlope20Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-sideslope-20.tscn");
     public static readonly PackedScene InvCorner3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-invcorner-3.tscn");
-    public static readonly PackedScene InvCorner4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-invcorner-4.tscn");
-    public static readonly PackedScene InvCorner5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-invcorner-5.tscn");
+    public static readonly PackedScene InvCorner4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-invcorner-3.tscn");
+    public static readonly PackedScene InvCorner5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-invcorner-4.tscn");
     public static readonly PackedScene InvCorner20Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-invcorner-20.tscn");
     public static readonly PackedScene Corner3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-corner-3.tscn");
-    public static readonly PackedScene Corner4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-corner-4.tscn");
-    public static readonly PackedScene Corner5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-corner-5.tscn");
+    public static readonly PackedScene Corner4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-corner-3.tscn");
+    public static readonly PackedScene Corner5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-corner-4.tscn");
     public static readonly PackedScene Corner20Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-corner-20.tscn");
 
     // order the scenes the same as the BlockSlopeType enum

@@ -23,9 +23,9 @@ public partial class ChunkManager : Node
 	[Export] public PackedScene ChunkScene { get; set; }
 	// this is the number of chunks rendered in the x and z direction, centered around the player
 	// the "render distance"
-	private int _width = 12;
+	private int _width = 14;
 	private int _y_width = 4;
-	public const float VOXEL_SCALE = 1.0f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
+	public const float VOXEL_SCALE = 0.5f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
 
 	// a chunk 32x32x32 blocks, and 1 integer for each block holds packed block data
 	// block type from 0-15, damage bits go from 16-23, slope bits go from 24-31
@@ -311,14 +311,15 @@ public partial class ChunkManager : Node
 			}
 		}
 
+
 		// update chunk tile positions and spawn rigid bodies
-		foreach (var (chunkTilePosition, particle_spawn_list) in chunkDestroyedBlocksLists)
+		foreach ((var chunkTilePosition, var particle_spawn_list) in chunkDestroyedBlocksLists)
 		{
 			lock (Instance._positionToChunk)
 			{
 				if (Instance._positionToChunk.TryGetValue(chunkTilePosition, out var chunk))
 				{
-					chunk.SpawnBlockParticles(particle_spawn_list);
+					chunk.SpawnBlockParticles(particle_spawn_list, playerBlockPosition);
 				}
 			}
 		}

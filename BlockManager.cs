@@ -50,10 +50,12 @@ public partial class BlockManager : Node
 	public static BlockManager Instance { get; private set; }
 
 	public ShaderMaterial ChunkMaterial { get; private set; }
+	public ShaderMaterial ChunkMaterialDamagePulse { get; private set; }
 
 	public ShaderMaterial BrokenBlockShader { get; private set; }
 
 	public ShaderMaterial LavaShader { get; private set; }
+
 
 	public Texture2DArray TextureArray = new();
 
@@ -64,6 +66,7 @@ public partial class BlockManager : Node
 	private static readonly NoiseTexture2D spotnoise = GD.Load("res://shaders/flame_spotnoise.tres") as NoiseTexture2D;
 	private static readonly Color fire_border_colour = new(1.0f,1.0f,1.0f,1.0f);
 	private static readonly Color fire_emission_colour = new(0.96f,0.35f,0.0f,1.0f);
+	private static readonly Color pulse_colour = new(0.96f,0.88f,0.0f,0.43f);
 	private static readonly Color burned_colour = new(0.2f, 0.09f, 0.03f,1.0f);
 	private static readonly Color acid_colour = new(0, 0.9490196078f, 0);
 	private static readonly Color acid_edge = new(0.0509803922f, 0.6980392157f, 0.0470588235f);
@@ -138,14 +141,20 @@ public partial class BlockManager : Node
 		ChunkMaterial.SetShaderParameter("_normalmap", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_NORM.jpg"));
 		ChunkMaterial.SetShaderParameter("_acidcurvetex", GD.Load("res://shaders/acid_damage_curve.tres"));
 		ChunkMaterial.SetShaderParameter("_firecurvetex", GD.Load("res://shaders/fire_damage_curve.tres"));
+		ChunkMaterial.SetShaderParameter("_damage_pulse_curvetex", GD.Load("res://shaders/pulse_damage_curve.tres"));
 		ChunkMaterial.SetShaderParameter("_cracks_texture", GD.Load("res://BlockTextures/textureExperiment/cracks_tex.bmp"));
 		ChunkMaterial.SetShaderParameter("_noise", noise);
 		ChunkMaterial.SetShaderParameter("_spot_noise", spotnoise);
 		ChunkMaterial.SetShaderParameter("_bordercol", fire_border_colour);
 		ChunkMaterial.SetShaderParameter("_emissioncol", fire_emission_colour);
+		ChunkMaterial.SetShaderParameter("_pulsecol", pulse_colour);
 		ChunkMaterial.SetShaderParameter("_burncol", burned_colour);
 		ChunkMaterial.SetShaderParameter("_acidcol", acid_colour);
 		ChunkMaterial.SetShaderParameter("_acidedge", acid_edge);
+		ChunkMaterial.SetShaderParameter("_pulse_when_damaged", false);
+
+		ChunkMaterialDamagePulse = ChunkMaterial.Duplicate() as ShaderMaterial;
+		ChunkMaterialDamagePulse.SetShaderParameter("_pulse_when_damaged", true);
 
 		BrokenBlockShader = ResourceLoader.Load("res://shaders/RIGID_BREAK_SHADER.tres") as ShaderMaterial;
 		BrokenBlockShader.SetShaderParameter("_albedo", TextureArray);
