@@ -5,61 +5,47 @@ using System.Linq;
 using MessagePack;
 using MessagePack.Resolvers;
 
-public partial class Save
+public interface IReloadable
 {
+    void LoadSavedState();
+}
 
-    static Save()
+[MessagePackObject]
+public class ArrayMeshData
+{
+    [Key(0)] public List<Dictionary<int, object>> Surfaces { get; set; } = new();
+}
+
+[MessagePackObject]
+public class SaveData
+{
+    [Key(0)] public Vector3 PlayerPosition { get; set; }
+    [Key(1)] public float HeadYRotation { get; set; }
+    [Key(2)] public Dictionary<Vector3I, int[]> SavedBlocks { get; set; } = new();
+    [Key(3)] public Dictionary<Vector3I,Dictionary<int,Dictionary<int, List<float>>>> SavedMeshes { get; set; } = new();
+    [Key(4)] public HashSet<uint> GeneratedChunks { get; set; } = new();
+}
+
+public class SaveState
+{
+    static SaveState()
     {
         // Configure MessagePack to use the standard resolver with private member support
         var options = MessagePackSerializerOptions.Standard
             .WithResolver(CompositeResolver.Create(
                 NativeGuidResolver.Instance,
-                StandardResolverAllowPrivate.Instance));  // Use StandardResolverAllowPrivate
+                StandardResolverAllowPrivate.Instance,
+                ContractlessStandardResolver.Instance // add support for common types
+            ));  // Use StandardResolverAllowPrivate
 
         MessagePackSerializer.DefaultOptions = options;
     }
 
-    [MessagePackObject]
-    public class SaveData
-    {
-        [Key(0)] public (float,float,float) PlayerPosition { get; set; }
-        [Key(1)] public float HeadRotation { get; set; }
-        [Key(2)] public Dictionary<(int,int), int[]> Chunks { get; set; } = new Dictionary<(int,int),int[]>();
-        [Key(3)] public HashSet<(int,int)> allChunks { get; set; } = new HashSet<(int,int)>();
-    }
+    private SaveData _data = new();
 
-    public SaveData Data { get; private set; }
+    public const string SAVE_PATH = "user://save.dat";
 
-    public const string SavePath = "user://save.dat";
-
-    private int ParseBlockToInt(Block block) {
-        return BlockManager.BlockID("Air");/*
-        if (block == BlockManager.Instance.Air) return (int)BID.Air;
-        else if (block == BlockManager.Instance.Stone) return (int)BID.Stone;
-        else if (block == BlockManager.Instance.Dirt) return (int)BID.Dirt;
-        else if (block == BlockManager.Instance.Grass) return (int)BID.Grass;
-        else if (block == BlockManager.Instance.Leaves) return (int)BID.Leaves;
-        else if (block == BlockManager.Instance.Trunk) return (int)BID.Trunk;
-        else if (block == BlockManager.Instance.Brick) return (int)BID.Brick;
-        else if (block == BlockManager.Instance.Lava) return (int)BID.Lava;
-        else throw new Exception($"Block {block} not found in BlockManager.");*/
-    }
-
-    private Block ParseIntToBlock(int i) {
-        return new Block();
-        /*
-        if (i == (int)BID.Air) return BlockManager.Instance.Air;
-        else if (i == (int)BID.Stone) return BlockManager.Instance.Stone;
-        else if (i == (int)BID.Dirt) return BlockManager.Instance.Dirt;
-        else if (i == (int)BID.Grass) return BlockManager.Instance.Grass;
-        else if (i == (int)BID.Leaves) return BlockManager.Instance.Leaves;
-        else if (i == (int)BID.Trunk) return BlockManager.Instance.Trunk;
-        else if (i == (int)BID.Brick) return BlockManager.Instance.Brick;
-        else if (i == (int)BID.Lava) return BlockManager.Instance.Lava;
-        else throw new Exception($"Block {i} not found in BlockManager.");*/
-    }
-
-    public bool SaveFileExists() => Godot.FileAccess.FileExists(SavePath);
+    public static bool SaveFileExists() => FileAccess.FileExists(SAVE_PATH);
 
     // Write save data using binary serialization
     public void WriteSave()
@@ -67,18 +53,25 @@ public partial class Save
         try
         {
             // Serialize the SaveData object to a byte array using MessagePack
-            byte[] saveData = MessagePackSerializer.Serialize(Data);
+            byte[] saveData = MessagePackSerializer.Serialize(_data);
 
-            // Write the byte array to the file
-            System.IO.File.WriteAllBytes(ProjectSettings.GlobalizePath(SavePath), saveData);
+            try
+            {
+                // Write the byte array to the file
+                System.IO.File.WriteAllBytes(ProjectSettings.GlobalizePath(SAVE_PATH), saveData);
 
-            GD.Print($"File saved successfully at: {ProjectSettings.GlobalizePath(SavePath)}");
-
+                GD.Print($"SAVEDATA File saved successfully at: {ProjectSettings.GlobalizePath(SAVE_PATH)}");
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"Failed to write save data to file: {e.Message}");
+                GD.PrintErr($"Stack trace: {e.StackTrace}");
+            }
         }
         catch (Exception e)
         {
-            GD.PrintErr($"Failed to save data: {e.Message}");
-
+            GD.PrintErr($"Failed to serialize save data: {e.Message}");
+            GD.PrintErr($"Stack trace: {e.StackTrace}");
         }
     }
 
@@ -87,23 +80,21 @@ public partial class Save
     {
         if (!SaveFileExists())
         {
-            GD.Print("Called LoadSave(): No save file found. Setting up new save data.");
-
-
-            Data = new SaveData();
+            GD.Print("Called LoadSave(): No save file found.");
+            
             return null;
         }
 
         try
         {
             // Read the byte array from the file
-            byte[] saveData = System.IO.File.ReadAllBytes(ProjectSettings.GlobalizePath(SavePath));
+            byte[] saveData = System.IO.File.ReadAllBytes(ProjectSettings.GlobalizePath(SAVE_PATH));
 
             // Deserialize the byte array to a SaveData object using MessagePack
-            Data = MessagePackSerializer.Deserialize<SaveData>(saveData);
+            _data = MessagePackSerializer.Deserialize<SaveData>(saveData);
 
-            GD.Print("Data loaded successfully.");
-            return Data;
+            GD.Print("_data loaded successfully.");
+            return _data;
         }
         catch (Exception e)
         {
@@ -112,41 +103,28 @@ public partial class Save
         }
     }
 
-    public void SavePlayerInformation(Vector3 position, float headRotation)
+    public void CachePlayerInformation()
     {
-        Data.PlayerPosition = (position.X, position.Y, position.Z);
-        Data.HeadRotation = headRotation;
-    }
-
-    public void SaveChunk(Vector2I position, Block[,,] blocks)
-    {
-        int[] blockList = blocks.Cast<Block>().Select(block => ParseBlockToInt(block)).ToArray();
-        Data.Chunks[(position.X,position.Y)] = blockList;
-        //GD.Print($"Stored chunk at {position}");
-
-    }
-
-    public Block[,,] LoadChunkBlocksOrNull(Vector2I position)
-    {
-        // get block ids for the chunk
-        if (!Data.Chunks.ContainsKey((position.X,position.Y))) return null;
-        int[] bids = Data.Chunks[(position.X,position.Y)];
-
-        // fill 3d array with blocks
-        Block[,,] blocks = new Block[ChunkManager.Dimensions.X, ChunkManager.Dimensions.Y, ChunkManager.Dimensions.Z];
-        for (int x = 0; x < ChunkManager.Dimensions.X; x++)
+        if (Player.Instance == null)
         {
-            for (int y = 0; y < ChunkManager.Dimensions.Y; y++)
-            {
-                for (int z = 0; z < ChunkManager.Dimensions.Z; z++)
-                {
-                    int index = x * ChunkManager.Dimensions.Y * ChunkManager.Dimensions.Z + y * ChunkManager.Dimensions.Z + z;
-                    blocks[x, y, z] = ParseIntToBlock(bids[index]);
-                }
-            }
+            GD.PrintErr("Player instance is null. Cannot cache player information.");
+            return;
         }
-
-        //GD.Print($"Loaded chunk at {position}");
-        return blocks;
+        _data.PlayerPosition = Player.Instance.GlobalPosition;
+        _data.HeadYRotation = Player.Instance.Head.Rotation.Y;
     }
+
+    public void CacheWorldData()
+    {
+        _data.SavedBlocks = ChunkManager.Instance.BLOCKCACHE.ToDictionary(pair => pair.Key, pair => pair.Value);
+        _data.SavedMeshes = ChunkManager.Instance.MESHCACHE.ToDictionary(pair => pair.Key, pair => pair.Value.SerializeSurfaceData());
+        _data.GeneratedChunks = CantorPairing.GetSet();
+    }
+
+    public Vector3 GetCachedPlayerPosition() => _data.PlayerPosition;
+    public float GetCachedHeadYRotation() => _data.HeadYRotation;
+    public Dictionary<Vector3I, int[]> GetCachedBlocks() => _data.SavedBlocks;
+    public Dictionary<Vector3I,Dictionary<int,Dictionary<int, List<float>>>> GetCachedMeshes() => _data.SavedMeshes;
+    public HashSet<uint> GetCachedCantorPairings() => _data.GeneratedChunks;
+    public SaveData GetCachedData() => _data;
 }

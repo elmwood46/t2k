@@ -31,12 +31,7 @@ public partial class TestPlayer : CharacterBody3D
         Camera.LookAt(GlobalPosition, Vector3.Up);
         
 		Instance = this;
-		if (SaveManager.Instance.SaveFileExists())
-		{
-			this.Position = SaveManager.Instance.LoadPlayerPosition();
-		} else {
-			this.Position = new Vector3(0, 10, 0);
-		}
+        this.Position = new Vector3(0, 10, 0);
 
 		Input.MouseMode = Input.MouseModeEnum.Captured;
 	}

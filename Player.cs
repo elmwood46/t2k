@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-public partial class Player : CharacterBody3D
+public partial class Player : CharacterBody3D, IReloadable
 {
 	[Export] public Node3D Head { get; set; }
 	[Export] public Node3D HeadCrouched { get; set; }
@@ -70,6 +70,7 @@ public partial class Player : CharacterBody3D
 
 	public static Player Instance { get; private set; }
 
+	#region ready
 	public override void _Ready()
 	{
 		Instance = this;
@@ -85,16 +86,10 @@ public partial class Player : CharacterBody3D
 		UpdateViewAndWorldModelMasks();
 		
         _movespeed = WalkSpeed;
-		if (SaveManager.Instance.SaveFileExists())
-		{
-			//Position = SaveManager.Instance.LoadPlayerPosition();
-			Head.RotateY(SaveManager.Instance.State.Data.HeadRotation);
-		} else {
-			//Position = new Vector3(0, 10, 0);
-		}
-
 		Input.MouseMode = Input.MouseModeEnum.Captured;
 	}
+	#endregion
+	#region input
 	public override void _Input(InputEvent @event)
 	{
 		if (@event is InputEventMouseMotion)
@@ -111,10 +106,20 @@ public partial class Player : CharacterBody3D
 			}
 		}
 	}
+	#endregion
+	#region load saved state
+	public void LoadSavedState()
+	{
+		GlobalPosition = SaveManager.GetCachedPlayerPosition();
+		Head.Rotation = Vector3.Zero;
+		Head.RotateY(SaveManager.GetCachedHeadYRotation());
+	}
+	#endregion
 
+	#region process input
 	public override void _Process(double delta)
 	{
-
+		#region interactable
 		// interact with objects
 		InteractableComponent interactable = GetInteractableComponentAtShapecast();
 		if (interactable != null) {
@@ -123,13 +128,15 @@ public partial class Player : CharacterBody3D
 				interactable.Interact();
 			}
 		}
+		#endregion
+
+		#region debug
 
 		// HACK debug restart
 		if (Input.IsActionJustReleased("DebugRestart"))
 		{
 			GetTree().ReloadCurrentScene();
 		}
-
 		//HACK toggle wireframe
 		if (Input.IsActionJustReleased("ToggleWireframe")) {
 			if (GetViewport().DebugDraw==Viewport.DebugDrawEnum.Wireframe) {
@@ -140,7 +147,25 @@ public partial class Player : CharacterBody3D
 				GetViewport().DebugDraw=Viewport.DebugDrawEnum.Wireframe;
 			}
 		}
-		
+		#endregion
+
+
+		#region saving and loading
+		if (Input.IsActionJustReleased("Reload"))
+		{
+			SaveManager.LoadSavedState();
+		}
+
+		// SAVING GAME 
+        // store position and rotation in save manager
+		if (Input.IsActionJustReleased("SaveGame"))
+		{
+			SaveManager.SaveToFile();
+		}
+		#endregion
+
+
+		#region block break
 		// do cube fragmenting stuff
 		if (RayCast.IsColliding() && RayCast.GetCollider() is RigidBody3D rb) {
 			if (Input.IsActionJustPressed("Break")) {
@@ -235,21 +260,14 @@ public partial class Player : CharacterBody3D
 		{
 			BlockHighlight.Visible = false;
 		}
+		#endregion
 
 		AlignWorldModelToLookDir();
 		UpdateRecoil((float) delta);
 		UpdateAnimations();
-
-        // SAVING GAME 
-        // store position and rotation in save manager
-		SaveManager.Instance.State.Data.PlayerPosition = (Position.X, Position.Y, Position.Z);
-		SaveManager.Instance.State.Data.HeadRotation = this.Head.Rotation.Y;
-		if (Input.IsActionJustPressed("SaveGame"))
-		{
-			SaveManager.Instance.SaveGame();
-		}
 	}
-
+	#endregion
+	#region physics process
 	public override void _PhysicsProcess(double delta)
 	{
 		if (IsOnFloor() || _snappedToStairsLastFrame)
@@ -335,5 +353,5 @@ public partial class Player : CharacterBody3D
         float target_fov = BASE_FOV + FOV_CHANGE * velocity_clamped;
         Camera.Fov = Mathf.Lerp(Camera.Fov, target_fov, 0.25f);
 	}
-
+	#endregion
 }

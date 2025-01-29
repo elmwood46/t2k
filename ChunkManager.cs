@@ -7,7 +7,7 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 
-public partial class ChunkManager : Node
+public partial class ChunkManager : Node, IReloadable
 {
 	public static ChunkManager Instance { get; private set; }
 	private Dictionary<Chunk, Vector3I> _chunkToPosition = new();
@@ -23,7 +23,7 @@ public partial class ChunkManager : Node
 	[Export] public PackedScene ChunkScene { get; set; }
 	// this is the number of chunks rendered in the x and z direction, centered around the player
 	// the "render distance"
-	private int _width = 14;
+	private int _width = 4;
 	private int _y_width = 4;
 	public const float VOXEL_SCALE = 0.5f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
 
@@ -71,7 +71,7 @@ public partial class ChunkManager : Node
 		InitChunks();
 	}
 
-	public async void InitChunks()
+public async void InitChunks()
 	{
 		//Vector2I playerChunk;
 		//playerChunk = !SaveManager.Instance.SaveFileExists() ? new Vector2I(0,0)
@@ -88,22 +88,13 @@ public partial class ChunkManager : Node
 				{
 					var index = x + (z * _width) + (y * _width * _width);
 					var pos = new Vector3I(x - halfWidth, y, z - halfWidth);
-					//var blocks = Generate(pos);
-					//var mesh = BuildChunkMesh(blocks);
-					//var hull = mesh.CreateTrimeshShape();
-					//UpdateChunkBlockData(pos);
-					//UpdateChunkMeshData(pos);
 					var chunk = _chunks[index];
-
 					tasks.Add(Task.Run(() =>
 					{
 						SetBlocksAndDeferMeshUpdates(pos);
 						chunk.CallDeferred(nameof(chunk.SetChunkPosition),pos);
 						return Task.CompletedTask;
 					}));
-
-					//await Task.Run(()=>{SetBlocksAndDeferMeshUpdates(pos);});
-					//chunk.UpdateChunkPosition(pos);
 				}
 			}
 		}
@@ -126,9 +117,77 @@ public partial class ChunkManager : Node
 
 		Instance.DeferredMeshUpdates.Clear();
 
+
 		if (!Engine.IsEditorHint())
 		{
 			new Thread(new ThreadStart(ThreadProcess)).Start();
+		}
+	}
+	#endregion
+
+	#region load saved state
+	public async void LoadSavedState()
+	{
+		// waits until all deferred mesh updates are done
+		// which signals that no chunks are currently being updated
+		await Task.Run(async () =>
+		{
+			while (!Instance.DeferredMeshUpdates.IsEmpty)
+			{
+				await Task.Yield(); // Yield to allow other tasks to run while waiting
+			}
+		});
+
+		// this is to ensure that the thread doesnt try update the chunks while we're loading the saved state
+		// because it accesses playerposition before doing anything else, locking player position stops the thread from running
+		lock(Instance._playerPositionLock)
+		{
+			// repopulate the dictionaries with saved data
+			CantorPairing.Clear();
+			Instance.BLOCKCACHE.Clear();
+			Instance.MESHCACHE.Clear();
+			var blocks = SaveManager.GetCachedBlocks();
+			var meshes = SaveManager.GetCachedMeshes();
+			var pairings = SaveManager.GetCachedCantorPairings();
+			foreach (var cantor in pairings) CantorPairing.Add(cantor);
+			foreach (var (pos, blockData) in blocks) Instance.BLOCKCACHE[pos] = blockData;
+			foreach (var (pos, meshData) in meshes) Instance.MESHCACHE[pos] = meshData;
+
+			// update all chunks
+			int playerChunkX, playerChunkZ;
+			playerChunkX = Mathf.FloorToInt(Instance._playerPosition.X / (Dimensions.X*VOXEL_SCALE));
+			playerChunkZ = Mathf.FloorToInt(Instance._playerPosition.Z / (Dimensions.Z*VOXEL_SCALE));
+
+			foreach (var chunk in _chunks)
+			{
+				var chunkPosition = _chunkToPosition[chunk];
+
+				var chunkX = chunkPosition.X;
+				var chunkZ = chunkPosition.Z;
+
+				var newChunkX = Mathf.PosMod(chunkX - playerChunkX + _width / 2, _width) + playerChunkX - _width / 2;
+				var newChunkZ = Mathf.PosMod(chunkZ - playerChunkZ + _width / 2, _width) + playerChunkZ - _width / 2;
+
+				if (newChunkX != chunkX || newChunkZ != chunkZ)
+				{
+					var newPosition = new Vector3I(newChunkX, chunkPosition.Y, newChunkZ);
+
+					lock(Instance._positionToChunk)
+					{
+						if (Instance._positionToChunk.ContainsKey(chunkPosition))
+						{
+							Instance._positionToChunk.Remove(chunkPosition);
+						}
+						Instance._chunkToPosition[chunk] = newPosition;
+						Instance._positionToChunk[newPosition] = chunk;
+					}			
+					chunk.CallDeferred(nameof(chunk.UpdateChunkPosition),newPosition);
+				}
+				else
+				{
+					chunk.CallDeferred(nameof(chunk.Update));
+				}
+			}
 		}
 	}
 	#endregion

@@ -22,11 +22,29 @@ public partial class CantorPairing : Node
         }
     }
 
+    public static HashSet<uint> GetSet() => Instance._used;
+
+    public static void Clear()
+    {
+        lock (Instance._lock)
+        {
+            Instance._used.Clear();
+        }
+    }
+
     public static void Add(Vector3I coords)
     {
         lock (Instance._lock)
         {
             Instance._used.Add(GetCantorNumber(coords));
+        }
+    }
+
+    public static void Add(uint cantor)
+    {
+        lock (Instance._lock)
+        {
+            Instance._used.Add(cantor);
         }
     }
 
