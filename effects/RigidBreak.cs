@@ -14,7 +14,7 @@ public partial class RigidBreak : Node3D
 
     private Node3D _BrokenScene { get; set; }
 
-
+/*
     public static readonly PackedScene CubeBroken3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/fracture-cube-3.tscn");
     public static readonly PackedScene CubeBroken4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/fracture-cube-3.tscn");
     public static readonly PackedScene CubeBroken5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/fracture-cube-4.tscn");
@@ -38,6 +38,31 @@ public partial class RigidBreak : Node3D
     public static readonly PackedScene Corner4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-corner-3.tscn");
     public static readonly PackedScene Corner5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-corner-4.tscn");
     public static readonly PackedScene Corner20Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-corner-20.tscn");
+*/
+
+    public static readonly PackedScene CubeBroken3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-BOXES.tscn");
+    public static readonly PackedScene CubeBroken4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-3X3-BOXES.tscn");
+    public static readonly PackedScene CubeBroken5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-4X4-BOXES.tscn");
+
+    // the UV scale for fracture cube 20 is wrong btw, probably because it was the first one I made
+    public static readonly PackedScene CubeBroken20Fragments = CubeBroken5Fragments;
+
+    // HACK set all the sideslopes to 20 because it's the only one where the UVs aren't fucky
+    // this was due to some blender exporting error no doubt
+    // it may be simply because there were more subdivisions the UVs didnt get sliced up weirdly
+    // uvs arent broken for other fragments, just the sideslopes 3-5
+    public static readonly PackedScene SideSlope3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-SIDESLOPE.tscn");
+    public static readonly PackedScene SideSlope4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-3X3-SIDESLOPE.tscn");
+    public static readonly PackedScene SideSlope5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-4X4-SIDESLOPE.tscn");
+    public static readonly PackedScene SideSlope20Fragments = SideSlope5Fragments;
+    public static readonly PackedScene InvCorner3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-INVCORNER.tscn");
+    public static readonly PackedScene InvCorner4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-3X3-INVCORNER.tscn");
+    public static readonly PackedScene InvCorner5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-4X4-INVCORNER.tscn");
+    public static readonly PackedScene InvCorner20Fragments = InvCorner5Fragments;
+    public static readonly PackedScene Corner3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-CORNER.tscn");
+    public static readonly PackedScene Corner4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-3X3-CORNER.tscn");
+    public static readonly PackedScene Corner5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-4X4-CORNER.tscn");
+    public static readonly PackedScene Corner20Fragments = Corner5Fragments;
 
     // order the scenes the same as the BlockSlopeType enum
     // 0-3 are cube fragments, 4-7 are side slope fragments, 8-11 are corner fragments, 12-15 are inverted corner fragments
@@ -95,10 +120,16 @@ public partial class RigidBreak : Node3D
         var slopeRotation = ChunkManager.GetBlockSlopeRotation(BlockInfo);
 
         _BrokenScene = FragmentScenes[Mathf.Clamp(BlockDivisions-2,0,3)+slopeType*4].Instantiate() as Node3D;
-        if (blockIsSloped) {
+        // HACK here is the position code for fragment blocks as opposed to boxmesh blocks
+        /*if (blockIsSloped) {
             _BrokenScene.RotateY(slopeRotation);
             _BrokenScene.Position += new Vector3(0.5f,0.0f,0.5f);
-        }
+        }*/
+
+        // boxmesh blocks are centered around 0,0,0 instead of 0,0.5,0
+        if (blockIsSloped) _BrokenScene.RotateY(slopeRotation);
+        _BrokenScene.Position += new Vector3(0.5f,0.5f,0.5f);
+        
         AddChild(_BrokenScene);
 
         t = new Timer

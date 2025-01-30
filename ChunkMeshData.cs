@@ -10,6 +10,7 @@ public class ChunkMeshData {
     public const byte ALL_SURFACES = 4; // must be equal to the number of surfaces
 
     private readonly ArrayMesh[] _surfaces = new ArrayMesh[ALL_SURFACES + 1];
+    private readonly ConcavePolygonShape3D _trimesh_shape;
 
     public ChunkMeshData(Dictionary<int,Dictionary<int,List<float>>> serializedData) {
         _surfaces[CHUNK_SURFACE] = new ArrayMesh();
@@ -19,18 +20,19 @@ public class ChunkMeshData {
         _surfaces[ALL_SURFACES] = new ArrayMesh();
         ReconstructFromSerializedData(serializedData);
         UnifySurfaces();
+        _trimesh_shape = _surfaces[ALL_SURFACES].GetSurfaceCount() > 0 ?_surfaces[ALL_SURFACES].CreateTrimeshShape() : new ConcavePolygonShape3D();
     }
 
-    public ChunkMeshData(ArrayMesh[] input_surfaces) {
+    public ChunkMeshData(ArrayMesh[] input_surfaces, bool noCollisions = false) {
         _surfaces[CHUNK_SURFACE] = input_surfaces[CHUNK_SURFACE];
         _surfaces[GRASS_SURFACE] = input_surfaces[GRASS_SURFACE];
         _surfaces[LAVA_SURFACE] = input_surfaces[LAVA_SURFACE];
         _surfaces[GOLD_SURFACE] = input_surfaces[GOLD_SURFACE];
         _surfaces[ALL_SURFACES] = new ArrayMesh();
         UnifySurfaces();
+        if (noCollisions) _trimesh_shape = null;
+        else _trimesh_shape = _surfaces[ALL_SURFACES].GetSurfaceCount() > 0 ?_surfaces[ALL_SURFACES].CreateTrimeshShape() : new ConcavePolygonShape3D();
     }
-
-
 
     public bool HasSurfaceOfType(byte type) {
         return _surfaces[type]?.GetSurfaceCount() > 0;
@@ -42,6 +44,10 @@ public class ChunkMeshData {
 
     public ArrayMesh GetUnifiedSurfaces() {
         return _surfaces[ALL_SURFACES];
+    }
+
+    public ConcavePolygonShape3D GetTrimeshShape() {
+        return _trimesh_shape;
     }
 
     private void UnifySurfaces() {

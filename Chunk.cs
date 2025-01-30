@@ -57,13 +57,19 @@ public partial class Chunk : StaticBody3D
 
     #region update
 
-	public void Update() {
+	async public void Update() {
         var meshdata = ChunkManager.TryGetChunkMeshData(ChunkPosition);
         if (meshdata == null) return;
 
-        MeshInstance.Mesh = meshdata.GetUnifiedSurfaces();
-        CollisionShape.Shape = MeshInstance.Mesh.CreateTrimeshShape();
-        
+        ArrayMesh meshdata_mesh = new();
+        ConcavePolygonShape3D meshdata_shape = new();
+        await Task.Run(() => {
+            meshdata_mesh = meshdata.GetUnifiedSurfaces();
+            meshdata_shape = meshdata.GetTrimeshShape();
+        });
+        MeshInstance.Mesh = meshdata_mesh;
+        CollisionShape.Shape = meshdata_shape;
+
         CallDeferred(MethodName.UpdateRigidBodies);
 	}
 
@@ -79,7 +85,7 @@ public partial class Chunk : StaticBody3D
     #endregion
 
     #region broken block particles
-    public void SpawnBlockParticles(Dictionary<Vector3I, int> positionsAndBlockInfo, Vector3I playerBlockPosition) {
+    public void SpawnBlockParticles(Godot.Collections.Dictionary<Vector3I, int> positionsAndBlockInfo, Vector3I playerBlockPosition) {
         if (positionsAndBlockInfo.Count == 0) return;
 
         // the particles spawned first have more detail and more expensive collisions\
@@ -104,6 +110,11 @@ public partial class Chunk : StaticBody3D
             // optimize particles to avoid framerate drop
             particles.MaskHalves = true;
             particles.BlockDivisions=2;
+
+            var mult = 3.0f;
+            if (partcount > 10*mult || blockCount > 5*mult)
+                particles.DecayTime = Mathf.Max(0.5f, 2.0f - partcount * 0.1f);
+
             /*
             if (!ChunkManager.Instance.DeferredMeshUpdates.IsEmpty) {
                 particles.MaskHalves = true;
@@ -118,21 +129,19 @@ public partial class Chunk : StaticBody3D
                 if (partcount + blockCount > 2) particles.MaskHalves = true;
             }
 
-            var mult = 3.0f;
-            if (partcount > 10*mult || blockCount > 5*mult)
-                particles.DecayTime = Mathf.Max(0.5f, 2.0f - partcount * 0.1f);
             particles.HalfStrength = partcount > 5*mult  || blockCount > 5*mult;        
             particles.MaskHalves = partcount >= 8 || blockCount > 6*mult;       
             particles.QuarterStrength = partcount > 10*mult || blockCount > 8*mult;
             particles.EighthStrength = partcount > 12*mult || blockCount > 9*mult;
             particles.OnlyOneParticle = partcount > 14*mult || blockCount > 11*mult;
+            */ 
 
             // set particles position
             // add 1/BLockDivisions to center the particles in the grid (since pos is floored block position)
             // and subtract a small amount to avoid z-fighting with top particles as well as keep them in their block
             // also subtract one to go from padded chunk pos to actual chunk pos
-            particles.Scale = Vector3.One*0.99f;
-            particles.Position = pos - Vector3.One; /*-Vector3.One + Vector3.One*(1/particles.BlockDivisions) - Vector3.Up*0.0625f;*/ 
+            //particles.Scale = Vector3.One*ChunkManager.VOXEL_SCALE*0.99f;
+            particles.Position = pos - Vector3.One; //-Vector3.One + Vector3.One*(1/particles.BlockDivisions) - Vector3.Up*0.0625f;
 
             if (is_block_above) particles.NoUpwardsImpulse = true;
 
@@ -143,7 +152,6 @@ public partial class Chunk : StaticBody3D
             particles.StartingImpulse = impulse_pos;
             blockCount++;
         }
-
     }
     #endregion
 

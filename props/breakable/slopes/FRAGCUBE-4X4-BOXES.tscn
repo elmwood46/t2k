@@ -1,0 +1,584 @@
+[gd_scene load_steps=3 format=3 uid="uid://cl87juwxxnucj"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_r4n23"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_fllb2"]
+
+[node name="Fragcube-4x4-boxes" type="Node3D"]
+transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0, 0)
+
+[node name="RigidBody3D" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.52859, -1.5, -1.48988)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D2" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -1.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D2"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D2"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D3" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, -1.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D3"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D3"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D4" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, -1.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D4"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D4"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D5" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, -1.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D5"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D5"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D6" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -1.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D6"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D6"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D7" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, -1.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D7"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D7"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D8" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, -1.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D8"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D8"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D9" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, -1.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D9"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D9"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D10" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -1.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D10"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D10"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D11" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, -1.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D11"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D11"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D12" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, -1.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D12"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D12"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D13" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, -1.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D13"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D13"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D14" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -1.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D14"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D14"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D15" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, -1.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D15"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D15"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D16" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, -1.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D16"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D16"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D17" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, -0.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D17"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D17"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D18" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -0.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D18"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D18"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D19" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, -0.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D19"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D19"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D20" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, -0.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D20"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D20"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D21" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, -0.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D21"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D21"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D22" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -0.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D22"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D22"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D23" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, -0.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D23"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D23"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D24" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, -0.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D24"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D24"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D25" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, -0.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D25"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D25"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D26" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -0.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D26"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D26"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D27" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, -0.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D27"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D27"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D28" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, -0.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D28"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D28"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D29" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, -0.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D29"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D29"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D30" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, -0.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D30"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D30"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D31" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, -0.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D31"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D31"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D32" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, -0.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D32"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D32"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D33" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D33"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D33"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D34" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D34"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D34"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D35" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D35"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D35"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D36" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D36"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D36"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D37" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D37"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D37"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D38" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D38"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D38"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D39" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D39"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D39"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D40" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D40"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D40"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D41" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D41"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D41"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D42" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D42"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D42"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D43" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D43"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D43"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D44" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D44"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D44"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D45" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D45"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D45"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D46" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D46"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D46"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D47" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D47"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D47"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D48" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D48"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D48"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D49" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D49"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D49"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D50" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 1.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D50"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D50"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D51" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D51"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D51"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D52" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 1.5, -1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D52"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D52"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D53" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D53"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D53"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D54" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 1.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D54"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D54"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D55" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D55"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D55"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D56" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 1.5, -0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D56"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D56"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D57" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D57"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D57"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D58" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 1.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D58"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D58"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D59" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D59"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D59"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D60" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 1.5, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D60"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D60"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D61" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D61"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D61"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D62" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 1.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D62"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D62"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D63" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D63"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D63"]
+shape = SubResource("BoxShape3D_fllb2")
+
+[node name="RigidBody3D64" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 1.5, 1.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D64"]
+mesh = SubResource("BoxMesh_r4n23")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D64"]
+shape = SubResource("BoxShape3D_fllb2")

@@ -6,7 +6,7 @@ using System.Numerics;
 
 public partial class ChunkManager : Node {
 
-	public const int CHUNK_SIZE = 30; // the chunk size is 62, padded chunk size is 64, // must match size in compute shader
+	public const int CHUNK_SIZE = 30; // the max chunk size is 30, padded chunk size is 32, // must match size in compute shader
     public const int CHUNKSQ = CHUNK_SIZE*CHUNK_SIZE;
     public const int CSP = CHUNK_SIZE+2;
     public const int CSP2 = CSP*CSP; // squared padded chunk size
@@ -21,7 +21,6 @@ public partial class ChunkManager : Node {
 	public static readonly Noise CELLNOISE = new FastNoiseLite(){NoiseType = FastNoiseLite.NoiseTypeEnum.Cellular
 	, CellularDistanceFunction = FastNoiseLite.CellularDistanceFunctionEnum.Manhattan,
 	FractalType = FastNoiseLite.FractalTypeEnum.Fbm, CellularReturnType = FastNoiseLite.CellularReturnTypeEnum.CellValue};
-
 	
 	public static readonly Noise WHITENOISE = new FastNoiseLite(){
 		NoiseType = FastNoiseLite.NoiseTypeEnum.Cellular,
@@ -734,7 +733,24 @@ public partial class ChunkManager : Node {
         surfaces[ChunkMeshData.GRASS_SURFACE] = surfToolArray[ChunkMeshData.GRASS_SURFACE].Commit();
         surfaces[ChunkMeshData.GOLD_SURFACE] = surfToolArray[ChunkMeshData.GOLD_SURFACE].Commit();
 
-        return new ChunkMeshData(surfaces);
+        int playerChunkX, playerChunkZ; //playerChunkY
+
+        //Godot.Vector3 player_glob_pos;
+
+        lock(Instance._playerPositionLock)
+        {
+            playerChunkX = Mathf.FloorToInt(Instance._playerPosition.X / (Dimensions.X*VOXEL_SCALE));
+            //playerChunkY = Mathf.FloorToInt(_playerPosition.Y / (Dimensions.Y*SUBCHUNKS*Chunk.VOXEL_SCALE));
+            //playerChunkY = Mathf.FloorToInt((_playerPosition.Y+Chunk.VOXEL_SCALE*Dimensions.Y*SUBCHUNKS*0.5f) / (Dimensions.Y*SUBCHUNKS*Chunk.VOXEL_SCALE));
+            playerChunkZ = Mathf.FloorToInt(Instance._playerPosition.Z / (Dimensions.Z*VOXEL_SCALE));
+            
+            //player_glob_pos = _playerPosition;
+        }
+
+        // TODO set mesh LOD collision shapes
+        var noCollisions = false;//new Vector3I(chunk_index.X,0,chunk_index.Z).DistanceSquaredTo(new Vector3I(playerChunkX, 0, playerChunkZ)) > (8*8);
+
+        return new ChunkMeshData(surfaces, noCollisions);
     }
     #endregion
 

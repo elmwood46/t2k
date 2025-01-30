@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 public partial class ChunkManager : Node, IReloadable
 {
 	public static ChunkManager Instance { get; private set; }
-	private Dictionary<Chunk, Vector3I> _chunkToPosition = new();
-	private Dictionary<Vector3I, Chunk> _positionToChunk = new();
+	private ConcurrentDictionary<Chunk, Vector3I> _chunkToPosition = new();
+	private ConcurrentDictionary<Vector3I, Chunk> _positionToChunk = new();
 	public ConcurrentDictionary<Vector3I, int[]> BLOCKCACHE = new();
 	public ConcurrentDictionary<Vector3I, ChunkMeshData> MESHCACHE = new();
 
@@ -23,12 +23,11 @@ public partial class ChunkManager : Node, IReloadable
 	[Export] public PackedScene ChunkScene { get; set; }
 	// this is the number of chunks rendered in the x and z direction, centered around the player
 	// the "render distance"
-	const int _width = 4;
+	const int _width = 8;
 	const int _y_width = 4;
+	const int _width_sq = (1+_width/2)*(1+_width/2);
 
-	const int _halfwidth_sq = (1+_width/2)*(1+_width/2);
-
-	public const float VOXEL_SCALE = 0.5f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
+	public const float VOXEL_SCALE = 1.0f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
 
 	// a chunk 32x32x32 blocks, and 1 integer for each block holds packed block data
 	// block type from 0-15, damage bits go from 16-23, slope bits go from 24-31
@@ -175,15 +174,12 @@ public async void InitChunks()
 				{
 					var newPosition = new Vector3I(newChunkX, chunkPosition.Y, newChunkZ);
 
-					lock(Instance._positionToChunk)
-					{
-						if (Instance._positionToChunk.ContainsKey(chunkPosition))
-						{
-							Instance._positionToChunk.Remove(chunkPosition);
-						}
-						Instance._chunkToPosition[chunk] = newPosition;
-						Instance._positionToChunk[newPosition] = chunk;
-					}			
+
+
+					Instance._positionToChunk.TryRemove(chunkPosition, out _);
+					Instance._chunkToPosition[chunk] = newPosition;
+					Instance._positionToChunk[newPosition] = chunk;
+							
 					chunk.CallDeferred(nameof(chunk.UpdateChunkPosition),newPosition);
 				}
 				else
@@ -195,7 +191,7 @@ public async void InitChunks()
 	}
 	#endregion
 
-	#region change blocks
+	#region damage/set blocks
 
 	// DEBUG setting blocks, untested
 	public static void TrySetBlock(Vector3I globalPosition, int block_type)
@@ -208,11 +204,11 @@ public async void InitChunks()
 
 			Instance.BLOCKCACHE[chunkTilePosition] = _blocks;
 			Instance.MESHCACHE[chunkTilePosition] = BuildChunkMesh(chunkTilePosition);
-			lock (Instance._positionToChunk) {
-				if (Instance._positionToChunk.TryGetValue(chunkTilePosition, out var chunk)) {
-					chunk.CallDeferred(nameof(chunk.Update));
-				}
+
+			if (Instance._positionToChunk.TryGetValue(chunkTilePosition, out var chunk)) {
+				chunk.CallDeferred(nameof(chunk.Update));
 			}
+			
 		} else GD.Print($"Tried to SET block at global position {globalPosition} but block data was not found in dictionary.");
 	}
 
@@ -220,10 +216,11 @@ public async void InitChunks()
 	{
 		var chunkBlockMapping = new Dictionary<Vector3I, List<(Vector3I, int)>>();
 		var playerBlockPosition = new Vector3I();
-		var tasks = new List<Task>();
-		var chunkDestroyedBlocksLists = new Dictionary<Vector3I,Dictionary<Vector3I,int>>();
-		var updateNeighbourChunks = new HashSet<Vector3I>();
-		var slopeUpdateSet = new Dictionary<Vector3I,List<Vector3I>>();
+		var tasks = new ConcurrentDictionary<Task,int>();
+		var supertasks = new List<Task>();
+		var chunkDestroyedBlocksLists = new ConcurrentDictionary<Vector3I,Godot.Collections.Dictionary<Vector3I,int>>();
+		var updateNeighbourChunks = new ConcurrentDictionary<Vector3I,int>();
+		var slopeUpdateSet = new ConcurrentDictionary<Vector3I,List<Vector3I>>();
 
 		foreach (var (globalPosition, damage) in blockAndDamage)
 		{
@@ -249,142 +246,166 @@ public async void InitChunks()
 		// need to update neighbour chunks if a block is destroyed in this chunk, or else the neighbour mesh can be exposed
 		foreach (var (chunkTilePosition, blockList) in chunkBlockMapping)
 		{
-			// output dictionary of block positions where particles need to be spawned (for destroyed blocks) and textures for spawned particles
-			var _blocks = TryGetChunkBlockData(chunkTilePosition);
-			if (_blocks == null) continue;
+			supertasks.Add(Task.Run(()=>
+			{
+				var chunk_was_not_damaged = true;
+				var _blocks = TryGetChunkBlockData(chunkTilePosition);
 
-			// array of tuples with block global position as Item1 and damage as Item2
-			foreach ((var blockToDamage, var blockDamageAmount) in blockList)
-			{				
-				var block_idx = BlockIndex(blockToDamage);
-				var blockinfo = _blocks[block_idx];
+				// output dictionary of block positions where particles need to be spawned (for destroyed blocks) and textures for spawned particles
+				if (_blocks == null) return Task.CompletedTask;
 
-				//GD.Print("checking if block empty: ", BlockManager.BlockName(blockid));
+				// array of tuples with block global position as Item1 and damage as Item2
+				foreach ((var blockToDamage, var blockDamageAmount) in blockList)
+				{				
+					var block_idx = BlockIndex(blockToDamage);
+					var blockinfo = _blocks[block_idx];
 
-				if (IsBlockEmpty(blockinfo) || IsBlockInvincible(blockinfo)) continue; // don't damage air blocks or invincible blocks
+					//GD.Print("checking if block empty: ", BlockManager.BlockName(blockid));
+					if (IsBlockEmpty(blockinfo) || IsBlockInvincible(blockinfo)) continue; // don't damage air blocks or invincible blocks
 
-				// increase block damage percentage
-				var block_damaged = (float)GetBlockDamageInteger(blockinfo);
-				block_damaged += blockDamageAmount*GetBlockFragility(blockinfo);
-				var dam_rounded = Mathf.RoundToInt(block_damaged);
+					// increase block damage percentage
+					var block_damaged = (float)GetBlockDamageInteger(blockinfo);
+					block_damaged += blockDamageAmount*GetBlockFragility(blockinfo);
+					var dam_rounded = Mathf.RoundToInt(block_damaged);
+					if (dam_rounded > GetBlockDamageInteger(blockinfo)) chunk_was_not_damaged = false;
+					else continue;
 
-				// DEBUG add physical damage for all attacks
-				var packedDamageType = GetBlockDamageTypeFlag(blockinfo)|PackDamageFlag(BlockDamageType.Physical);
+					// DEBUG add physical damage for all attacks
+					var packedDamageType = GetBlockDamageTypeFlag(blockinfo)|PackDamageFlag(BlockDamageType.Physical);
 
-				if (dam_rounded >= BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD)
-				{
-					blockinfo = RepackDamageData(blockinfo, packedDamageType, BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD);
-
-					// go from padded chunk position to chunk position
-					if (!chunkDestroyedBlocksLists.TryGetValue(chunkTilePosition, out var particle_spawn_list))
+					if (dam_rounded >= BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD)
 					{
-						particle_spawn_list = new Dictionary<Vector3I, int>();
-						chunkDestroyedBlocksLists[chunkTilePosition] = particle_spawn_list;
-					}
-					particle_spawn_list[blockToDamage] = blockinfo;              
-					_blocks[block_idx] = 0;
-				}
-				else
-				{
-					_blocks[block_idx] = RepackDamageData(blockinfo, packedDamageType, dam_rounded);
-				}
-			}
+						blockinfo = RepackDamageData(blockinfo, packedDamageType, BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD);
 
-			TryUpdateOrGenerateChunkBlockData(chunkTilePosition,_blocks);
-
-			// update mesh and collision shape
-			// recalculate mesh slopes
-			if (chunkDestroyedBlocksLists.TryGetValue(chunkTilePosition, out var spawnList)) {
-				// collect neighbour positions for updating slopes at the border of destroyed blocks
-				foreach (var key in spawnList.Keys) {
-					foreach(var v in VECTOR_NEIGHBOUR_SET) { // add neighbour block to slope update list if it's not already in the list
-						var neighbour = key + v;
-
-						// update neighbourning chunks if a block was destroyed in this chunk (being in particle_spawn_lists means a block was destroyed)
-						// don't update neighbour chunk if chunkDestroyedBlocksLists already contains it, because it will be updated in a future iteration of this loop
-						var dx = neighbour.X > CHUNK_SIZE ? 1 : neighbour.X < 1 ? -1 : 0;
-						var dy = neighbour.Y > CHUNK_SIZE ? 1 : neighbour.Y < 1 ? -1 : 0;
-						var dz = neighbour.Z > CHUNK_SIZE ? 1 : neighbour.Z < 1 ? -1 : 0;
-						var delta = new Vector3I(dx,dy,dz);
-						if (dx!=0 || dy!=0 || dz!=0)
+						// go from padded chunk position to chunk position
+						if (!chunkDestroyedBlocksLists.TryGetValue(chunkTilePosition, out var particle_spawn_list))
 						{
-							updateNeighbourChunks.Add(chunkTilePosition + delta);
+							particle_spawn_list = new Godot.Collections.Dictionary<Vector3I, int>();
+							chunkDestroyedBlocksLists[chunkTilePosition] = particle_spawn_list;
 						}
+						particle_spawn_list[blockToDamage] = blockinfo;              
+						_blocks[block_idx] = 0;
+					}
+					else
+					{
+						_blocks[block_idx] = RepackDamageData(blockinfo, packedDamageType, dam_rounded);
+					}
+				}
+				if (chunk_was_not_damaged) return Task.CompletedTask;
 
-						if (spawnList.ContainsKey(neighbour)) continue;
-						if (playerBlockPosition == neighbour) continue;
-						if (BlockHasNeighbor(chunkTilePosition,key,v)) {
-							if (!slopeUpdateSet.TryGetValue(chunkTilePosition, out var set)) {
-								set = new();
-								slopeUpdateSet[chunkTilePosition] = set;
+				TryUpdateOrGenerateChunkBlockData(chunkTilePosition,_blocks);
+				Thread.Sleep(10);
+
+				// update mesh and collision shape
+				// recalculate mesh slopes
+				if (chunkDestroyedBlocksLists.TryGetValue(chunkTilePosition, out var spawnList)) {
+					// collect neighbour positions for updating slopes at the border of destroyed blocks
+					foreach (var key in spawnList.Keys) {
+						foreach(var v in VECTOR_NEIGHBOUR_SET) { // add neighbour block to slope update list if it's not already in the list
+							var neighbour = key + v;
+
+							// update neighbourning chunks if a block was destroyed in this chunk (being in particle_spawn_lists means a block was destroyed)
+							// don't update neighbour chunk if chunkDestroyedBlocksLists already contains it, because it will be updated in a future iteration of this loop
+							var dx = neighbour.X > CHUNK_SIZE ? 1 : neighbour.X < 1 ? -1 : 0;
+							var dy = neighbour.Y > CHUNK_SIZE ? 1 : neighbour.Y < 1 ? -1 : 0;
+							var dz = neighbour.Z > CHUNK_SIZE ? 1 : neighbour.Z < 1 ? -1 : 0;
+							var delta = new Vector3I(dx,dy,dz);
+							if (dx!=0 || dy!=0 || dz!=0)
+							{
+								updateNeighbourChunks.TryAdd(chunkTilePosition + delta,0);
 							}
-							slopeUpdateSet[chunkTilePosition].Add(neighbour);
+
+							if (spawnList.ContainsKey(neighbour)) continue;
+							if (playerBlockPosition == neighbour) continue;
+							if (BlockHasNeighbor(chunkTilePosition,key,v)) {
+								if (!slopeUpdateSet.TryGetValue(chunkTilePosition, out var set)) {
+									set = new();
+									slopeUpdateSet[chunkTilePosition] = set;
+								}
+								slopeUpdateSet[chunkTilePosition].Add(neighbour);
+							}
 						}
 					}
 				}
 
-				tasks.Add(Task.Run(()=>
+				tasks.TryAdd(Task.Run(()=>
 				{
 					//GD.Print("updating single where blocks were broken ",chunkTilePosition);
 					Instance.BLOCKCACHE[chunkTilePosition] = _blocks;
+					Thread.Sleep(10);
 					return Task.CompletedTask;
-				}));
-			}
-			else
-			{
-				//updateNeighbourChunks.Add(chunkTilePosition);
-				
-				tasks.Add(Task.Run(()=>
-				{
-					//GD.Print("updating single chunk, no damages ",chunkTilePosition);
-					Instance.BLOCKCACHE[chunkTilePosition] = _blocks;
-					return Task.CompletedTask;
-				}));
-			}
-		}
-		await Task.WhenAll(tasks);
+				}),0);
 
-		// update any neighborning chunks which now have exposed faces, and were not included in previous pass
-		var neighboursToUpdate = updateNeighbourChunks.Where(chunkTilePosition => chunkTilePosition.Y < _y_width && chunkTilePosition.Y >= 0 && !chunkDestroyedBlocksLists.ContainsKey(chunkTilePosition));
-		foreach (var chunkTilePosition in neighboursToUpdate.Union(chunkBlockMapping.Keys))
-		{
-			tasks.Add(Task.Run(()=>
-			{
-				//GD.Print("updating neighbour chunk ",chunkTilePosition);
-				if (slopeUpdateSet.TryGetValue(chunkTilePosition, out var slopeUpdateList)) {
-					Instance.MESHCACHE[chunkTilePosition] = BuildChunkMesh(chunkTilePosition, slopeUpdateList);
-				} else {
-					Instance.MESHCACHE[chunkTilePosition] = BuildChunkMesh(chunkTilePosition);
-				}
-				//TryUpdateChunkMeshData(chunkTilePosition);
 				return Task.CompletedTask;
 			}));
 		}
-		await Task.WhenAll(tasks);
+		if (!tasks.IsEmpty) 
+			await Task.WhenAll(tasks.Keys);
+		if (supertasks.Count > 0)
+			await Task.WhenAll(supertasks);
 
+		// update any neighborning chunks which now have exposed faces, and were not included in previous pass
+		supertasks.Clear();
+		foreach (var chunkTilePosition in chunkBlockMapping.Keys)
+		{
+			supertasks.Add(Task.Run(()=>
+			{
+				ChunkMeshData meshData;
+				if (slopeUpdateSet.TryGetValue(chunkTilePosition, out var slopeUpdateList)) meshData = BuildChunkMesh(chunkTilePosition, slopeUpdateList);
+				else meshData = BuildChunkMesh(chunkTilePosition);
+				Instance.MESHCACHE.TryRemove(chunkTilePosition, out _);
+				Instance.MESHCACHE.TryAdd(chunkTilePosition, meshData);
+				Thread.Sleep(10);
+				return Task.CompletedTask;
+			}));
+		}
+		await Task.WhenAll(supertasks);
+		supertasks.Clear();
+		var neighboursToUpdate = updateNeighbourChunks.Keys.Where(chunkTilePosition => chunkTilePosition.Y < _y_width && chunkTilePosition.Y >= 0 && !chunkDestroyedBlocksLists.ContainsKey(chunkTilePosition));
+		foreach (var chunkTilePosition in neighboursToUpdate)
+		{
+			supertasks.Add(Task.Run(()=>
+			{
+				ChunkMeshData meshData;
+				if (slopeUpdateSet.TryGetValue(chunkTilePosition, out var slopeUpdateList)) meshData = BuildChunkMesh(chunkTilePosition, slopeUpdateList);
+				else meshData = BuildChunkMesh(chunkTilePosition);
+				Instance.MESHCACHE.TryRemove(chunkTilePosition, out _);
+				Instance.MESHCACHE.TryAdd(chunkTilePosition, meshData);
+				Thread.Sleep(10);
+				return Task.CompletedTask;
+			}));
+		}
+		await Task.WhenAll(supertasks);
+
+		supertasks.Clear();
 		foreach (var chunkTilePosition in neighboursToUpdate.Union(chunkBlockMapping.Keys))
 		{
-			lock (Instance._positionToChunk)
-			{
+			supertasks.Add(Task.Run(() => {
 				if (Instance._positionToChunk.TryGetValue(chunkTilePosition, out var chunk))
 				{
+					if (chunkDestroyedBlocksLists.TryGetValue(chunkTilePosition, out var particle_spawn_list)){
+						chunk.CallDeferred(nameof(chunk.SpawnBlockParticles),particle_spawn_list,playerBlockPosition);
+					}
 					chunk.CallDeferred(nameof(chunk.Update));
+					Thread.Sleep(1);
 				}
-			}
+				return Task.CompletedTask;
+			}));
 		}
-
 
 		// update chunk tile positions and spawn rigid bodies
+		/*
 		foreach ((var chunkTilePosition, var particle_spawn_list) in chunkDestroyedBlocksLists)
 		{
-			lock (Instance._positionToChunk)
+
+			if (Instance._positionToChunk.TryGetValue(chunkTilePosition, out var chunk))
 			{
-				if (Instance._positionToChunk.TryGetValue(chunkTilePosition, out var chunk))
-				{
-					chunk.SpawnBlockParticles(particle_spawn_list, playerBlockPosition);
-				}
+				chunk.SpawnBlockParticles(particle_spawn_list, playerBlockPosition);
 			}
-		}
+			
+		}*/
+
+		await Task.WhenAll(supertasks);
 	}
 	#endregion
 
@@ -410,7 +431,7 @@ public async void InitChunks()
 	{
 		if (Instance._positionToChunk.TryGetValue(previousPosition, out var chunkAtPosition) && chunkAtPosition == chunk)
 		{
-			Instance._positionToChunk.Remove(previousPosition);
+			Instance._positionToChunk.TryRemove(previousPosition, out _);
 		}
 
 		Instance._chunkToPosition[chunk] = currentPosition;
@@ -490,16 +511,6 @@ public async void InitChunks()
 				//player_glob_pos = _playerPosition;
 			}
 
-			List<Vector3I> removes = new();
-			foreach (var (pos, mesh) in Instance.MESHCACHE) {
-				if (new Vector3I(playerChunkX,0,playerChunkZ).DistanceSquaredTo(new Vector3I(pos.X,0,pos.Z)) >= _halfwidth_sq) {
-					removes.Add(pos);
-				}
-			}
-			foreach (var pos in removes) {
-				Instance.MESHCACHE.TryRemove(pos, out _);
-			}
-
 			var tasks = new List<Task>();
 			var newPositions = new Dictionary<Chunk,Vector3I>();
 			foreach (var chunk in _chunks)
@@ -517,15 +528,12 @@ public async void InitChunks()
 				if (newChunkX != chunkX || newChunkY != chunkY || newChunkZ != chunkZ)
 				{
 					var newPosition = new Vector3I(newChunkX, newChunkY, newChunkZ);
-					lock(_positionToChunk)
-					{
-						if (_positionToChunk.ContainsKey(chunkPosition))
-						{
-							_positionToChunk.Remove(chunkPosition);
-						}
-						_chunkToPosition[chunk] = newPosition;
-						_positionToChunk[newPosition] = chunk;
-					}
+
+
+					_positionToChunk.TryRemove(chunkPosition, out _);
+					_chunkToPosition[chunk] = newPosition;
+					_positionToChunk[newPosition] = chunk;
+				
 
 					newPositions.Add(chunk,newPosition);
 
@@ -537,12 +545,12 @@ public async void InitChunks()
 						}
 						return Task.CompletedTask;
 					}));
-
-					Thread.Sleep(3);
+					Thread.Sleep(10);
 				}
 				//Thread.Sleep(1);
 			}
-			await Task.WhenAll(tasks);
+			if (tasks.Count > 0)
+				await Task.WhenAll(tasks);
 
 			tasks.Clear();
 			foreach (var pos in Instance.DeferredMeshUpdates.Keys) {
@@ -550,25 +558,39 @@ public async void InitChunks()
 					TryUpdateChunkMeshData(pos);
 					return Task.CompletedTask;
 				}));
-				Thread.Sleep(3);
+				Thread.Sleep(10);
 			}
-			await Task.WhenAll(tasks);
+			if (tasks.Count > 0)
+				await Task.WhenAll(tasks);
 
 			// update chunks which need a deferred mesh update and aren't covered by the new positions
-			lock (_positionToChunk) {
-				foreach (var pos in  Instance.DeferredMeshUpdates.Keys.Except(newPositions.Values)) {
-					if (_positionToChunk.ContainsKey(pos)) {
-						_positionToChunk[pos].CallDeferred(nameof(Chunk.Update));
-						Thread.Sleep(10);
-					}
+			foreach (var pos in  Instance.DeferredMeshUpdates.Keys.Except(newPositions.Values)) {
+				if (_positionToChunk.ContainsKey(pos)) {
+					_positionToChunk[pos].CallDeferred(nameof(Chunk.Update));
+					Thread.Sleep(50);
 				}
 			}
+			
 			Instance.DeferredMeshUpdates.Clear();
 
 			// update chunks which changed position
 			foreach ((var chunk, var pos) in newPositions) {
 				chunk.CallDeferred(nameof(Chunk.UpdateChunkPosition), pos);
-				Thread.Sleep(10);
+				Thread.Sleep(50);
+			}
+
+			List<Vector3I> removes = new();
+			foreach (var (pos, mesh) in Instance.MESHCACHE)
+			{
+				if (new Vector3I(playerChunkX, 0, playerChunkZ).DistanceSquaredTo(new Vector3I(pos.X, 0, pos.Z)) > _width_sq)
+				{
+					GD.Print("added mesh to remove list");
+					removes.Add(pos);
+				}
+			}
+			foreach (var pos in removes)
+			{
+				Instance.MESHCACHE.TryRemove(pos, out _);
 			}
 
 			GD.Print("Mesh data cache size: ", Instance.MESHCACHE.Count);

@@ -156,7 +156,8 @@ public partial class BlockManager : Node
 		ChunkMaterialDamagePulse = ChunkMaterial.Duplicate() as ShaderMaterial;
 		ChunkMaterialDamagePulse.SetShaderParameter("_pulse_when_damaged", true);
 
-		BrokenBlockShader = ResourceLoader.Load("res://shaders/RIGID_BREAK_SHADER.tres") as ShaderMaterial;
+		//BrokenBlockShader = ResourceLoader.Load("res://shaders/RIGID_BREAK_SHADER.tres") as ShaderMaterial;
+		BrokenBlockShader = ResourceLoader.Load("res://shaders/broken_block_shader_wholeblock.tres") as ShaderMaterial;
 		BrokenBlockShader.SetShaderParameter("_albedo", TextureArray);
 		BrokenBlockShader.SetShaderParameter("_displacement", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_DISPa.png"));
 		BrokenBlockShader.SetShaderParameter("_roughness", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_ROUGH.jpg"));
