@@ -62,7 +62,7 @@ public partial class Chunk : StaticBody3D
         if (meshdata == null) return;
 
         MeshInstance.Mesh = meshdata.GetUnifiedSurfaces();
-        CollisionShape.Shape = meshdata.GetTrimeshShape();
+        CollisionShape.Shape = MeshInstance.Mesh.CreateTrimeshShape();
         
         CallDeferred(MethodName.UpdateRigidBodies);
 	}
@@ -101,12 +101,21 @@ public partial class Chunk : StaticBody3D
             var is_block_above = ChunkManager.IsBlockAbove(ChunkPosition,pos);
             var particles = _rigid_break.Instantiate() as RigidBreak;
 
-            // optimize particles to avoid framerate drop         
-            if (blocks_being_destroyed > 1) { // destroying more than one block at once
+            // optimize particles to avoid framerate drop
+            particles.MaskHalves = true;
+            particles.BlockDivisions=2;
+            /*
+            if (!ChunkManager.Instance.DeferredMeshUpdates.IsEmpty) {
+                particles.MaskHalves = true;
+            }
+            else if (blocks_being_destroyed > 1) { // destroying more than one block at once
                 if (partcount + blockCount < 1) particles.BlockDivisions = 3;
+                if (partcount + blockCount > 1) particles.MaskHalves = true;
             } else {
-                if (partcount + blockCount < 15) particles.BlockDivisions = 4;
-                if (partcount + blockCount < 5) particles.BlockDivisions = 20;
+                if (partcount + blockCount < 2) particles.BlockDivisions = 20;
+                else if (partcount + blockCount < 3) particles.BlockDivisions = 4;
+                else if (partcount + blockCount < 4) particles.BlockDivisions = 3;
+                if (partcount + blockCount > 2) particles.MaskHalves = true;
             }
 
             var mult = 3.0f;

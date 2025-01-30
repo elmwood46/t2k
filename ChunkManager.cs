@@ -23,8 +23,11 @@ public partial class ChunkManager : Node, IReloadable
 	[Export] public PackedScene ChunkScene { get; set; }
 	// this is the number of chunks rendered in the x and z direction, centered around the player
 	// the "render distance"
-	private int _width = 4;
-	private int _y_width = 4;
+	const int _width = 4;
+	const int _y_width = 4;
+
+	const int _halfwidth_sq = (1+_width/2)*(1+_width/2);
+
 	public const float VOXEL_SCALE = 0.5f; // chunk space is integer based, so this is the scale of each voxel (and the chunk) in world space
 
 	// a chunk 32x32x32 blocks, and 1 integer for each block holds packed block data
@@ -342,7 +345,7 @@ public async void InitChunks()
 		await Task.WhenAll(tasks);
 
 		// update any neighborning chunks which now have exposed faces, and were not included in previous pass
-		var neighboursToUpdate = updateNeighbourChunks.Where(chunkTilePosition => chunkTilePosition.Y < Instance._y_width && chunkTilePosition.Y >= 0 && !chunkDestroyedBlocksLists.ContainsKey(chunkTilePosition));
+		var neighboursToUpdate = updateNeighbourChunks.Where(chunkTilePosition => chunkTilePosition.Y < _y_width && chunkTilePosition.Y >= 0 && !chunkDestroyedBlocksLists.ContainsKey(chunkTilePosition));
 		foreach (var chunkTilePosition in neighboursToUpdate.Union(chunkBlockMapping.Keys))
 		{
 			tasks.Add(Task.Run(()=>
@@ -353,7 +356,7 @@ public async void InitChunks()
 				} else {
 					Instance.MESHCACHE[chunkTilePosition] = BuildChunkMesh(chunkTilePosition);
 				}
-				TryUpdateChunkMeshData(chunkTilePosition);
+				//TryUpdateChunkMeshData(chunkTilePosition);
 				return Task.CompletedTask;
 			}));
 		}
@@ -440,7 +443,8 @@ public async void InitChunks()
 	public static void TryUpdateChunkMeshData(Vector3I chunkPosition)
 	{
 		if (Instance.BLOCKCACHE.TryGetValue(chunkPosition, out _)) {
-			Instance.MESHCACHE[chunkPosition] = BuildChunkMesh(chunkPosition);
+			if (!Instance.MESHCACHE.ContainsKey(chunkPosition)) Instance.MESHCACHE.TryAdd(chunkPosition, BuildChunkMesh(chunkPosition));
+			else Instance.MESHCACHE[chunkPosition] = BuildChunkMesh(chunkPosition);
 		}
 	}
 
@@ -486,6 +490,16 @@ public async void InitChunks()
 				//player_glob_pos = _playerPosition;
 			}
 
+			List<Vector3I> removes = new();
+			foreach (var (pos, mesh) in Instance.MESHCACHE) {
+				if (new Vector3I(playerChunkX,0,playerChunkZ).DistanceSquaredTo(new Vector3I(pos.X,0,pos.Z)) >= _halfwidth_sq) {
+					removes.Add(pos);
+				}
+			}
+			foreach (var pos in removes) {
+				Instance.MESHCACHE.TryRemove(pos, out _);
+			}
+
 			var tasks = new List<Task>();
 			var newPositions = new Dictionary<Chunk,Vector3I>();
 			foreach (var chunk in _chunks)
@@ -518,6 +532,8 @@ public async void InitChunks()
 					tasks.Add(Task.Run(() => {
 						if (!CantorPairing.Contains(newPosition)) {
 							SetBlocksAndDeferMeshUpdates(newPosition);
+						} else if (!Instance.MESHCACHE.ContainsKey(newPosition)) {
+							TryUpdateChunkMeshData(newPosition);
 						}
 						return Task.CompletedTask;
 					}));
@@ -554,6 +570,8 @@ public async void InitChunks()
 				chunk.CallDeferred(nameof(Chunk.UpdateChunkPosition), pos);
 				Thread.Sleep(10);
 			}
+
+			GD.Print("Mesh data cache size: ", Instance.MESHCACHE.Count);
 
 			Thread.Sleep(100);
 		}

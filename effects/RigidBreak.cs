@@ -120,7 +120,8 @@ public partial class RigidBreak : Node3D
                 rb.SetCollisionLayerValue(1, false);
                 rb.SetCollisionLayerValue(2, true);
                 rb.SetCollisionMaskValue(1, true);
-                rb.SetCollisionMaskValue(2, true);
+                // HACK normally set collision to true, set false to test
+                rb.SetCollisionMaskValue(2, false);
                 if (MaskHalves) rb.SetCollisionMaskValue(2,false);
                 foreach (Node meshchild in rb.GetChildren())
                 {
