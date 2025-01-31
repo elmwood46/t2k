@@ -83,7 +83,7 @@ void fragment() {
 			ROUGHNESS = texture(_roughness, 0.15*uv).r * normscale;
 		}
 	}
-	
+
 	if (_pulse_when_damaged)
 	{
 		float damageTick = fract(TIME*(1.0+3.0*damageratio));

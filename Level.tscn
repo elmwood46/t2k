@@ -1,10 +1,11 @@
-[gd_scene load_steps=41 format=4 uid="uid://deyat72y3hmc1"]
+[gd_scene load_steps=42 format=4 uid="uid://deyat72y3hmc1"]
 
 [ext_resource type="Script" path="res://ChunkManager.cs" id="1_0ir14"]
 [ext_resource type="PackedScene" uid="uid://ds0scgvcsglbw" path="res://block_manager.tscn" id="1_jg7ov"]
 [ext_resource type="PackedScene" uid="uid://da5ax8fx3rml2" path="res://Chunk.tscn" id="1_peckr"]
 [ext_resource type="Environment" uid="uid://cki687xoyy0pq" path="res://sdfgi_env_haze.tres" id="1_qgltg"]
 [ext_resource type="Script" path="res://CantorPairing.cs" id="2_45n5k"]
+[ext_resource type="PackedScene" uid="uid://dsokuw8d266tl" path="res://props/stones/DestructibleRock.tscn" id="2_lgddl"]
 [ext_resource type="Script" path="res://FallingDeath.cs" id="8_k5ypu"]
 [ext_resource type="Script" path="res://SaveManager.cs" id="8_p2bgt"]
 [ext_resource type="PackedScene" uid="uid://c4rhmia48c1pu" path="res://props/breakable/DestructibleCube.tscn" id="8_u1wsw"]
@@ -253,8 +254,20 @@ ChunkScene = ExtResource("1_peckr")
 [node name="Ladder" parent="." groups=["ladder_area3d"] instance=ExtResource("16_usagc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10.522, -7)
 
+[node name="DestructibleRock" parent="." instance=ExtResource("2_lgddl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.602932, 18.5188, -7.23401)
+
 [node name="Player" parent="." instance=ExtResource("15_72lf1")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.37728, 18.5677, 2.932)
+
+[node name="BreakableCube" parent="." instance=ExtResource("8_u1wsw")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 16.2662, 0)
+
+[node name="BreakableCube3" parent="." instance=ExtResource("8_u1wsw")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 3, 21.5419, 0)
+
+[node name="BreakableCube4" parent="." instance=ExtResource("8_u1wsw")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 18.1561, 4)
 
 [node name="Node" type="Node" parent="."]
 script = ExtResource("8_p2bgt")
@@ -360,28 +373,8 @@ radius = 1.14806
 height = 0.807669
 material = SubResource("StandardMaterial3D_1dgdr")
 
-[node name="Node3D" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.04, 17.6244, 7.53483)
-
-[node name="BreakableCube" parent="Node3D" instance=ExtResource("8_u1wsw")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 14.3105, -3.5238)
-
-[node name="RigidBody3D2" type="RigidBody3D" parent="Node3D"]
-mass = 5.0
-physics_material_override = SubResource("PhysicsMaterial_p7qpi")
-script = SubResource("GDScript_mtdub")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Node3D/RigidBody3D2"]
-mesh = SubResource("CapsuleMesh_2e2d3")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Node3D/RigidBody3D2"]
-shape = SubResource("ConvexPolygonShape3D_ep2me")
-
-[node name="Label3D" type="Label3D" parent="Node3D/RigidBody3D2"]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.2278, 0)
-text = "HP: 100"
-font = SubResource("SystemFont_cibc6")
-font_size = 80
+[node name="BreakableCube2" parent="." instance=ExtResource("8_u1wsw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.04, 32, 4)
 
 [node name="Label" type="Label" parent="."]
 offset_left = 2.0
@@ -389,6 +382,24 @@ offset_top = 34.0
 offset_right = 42.0
 offset_bottom = 57.0
 text = "FPS: "
+
+[node name="RigidBody3D2" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.04, 17.6244, 7.53483)
+mass = 5.0
+physics_material_override = SubResource("PhysicsMaterial_p7qpi")
+script = SubResource("GDScript_mtdub")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RigidBody3D2"]
+mesh = SubResource("CapsuleMesh_2e2d3")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D2"]
+shape = SubResource("ConvexPolygonShape3D_ep2me")
+
+[node name="Label3D" type="Label3D" parent="RigidBody3D2"]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.2278, 0)
+text = "HP: 100"
+font = SubResource("SystemFont_cibc6")
+font_size = 80
 
 [node name="Falling Death" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -50, 0)

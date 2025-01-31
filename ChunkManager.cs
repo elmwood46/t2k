@@ -14,6 +14,7 @@ public partial class ChunkManager : Node, IReloadable
 	private ConcurrentDictionary<Vector3I, Chunk> _positionToChunk = new();
 	public ConcurrentDictionary<Vector3I, int[]> BLOCKCACHE = new();
 	public ConcurrentDictionary<Vector3I, ChunkMeshData> MESHCACHE = new();
+	public ConcurrentDictionary<Vector3I, List<DestructibleMeshData>> BREAKABLE_MESH_CACHE = new ();
 
 	// deferred mesh updates also holds a list of which blocks were filled in the chunk
 	// this allows for more efficient processing of sloped blocks when we mesh the chunk
@@ -24,7 +25,7 @@ public partial class ChunkManager : Node, IReloadable
 	[Export] public PackedScene ChunkScene { get; set; }
 	// this is the number of chunks rendered in the x and z direction, centered around the player
 	// the "render distance"
-	const int _width = 8;
+	const int _width = 3;
 	const int _y_width = 1;
 	const int _width_sq = (1+_width/2)*(1+_width/2);
 
@@ -569,7 +570,7 @@ public async void InitChunks()
 					}));
 					Thread.Sleep(10);
 				}
-			} 
+			}
 			await Task.WhenAll(tasks);
 
 			foreach (var pos in Instance.DeferredMeshUpdates.Keys.Except(_chunkToPosition.Values))
@@ -625,7 +626,7 @@ public async void InitChunks()
 				Instance.MESHCACHE.TryRemove(pos, out _);
 			}*/
 
-			GD.Print("Mesh data cache size: ", Instance.MESHCACHE.Count);
+			//GD.Print("Mesh data cache size: ", Instance.MESHCACHE.Count);
 
 			Thread.Sleep(100);
 		}

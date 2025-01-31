@@ -167,10 +167,10 @@ public partial class Player : CharacterBody3D, IReloadable
 
 		#region block break
 		// do cube fragmenting stuff
-		if (RayCast.IsColliding() && RayCast.GetCollider() is RigidBody3D rb) {
+		if (RayCast.IsColliding() && RayCast.GetCollider() is Node3D pb) {
 			if (Input.IsActionJustPressed("Break")) {
-				if (rb.GetParent().GetParent() is DestructibleMesh mesh)
-					mesh.Break(RayCast.GetCollisionPoint(),PushForce);
+				//if (pb.GetParent().GetParent() is DestructibleMesh mesh)
+					//mesh.Break(RayCast.GetCollisionPoint(),PushForce);
 			}
 		}
 

@@ -54,9 +54,9 @@ public partial class BlockManager : Node
 
 	public ShaderMaterial BrokenBlockShader { get; private set; }
 	public ShaderMaterial CellFractureBlockShader { get; private set; }
+	public ShaderMaterial DestructibleObjectShader { get; private set; }
 
 	public ShaderMaterial LavaShader { get; private set; }
-
 
 	public Texture2DArray TextureArray = new();
 
@@ -189,6 +189,21 @@ public partial class BlockManager : Node
 		CellFractureBlockShader.SetShaderParameter("_burncol", burned_colour);
 		CellFractureBlockShader.SetShaderParameter("_acidcol", acid_colour);
 		CellFractureBlockShader.SetShaderParameter("_acidedge", acid_edge);
+
+        DestructibleObjectShader = ResourceLoader.Load("res://shaders/breakable_object.tres") as ShaderMaterial;
+		DestructibleObjectShader.SetShaderParameter("_displacement", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_DISPa.png"));
+		DestructibleObjectShader.SetShaderParameter("_roughness", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_ROUGH.jpg"));
+		DestructibleObjectShader.SetShaderParameter("_normalmap", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_NORM.jpg"));
+		DestructibleObjectShader.SetShaderParameter("_acidcurvetex", GD.Load("res://shaders/acid_damage_curve.tres"));
+		DestructibleObjectShader.SetShaderParameter("_firecurvetex", GD.Load("res://shaders/fire_damage_curve.tres"));
+		DestructibleObjectShader.SetShaderParameter("_cracks_texture", GD.Load("res://BlockTextures/textureExperiment/cracks_tex.bmp"));
+		DestructibleObjectShader.SetShaderParameter("_noise", noise);
+		DestructibleObjectShader.SetShaderParameter("_spot_noise", spotnoise);
+		DestructibleObjectShader.SetShaderParameter("_bordercol", fire_border_colour);
+		DestructibleObjectShader.SetShaderParameter("_emissioncol", fire_emission_colour);
+		DestructibleObjectShader.SetShaderParameter("_burncol", burned_colour);
+		DestructibleObjectShader.SetShaderParameter("_acidcol", acid_colour);
+		DestructibleObjectShader.SetShaderParameter("_acidedge", acid_edge);
 
 		 // Save the image to a file (PNG format)
         /*

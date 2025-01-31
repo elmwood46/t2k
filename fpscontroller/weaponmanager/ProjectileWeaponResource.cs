@@ -14,7 +14,7 @@ public partial class ProjectileWeaponResource : WeaponResource
         WeaponManager.Instance.QueueAnim(ViewIdleAnim);
 
         var raycast = WeaponManager.Instance.BulletRaycast;
-        Vector2 recoil = WeaponManager.Instance.GetCurrentRecoil();
+        Vector2 recoil = WeaponManager.GetCurrentRecoil();
         raycast.Rotation = new Vector3(recoil.X, recoil.Y, raycast.Rotation.Z); 
         raycast.TargetPosition = ProjectileRelativeSpawnPos;
         raycast.ForceRaycastUpdate();

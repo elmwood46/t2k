@@ -1,0 +1,24 @@
+[gd_scene load_steps=5 format=3 uid="uid://dsokuw8d266tl"]
+
+[ext_resource type="Script" path="res://props/breakable/DestructibleMesh.cs" id="1_evltg"]
+[ext_resource type="PackedScene" uid="uid://dhu4sqgl8emk" path="res://props/stones/stone_small_001_whole.tscn" id="2_vxjx2"]
+[ext_resource type="PackedScene" uid="uid://ddjjgcthsrexa" path="res://props/stones/stone_small_001_broken.tscn" id="3_q4yj3"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_6hg6c"]
+radius = 0.1
+
+[node name="DestructibleRock" type="Area3D" node_paths=PackedStringArray("IntactScene", "BrokenScene")]
+script = ExtResource("1_evltg")
+IntactPacked = ExtResource("2_vxjx2")
+BrokenPacked = ExtResource("3_q4yj3")
+IntactScene = NodePath("stone_small_001_whole")
+BrokenScene = NodePath("stone_small_001_broken")
+
+[node name="stone_small_001_whole" parent="." instance=ExtResource("2_vxjx2")]
+
+[node name="stone_small_001_broken" parent="." instance=ExtResource("3_q4yj3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0201585, 0, 0)
+visible = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_6hg6c")

@@ -74,7 +74,7 @@ void fragment() {
 	EMISSION = res[1];
 
 	const float normscale = 3.0;
-	const float uvscale = 0.2; //0.2 for default box mesh 
+	const float uvscale = 0.2; //0.2 for default box mesh
 
 	if (aciddamage || physicaldamage)
 	{

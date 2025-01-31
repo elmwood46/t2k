@@ -122,7 +122,7 @@ public partial class WeaponManager : Node3D
 		}
 	}
 
-	public Vector2 GetCurrentRecoil() {
+	public static Vector2 GetCurrentRecoil() {
 		return Player.Instance.GetCurrentRecoil();
 	}
 

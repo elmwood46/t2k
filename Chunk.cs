@@ -4,6 +4,58 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+
+public partial class DestructibleMeshData : Resource {
+    public readonly Transform3D Transform;
+    public readonly float Health;
+    public readonly float MaxHealth;
+    public readonly PackedScene IntactPacked;
+    public readonly PackedScene BrokenPacked;
+    public Transform3D IntactTransform;
+
+    public DestructibleMeshData(DestructibleMesh mesh)
+    {
+        Transform = mesh.Transform;
+        Health = mesh.Health;
+        MaxHealth = mesh.MaxHealth;
+        IntactPacked = mesh.IntactPacked;
+        BrokenPacked = mesh.BrokenPacked;
+        IntactTransform = ((Node3D)mesh.IntactScene.GetChild(0)).Transform;
+    }
+
+    public DestructibleMeshData(
+        Transform3D transform,
+        float health,
+        float maxhealth,
+        PackedScene intact_scene,
+        PackedScene broken_scene,
+        Transform3D intact_transform
+        )
+    {
+        Transform = transform;
+        Health = health;
+        MaxHealth = maxhealth;
+        IntactPacked = intact_scene;
+        BrokenPacked = broken_scene;
+        IntactTransform = intact_transform;
+    }
+}
+
+public class ChunkInstanceData
+{
+    private readonly List<DestructibleMesh> _destructibleMeshes;
+
+    public List<DestructibleMesh> GetDestructibleMeshes()
+    {
+        return _destructibleMeshes;
+    }
+
+    public void AddDestructibleMesh(DestructibleMesh mesh)
+    {
+        _destructibleMeshes.Add(mesh);
+    }
+}
+
 [Tool]
 public partial class Chunk : StaticBody3D
 {
@@ -12,8 +64,6 @@ public partial class Chunk : StaticBody3D
 	[Export] public MeshInstance3D MeshInstance { get; set; }
 
     //[Export] public Grass[] GrassMultiMeshArray {get; set;}
-
-    private static readonly PackedScene _block_break_particles = GD.Load<PackedScene>("res://effects/break_block.tscn");
 
     private static readonly PackedScene _rigid_break = GD.Load<PackedScene>("res://effects/rigid_break2.tscn");
 
@@ -33,22 +83,68 @@ public partial class Chunk : StaticBody3D
 	public override void _Ready() {
 		Scale = new Vector3(ChunkManager.VOXEL_SCALE, ChunkManager.VOXEL_SCALE, ChunkManager.VOXEL_SCALE);
         _chunk_area.AddChild(_chunk_bounding_box);
+        _chunk_area.SetCollisionLayerValue(1, true);
+        _chunk_area.SetCollisionLayerValue(2, true);
+        _chunk_area.SetCollisionMaskValue(1, true);
+        _chunk_area.SetCollisionMaskValue(2, true);
         AddChild(_chunk_area);
 	}
 
     #region set chunk pos
 	public void SetChunkPosition(Vector3I position)
 	{
+        SaveLocalChunkDataAndFree(ChunkPosition);
 		ChunkManager.UpdateChunkPosition(this, position, ChunkPosition);
 		ChunkPosition = position;
         var newpos = new Vector3(
             ChunkManager.VOXEL_SCALE * ChunkPosition.X * ChunkManager.Dimensions.X,
             ChunkManager.VOXEL_SCALE * ChunkPosition.Y * ChunkManager.Dimensions.Y * ChunkManager.SUBCHUNKS,
             ChunkManager.VOXEL_SCALE * ChunkPosition.Z * ChunkManager.Dimensions.Z);
-        CallDeferred(Node3D.MethodName.SetGlobalPosition, newpos);
+        CallDeferred(MethodName.SetGlobalPositionAndLoadData, newpos, ChunkPosition);
 	}
 
+    public void SaveLocalChunkDataAndFree(Vector3I chunkpos)
+    {
+        var saved_breakable = new List<DestructibleMeshData>();
+        foreach (var child in _chunk_area.GetOverlappingBodies())
+        {
+            if (child.GetParent().GetParent() is DestructibleMesh d)
+            {
+                GD.Print("saving: ",  _chunk_area.GetOverlappingAreas());
+                var data = new DestructibleMeshData(d);
+                saved_breakable.Add(data);
+                d.QueueFree();
+            }
+        }
+        ChunkManager.Instance.BREAKABLE_MESH_CACHE.TryRemove(chunkpos, out _);
+        ChunkManager.Instance.BREAKABLE_MESH_CACHE.TryAdd(chunkpos, saved_breakable);
+    }
+
+    public void SetGlobalPositionAndLoadData(Vector3 newpos, Vector3I newchunkpos)
+    {
+        SetGlobalPosition(newpos);
+        if (!ChunkManager.Instance.BREAKABLE_MESH_CACHE.TryGetValue(newchunkpos, out var saved_breakable)) return;
+        foreach (DestructibleMeshData data in saved_breakable)
+        {
+            var mesh = new DestructibleMesh
+            {
+                Transform = data.Transform,
+                BrokenPacked = data.BrokenPacked,
+                IntactPacked = data.IntactPacked,
+                BrokenScene = data.BrokenPacked.Instantiate() as Node3D,
+                IntactScene = data.IntactPacked.Instantiate() as Node3D,
+                Health = data.Health,
+                MaxHealth = data.MaxHealth
+            };
+            mesh.AddChild(mesh.BrokenScene);
+            mesh.AddChild(mesh.IntactScene);
+            ((PhysicsBody3D)mesh.IntactScene.GetChild(0)).Transform = data.IntactTransform;
+            AddSibling(mesh);
+        }
+    }
+
     public void UpdateChunkPosition(Vector3I position) {
+
         SetChunkPosition(position);
         Update();
     }

@@ -145,7 +145,7 @@ public partial class WeaponResource : Resource
         WeaponManager.Instance.ShowMuzzleFlash();
 
         var raycast = WeaponManager.Instance.BulletRaycast;
-        Vector2 recoil = WeaponManager.Instance.GetCurrentRecoil();
+        Vector2 recoil = WeaponManager.GetCurrentRecoil();
         raycast.Rotation = new Vector3(recoil.X, recoil.Y, raycast.Rotation.Z); 
         raycast.TargetPosition = new Vector3(0,0,-RAYCAST_DIST);
         raycast.ForceRaycastUpdate();

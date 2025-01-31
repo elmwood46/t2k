@@ -6,6 +6,7 @@ public partial class BulletDecalPool : Node
 {
     private const int MAX_BULLET_DECALS = 1000;
     private static readonly List<Node3D> decalPool = new();
+    private static readonly PackedScene decalScene = GD.Load<PackedScene>("res://fpscontroller/weaponmanager/bullet_decal.tscn");
     public static void SpawnBulletDecal(Vector3 globalPos, Vector3 normal, Node3D parent, Basis bulletBasis, Texture2D textureOverride = null)
     {
         Node3D decalInstance;
@@ -20,7 +21,6 @@ public partial class BulletDecalPool : Node
         }
         else
         {
-            PackedScene decalScene = GD.Load<PackedScene>("res://fpscontroller/weaponmanager/bullet_decal.tscn");
             decalInstance = (Node3D)decalScene.Instantiate();
             parent.AddChild(decalInstance);
             decalPool.Add(decalInstance);
