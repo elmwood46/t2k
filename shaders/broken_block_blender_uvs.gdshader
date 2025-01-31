@@ -28,7 +28,7 @@ uniform int _damage_data;
 vec3 Blender_UV_To_Voxel_UV(vec2 box_uv) {
 	// top face by default
 	int idx = 1;
-	
+
 	if (box_uv.x<0.375) // bottom face
 	{
 		idx = 0;
@@ -64,7 +64,7 @@ void fragment() {
 	bool aciddamage = (_damage_data>>7 & 1) == 1;
 
 	const float normscale = 1.0;
-	const float uvscale = 1.0; //0.2 for default box mesh 
+	const float uvscale = 1.0; //0.2 for default box mesh
 
 	vec3[2] res = ApplyDamageShaders(
 		UV,
