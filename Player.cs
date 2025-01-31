@@ -205,7 +205,7 @@ public partial class Player : CharacterBody3D, IReloadable
 				};
 				ChunkManager.DamageBlocks(d);
 			
-				if (true) {
+				if (false) {
 					//ChunkManager.Instance.DamageBlocks(new Vector3I[] {(Vector3I)(intBlockPosition - chunk.GlobalPosition)}, 5);
 
 						// LINE ATTACK PATTERN

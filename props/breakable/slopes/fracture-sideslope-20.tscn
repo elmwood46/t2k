@@ -703,7 +703,7 @@ points = PackedVector3Array(-0.104525, -0.11406, -0.24973, -0.109511, -0.11406, 
 [node name="fracture-sideslope-20" type="Node3D"]
 
 [node name="@RigidBody3D@196575" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.351073, 0.225768, -0.085765)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.351073, -0.164422, -0.085765)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -718,7 +718,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_cg2v6")
 
 [node name="@RigidBody3D@196577" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.185994, 0.186836, 0.409484)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.185994, -0.203354, 0.409484)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -733,7 +733,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_vkjuh")
 
 [node name="@RigidBody3D@196579" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.438469, 0.780705, 0.325813)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.438469, 0.390515, 0.325813)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -748,7 +748,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_gfekr")
 
 [node name="@RigidBody3D@196581" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.388342, 0.491671, 0.202949)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.388342, 0.101481, 0.202949)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -763,7 +763,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_fw4yh")
 
 [node name="@RigidBody3D@196583" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0667639, 0.339147, 0.379881)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0667639, -0.0510428, 0.379881)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -778,7 +778,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_e1bi6")
 
 [node name="@RigidBody3D@196585" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.306399, 0.752198, 0.397948)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.306399, 0.362008, 0.397948)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -793,7 +793,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_c35iq")
 
 [node name="@RigidBody3D@196587" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.171133, 0.457726, 0.413485)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.171133, 0.0675362, 0.413485)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -808,7 +808,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_ycw0s")
 
 [node name="@RigidBody3D@196589" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.319721, 0.25149, 0.167825)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.319721, -0.1387, 0.167825)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -823,7 +823,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_b6eoq")
 
 [node name="@RigidBody3D@196591" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.364317, 0.136624, 0.382927)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.364317, -0.253566, 0.382927)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -838,7 +838,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_b3cvu")
 
 [node name="@RigidBody3D@196593" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.012162, 0.536512, 0.14541)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.012162, 0.146322, 0.14541)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -853,7 +853,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_irl4c")
 
 [node name="@RigidBody3D@196595" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.410655, 0.478246, 0.408336)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.410655, 0.0880562, 0.408336)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -868,7 +868,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_dyegf")
 
 [node name="@RigidBody3D@196597" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.410518, 0.417643, 0.441548)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.410518, 0.0274532, 0.441548)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -883,7 +883,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_bn26g")
 
 [node name="@RigidBody3D@196599" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.319243, 0.132912, 0.422413)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.319243, -0.257278, 0.422413)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -898,7 +898,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_u3enn")
 
 [node name="@RigidBody3D@196601" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.266025, 0.690941, 0.386379)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.266025, 0.300751, 0.386379)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -913,7 +913,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_odkdt")
 
 [node name="@RigidBody3D@196603" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.244598, 0.193184, -0.104675)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.244598, -0.197006, -0.104675)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -928,7 +928,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_mjdtg")
 
 [node name="@RigidBody3D@196605" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.429364, 0.194938, 0.273374)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.429364, -0.195252, 0.273374)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -943,7 +943,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_hp74v")
 
 [node name="@RigidBody3D@196607" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.350431, 0.551167, 0.12139)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.350431, 0.160977, 0.12139)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -958,7 +958,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_20tbr")
 
 [node name="@RigidBody3D@196609" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0883364, 0.163258, -0.151535)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0883364, -0.226932, -0.151535)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -973,7 +973,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_nedef")
 
 [node name="@RigidBody3D@196611" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.05312e-05, 0.792402, 0.429866)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.05312e-05, 0.402212, 0.429866)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0
@@ -988,7 +988,7 @@ skeleton = NodePath("")
 shape = SubResource("ConvexPolygonShape3D_f7ju0")
 
 [node name="@RigidBody3D@196613" type="RigidBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0771285, 0.120606, 0.177553)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0771285, -0.269584, 0.177553)
 collision_layer = 0
 collision_mask = 0
 mass = 20.0

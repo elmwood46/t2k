@@ -53,6 +53,7 @@ public partial class BlockManager : Node
 	public ShaderMaterial ChunkMaterialDamagePulse { get; private set; }
 
 	public ShaderMaterial BrokenBlockShader { get; private set; }
+	public ShaderMaterial CellFractureBlockShader { get; private set; }
 
 	public ShaderMaterial LavaShader { get; private set; }
 
@@ -173,6 +174,22 @@ public partial class BlockManager : Node
 		BrokenBlockShader.SetShaderParameter("_acidcol", acid_colour);
 		BrokenBlockShader.SetShaderParameter("_acidedge", acid_edge);
 		
+		CellFractureBlockShader = ResourceLoader.Load("res://shaders/RIGID_BREAK_SHADER.tres") as ShaderMaterial;
+		CellFractureBlockShader.SetShaderParameter("_albedo", TextureArray);
+		CellFractureBlockShader.SetShaderParameter("_displacement", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_DISPa.png"));
+		CellFractureBlockShader.SetShaderParameter("_roughness", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_ROUGH.jpg"));
+		CellFractureBlockShader.SetShaderParameter("_normalmap", GD.Load("res://BlockTextures/textureExperiment/Ground_Dirt_006_NORM.jpg"));
+		CellFractureBlockShader.SetShaderParameter("_acidcurvetex", GD.Load("res://shaders/acid_damage_curve.tres"));
+		CellFractureBlockShader.SetShaderParameter("_firecurvetex", GD.Load("res://shaders/fire_damage_curve.tres"));
+		CellFractureBlockShader.SetShaderParameter("_cracks_texture", GD.Load("res://BlockTextures/textureExperiment/cracks_tex.bmp"));
+		CellFractureBlockShader.SetShaderParameter("_noise", noise);
+		CellFractureBlockShader.SetShaderParameter("_spot_noise", spotnoise);
+		CellFractureBlockShader.SetShaderParameter("_bordercol", fire_border_colour);
+		CellFractureBlockShader.SetShaderParameter("_emissioncol", fire_emission_colour);
+		CellFractureBlockShader.SetShaderParameter("_burncol", burned_colour);
+		CellFractureBlockShader.SetShaderParameter("_acidcol", acid_colour);
+		CellFractureBlockShader.SetShaderParameter("_acidedge", acid_edge);
+
 		 // Save the image to a file (PNG format)
         /*
 		GD.Print($"Block textures: {blockTextures.Length}");

@@ -6,11 +6,9 @@ public partial class RigidBreak : Node3D
 {
     public float frames = 0f;
 
-    public Vector3 StartingImpulse { get; set; }
-
     public int BlockDivisions = 2;
 
-    private readonly ShaderMaterial _shader = (ShaderMaterial)BlockManager.Instance.BrokenBlockShader.Duplicate();
+    private ShaderMaterial _shader = (ShaderMaterial)BlockManager.Instance.BrokenBlockShader.Duplicate();
 
     private Node3D _BrokenScene { get; set; }
 
@@ -45,7 +43,7 @@ public partial class RigidBreak : Node3D
     public static readonly PackedScene CubeBroken5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-4X4-BOXES.tscn");
 
     // the UV scale for fracture cube 20 is wrong btw, probably because it was the first one I made
-    public static readonly PackedScene CubeBroken20Fragments = CubeBroken5Fragments;
+    public static readonly PackedScene CubeBroken20Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-20.tscn");
 
     // HACK set all the sideslopes to 20 because it's the only one where the UVs aren't fucky
     // this was due to some blender exporting error no doubt
@@ -54,15 +52,15 @@ public partial class RigidBreak : Node3D
     public static readonly PackedScene SideSlope3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-SIDESLOPE.tscn");
     public static readonly PackedScene SideSlope4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-3X3-SIDESLOPE.tscn");
     public static readonly PackedScene SideSlope5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-4X4-SIDESLOPE.tscn");
-    public static readonly PackedScene SideSlope20Fragments = SideSlope5Fragments;
+    public static readonly PackedScene SideSlope20Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-sideslope-20.tscn");
     public static readonly PackedScene InvCorner3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-INVCORNER.tscn");
     public static readonly PackedScene InvCorner4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-3X3-INVCORNER.tscn");
     public static readonly PackedScene InvCorner5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-4X4-INVCORNER.tscn");
-    public static readonly PackedScene InvCorner20Fragments = InvCorner5Fragments;
+    public static readonly PackedScene InvCorner20Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-invcorner-20.tscn");
     public static readonly PackedScene Corner3Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-CORNER.tscn");
     public static readonly PackedScene Corner4Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-3X3-CORNER.tscn");
     public static readonly PackedScene Corner5Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/FRAGCUBE-4X4-CORNER.tscn");
-    public static readonly PackedScene Corner20Fragments = Corner5Fragments;
+    public static readonly PackedScene Corner20Fragments = ResourceLoader.Load<PackedScene>("res://props/breakable/slopes/fracture-corner-20.tscn");
 
     // order the scenes the same as the BlockSlopeType enum
     // 0-3 are cube fragments, 4-7 are side slope fragments, 8-11 are corner fragments, 12-15 are inverted corner fragments
@@ -94,7 +92,7 @@ public partial class RigidBreak : Node3D
 
     public Timer t;
 
-    [Export] public Node3D ExplosionCentre { get; set; }
+    private Node3D _explosionCentre;
 
     public RandomNumberGenerator rng = new();
 
@@ -109,17 +107,24 @@ public partial class RigidBreak : Node3D
 
     public override void _Ready()
     {
-        AddToGroup("RigidBreak");
+        // DEBUG never have updwards impulse
+        NoUpwardsImpulse = true;
 
-        // pass uniforms to shader
-        _shader.SetShaderParameter("_tex_array_idx", BlockManager.BlockTextureArrayPositions(ChunkManager.GetBlockID(BlockInfo)));
-        _shader.SetShaderParameter("_damage_data", ChunkManager.GetBlockDamageData(BlockInfo));
+        AddToGroup("RigidBreak");
 
         bool blockIsSloped = ChunkManager.IsBlockSloped(BlockInfo);
         var slopeType = ChunkManager.GetBlockSlopeType(BlockInfo);
         var slopeRotation = ChunkManager.GetBlockSlopeRotation(BlockInfo);
 
-        _BrokenScene = FragmentScenes[Mathf.Clamp(BlockDivisions-2,0,3)+slopeType*4].Instantiate() as Node3D;
+        var fragIndex = Mathf.Clamp(BlockDivisions-2,0,3)+slopeType*4;
+
+        // pass uniforms to shader
+        // we use a different shader for cell fragment objects
+        if ((fragIndex+1)%4==0) _shader = (ShaderMaterial)BlockManager.Instance.CellFractureBlockShader.Duplicate();
+        _shader.SetShaderParameter("_tex_array_idx", BlockManager.BlockTextureArrayPositions(ChunkManager.GetBlockID(BlockInfo)));
+        _shader.SetShaderParameter("_damage_data", ChunkManager.GetBlockDamageData(BlockInfo));
+
+        _BrokenScene = FragmentScenes[fragIndex].Instantiate() as Node3D;
         // HACK here is the position code for fragment blocks as opposed to boxmesh blocks
         /*if (blockIsSloped) {
             _BrokenScene.RotateY(slopeRotation);
@@ -127,8 +132,13 @@ public partial class RigidBreak : Node3D
         }*/
 
         // boxmesh blocks are centered around 0,0,0 instead of 0,0.5,0
-        if (blockIsSloped) _BrokenScene.RotateY(slopeRotation);
-        _BrokenScene.Position += new Vector3(0.5f,0.5f,0.5f);
+        _explosionCentre = new Node3D();
+        _BrokenScene.AddChild(_explosionCentre);
+        if (blockIsSloped) {
+            _BrokenScene.RotateY(slopeRotation);
+        }
+        //_BrokenScene.Position += new Vector3(0.5f,0.5f,0.5f);
+        //_explosionCentre.Position = halfpos;
         
         AddChild(_BrokenScene);
 
@@ -151,8 +161,7 @@ public partial class RigidBreak : Node3D
                 rb.SetCollisionLayerValue(1, false);
                 rb.SetCollisionLayerValue(2, true);
                 rb.SetCollisionMaskValue(1, true);
-                // HACK normally set collision to true, set false to test
-                rb.SetCollisionMaskValue(2, false);
+                rb.SetCollisionMaskValue(2, true);
                 if (MaskHalves) rb.SetCollisionMaskValue(2,false);
                 foreach (Node meshchild in rb.GetChildren())
                 {
@@ -161,6 +170,7 @@ public partial class RigidBreak : Node3D
                         mesh.MaterialOverride = _shader;
                     }
                 }
+                rb.Mass = 10f+5f*BlockDivisions;
                 rb.Freeze = false;
             }
         }
@@ -170,18 +180,18 @@ public partial class RigidBreak : Node3D
     {
         if (_BrokenScene == null) return;
 
+        
         if (frames < 1f)
         {
             foreach (Node child in _BrokenScene.GetChildren())
             {
                 if (child is RigidBody3D rb)
                 {
-                    var dir = (ExplosionCentre.GlobalPosition - Player.Instance.GlobalPosition).Normalized();
-                    rb.ApplyImpulse(dir * 20f * (NoUpwardsImpulse ? new Vector3(1,0,1) : Vector3.One)) ;
-                    rb.ApplyImpulse((rb.Position-ExplosionCentre.Position).Normalized() * 5f * (NoUpwardsImpulse ? new Vector3(1,0,1) : Vector3.One));
+                    var dir = (_explosionCentre.GlobalPosition - Player.Instance.GlobalPosition).Normalized();
+                    //rb.ApplyImpulse(dir * 50f * (NoUpwardsImpulse ? new Vector3(1,0,1) : Vector3.One)) ;
+                    //rb.ApplyImpulse((rb.Position-_explosionCentre.Position).Normalized() * 50f * (NoUpwardsImpulse ? new Vector3(1,0,1) : Vector3.One));
                 }
             }
-            frames ++;
         }
 
         if ((int)frames %2 == 0)

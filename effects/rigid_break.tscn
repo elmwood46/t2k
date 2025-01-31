@@ -2,9 +2,5 @@
 
 [ext_resource type="Script" path="res://effects/RigidBreak.cs" id="1_dpm0d"]
 
-[node name="RigidBreak" type="Node3D" node_paths=PackedStringArray("ExplosionCentre")]
+[node name="RigidBreak" type="Node3D"]
 script = ExtResource("1_dpm0d")
-ExplosionCentre = NodePath("Node3D")
-
-[node name="Node3D" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2, 2)

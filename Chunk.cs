@@ -108,8 +108,16 @@ public partial class Chunk : StaticBody3D
             var particles = _rigid_break.Instantiate() as RigidBreak;
 
             // optimize particles to avoid framerate drop
-            particles.MaskHalves = true;
-            particles.BlockDivisions=2;
+            
+            if (blocks_being_destroyed > 1) { // destroying more than one block at once
+                if (partcount + blockCount < 1) particles.BlockDivisions = 3;
+                if (partcount + blockCount > 2) particles.MaskHalves = true;
+            } else {
+                if (partcount + blockCount < 2) particles.BlockDivisions = 20;
+                else if (partcount + blockCount < 3) particles.BlockDivisions = 4;
+                else if (partcount + blockCount < 4) particles.BlockDivisions = 3;
+                if (partcount + blockCount > 3) particles.MaskHalves = true;
+            }
 
             var mult = 3.0f;
             if (partcount > 10*mult || blockCount > 5*mult)
@@ -141,15 +149,13 @@ public partial class Chunk : StaticBody3D
             // and subtract a small amount to avoid z-fighting with top particles as well as keep them in their block
             // also subtract one to go from padded chunk pos to actual chunk pos
             //particles.Scale = Vector3.One*ChunkManager.VOXEL_SCALE*0.99f;
-            particles.Position = pos - Vector3.One; //-Vector3.One + Vector3.One*(1/particles.BlockDivisions) - Vector3.Up*0.0625f;
+            particles.Position = pos - Vector3.One*0.5f; //-Vector3.One + Vector3.One*(1/particles.BlockDivisions) - Vector3.Up*0.0625f;
 
             if (is_block_above) particles.NoUpwardsImpulse = true;
 
             particles.BlockInfo = block_info;
             
             AddChild(particles);
-            var impulse_pos = (particles.GlobalTransform.Origin - Player.Instance.GlobalTransform.Origin).Normalized() * 100.0f; 
-            particles.StartingImpulse = impulse_pos;
             blockCount++;
         }
     }
