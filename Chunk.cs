@@ -4,58 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-
-public partial class DestructibleMeshData : Resource {
-    public readonly Transform3D Transform;
-    public readonly float Health;
-    public readonly float MaxHealth;
-    public readonly PackedScene IntactPacked;
-    public readonly PackedScene BrokenPacked;
-    public Transform3D IntactTransform;
-
-    public DestructibleMeshData(DestructibleMesh mesh)
-    {
-        Transform = mesh.Transform;
-        Health = mesh.Health;
-        MaxHealth = mesh.MaxHealth;
-        IntactPacked = mesh.IntactPacked;
-        BrokenPacked = mesh.BrokenPacked;
-        IntactTransform = ((Node3D)mesh.IntactScene.GetChild(0)).Transform;
-    }
-
-    public DestructibleMeshData(
-        Transform3D transform,
-        float health,
-        float maxhealth,
-        PackedScene intact_scene,
-        PackedScene broken_scene,
-        Transform3D intact_transform
-        )
-    {
-        Transform = transform;
-        Health = health;
-        MaxHealth = maxhealth;
-        IntactPacked = intact_scene;
-        BrokenPacked = broken_scene;
-        IntactTransform = intact_transform;
-    }
-}
-
-public class ChunkInstanceData
-{
-    private readonly List<DestructibleMesh> _destructibleMeshes;
-
-    public List<DestructibleMesh> GetDestructibleMeshes()
-    {
-        return _destructibleMeshes;
-    }
-
-    public void AddDestructibleMesh(DestructibleMesh mesh)
-    {
-        _destructibleMeshes.Add(mesh);
-    }
-}
-
 [Tool]
 public partial class Chunk : StaticBody3D
 {
@@ -108,9 +56,8 @@ public partial class Chunk : StaticBody3D
         var saved_breakable = new List<DestructibleMeshData>();
         foreach (var child in _chunk_area.GetOverlappingBodies())
         {
-            if (child.GetParent().GetParent() is DestructibleMesh d)
+            if (child.GetParent().GetParent() is DestructibleMesh d && d.Health > 0.0f)
             {
-                GD.Print("saving: ",  _chunk_area.GetOverlappingAreas());
                 var data = new DestructibleMeshData(d);
                 saved_breakable.Add(data);
                 d.QueueFree();
@@ -128,17 +75,19 @@ public partial class Chunk : StaticBody3D
         {
             var mesh = new DestructibleMesh
             {
-                Transform = data.Transform,
                 BrokenPacked = data.BrokenPacked,
                 IntactPacked = data.IntactPacked,
                 BrokenScene = data.BrokenPacked.Instantiate() as Node3D,
                 IntactScene = data.IntactPacked.Instantiate() as Node3D,
                 Health = data.Health,
-                MaxHealth = data.MaxHealth
+                MaxHealth = data.MaxHealth,
+                Type = data.Type,
+                PackedBlockDamageInfo = data.PackedBlockDamageInfo
             };
             mesh.AddChild(mesh.BrokenScene);
             mesh.AddChild(mesh.IntactScene);
-            ((PhysicsBody3D)mesh.IntactScene.GetChild(0)).Transform = data.IntactTransform;
+            ((PhysicsBody3D)mesh.IntactScene.GetChild(0)).GlobalTransform = data.IntactTransform;
+            mesh.BrokenScene.GlobalTransform = data.BrokenTransform;
             AddSibling(mesh);
         }
     }

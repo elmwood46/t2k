@@ -203,7 +203,6 @@ public async void InitChunks()
 	#endregion
 
 	#region damage/set blocks
-
 	// DEBUG setting blocks, untested
 	public static void TrySetBlock(Vector3I globalPosition, int block_type)
 	{
@@ -652,6 +651,10 @@ public async void InitChunks()
         return (damageTypeFlag<<5) | damageAmount;
     }
 
+	public static int RepackDamageFlag(int blockinfo, BlockDamageType flag) {
+		return blockinfo | (PackDamageData(PackDamageFlag(flag),0)<<BLOCK_DAMAGE_BITS_OFFSET);
+	}
+
 	public static int PackDamageFlag(BlockDamageType damageType) {
 		return damageType switch  {
             BlockDamageType.Physical => 1,
@@ -663,6 +666,13 @@ public async void InitChunks()
     public static int RepackBlockType(int blockInfo, int blockType) {
         return (blockInfo & ~0xffff) | blockType;
     }
+
+	public static int AddBlockDamage(int blockinfo, BlockDamageType updateflag, int set_health)
+	{
+		var newflag = GetBlockDamageTypeFlag(blockinfo)|PackDamageFlag(updateflag);
+		var newhealth = Mathf.Clamp(set_health,0,BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD);
+		return RepackDamageData(blockinfo, newflag, newhealth);
+	}
 
     public static int RepackDamageData(int blockInfo, int damageTypeFlag, int damageAmount) {
         return RepackDamageData(blockInfo,PackDamageData(damageTypeFlag, damageAmount));

@@ -30,7 +30,7 @@ public partial class MeleeWeaponResource : WeaponResource
             // inflict damage
             if (obj is IHurtable hurtable_obj) 
             {
-                hurtable_obj.TakeDamage(Damage);
+                hurtable_obj.TakeDamage(Damage,BlockDamageType.Physical);
             }
 
             // check for destructible object
@@ -38,7 +38,7 @@ public partial class MeleeWeaponResource : WeaponResource
             {
 				if (pb.GetParent().GetParent() is DestructibleMesh mesh)
                 {
-                    mesh.TakeDamage(Damage);
+                    mesh.TakeDamage(Damage, BlockDamageType.Physical);
                     if (mesh.Health <= 0) mesh.Break(raycast.GetCollisionPoint(),_rigidBodyPushForce);
                 }
             }
