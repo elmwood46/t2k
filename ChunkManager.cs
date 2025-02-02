@@ -667,6 +667,13 @@ public async void InitChunks()
         return (blockInfo & ~0xffff) | blockType;
     }
 
+	/// <summary>
+	/// Sets a new value for the block damage and adds the damage flag to existing flags without changing them.
+	/// </summary>
+	/// <param name="blockinfo">the block info integer to affect</param>
+	/// <param name="updateflag">sets the damage type flag, adding it to any existing ones</param>
+	/// <param name="set_health">sets the new health integer, a value between 0 and BlockManager.BLOCK_BREAK_DAMAGE_THREASHOLD inclusive</param>
+	/// <returns>A new blockinfo integer with the damage flag updated and a new damage integer set.</returns>
 	public static int AddBlockDamage(int blockinfo, BlockDamageType updateflag, int set_health)
 	{
 		var newflag = GetBlockDamageTypeFlag(blockinfo)|PackDamageFlag(updateflag);
