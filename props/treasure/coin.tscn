@@ -1,6 +1,10 @@
-[gd_scene load_steps=5 format=4 uid="uid://uldj30cvurdk"]
+[gd_scene load_steps=7 format=4 uid="uid://uldj30cvurdk"]
 
 [ext_resource type="Texture2D" uid="uid://bicky6ugq6oog" path="res://props/treasure/coinC_2.png" id="1_44y2m"]
+[ext_resource type="Script" path="res://props/treasure/Coin.cs" id="1_xg0dk"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_as7ab"]
+bounce = 0.2
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m24xo"]
 resource_name = "Material.003"
@@ -27,13 +31,17 @@ _surfaces = [{
 }]
 blend_shape_mode = 0
 
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_xjr0j"]
-points = PackedVector3Array(0.21796, -0.0886132, -0.965967, 0.217959, 0.0930132, 0.974167, 0.21796, 0.244812, 0.943966, -0.2317, 0.9505, -0.0551107, -0.2317, -0.9461, 0.0633108, -0.2317, 0.0614224, 0.952029, 0.216787, -0.902764, 0.396212, -0.2317, -0.0570223, -0.943829, 0.216786, 0.90716, -0.38801, 0.216721, -0.721671, -0.659177, 0.216786, 0.907159, 0.39621, -0.207608, 0.672753, -0.727425, -0.207608, -0.668353, 0.735625, -0.207598, 0.733834, 0.67449, -0.207608, -0.668353, -0.727425, 0.216814, 0.394434, -0.900792, 0.216806, -0.390021, 0.908961, 0.216786, -0.90276, -0.38801, -0.207679, -0.91257, -0.392261, -0.208942, -0.243331, 0.955276, -0.208942, 0.247731, -0.947076, 0.216732, 0.665641, 0.727866, -0.2077, 0.398681, 0.91879, -0.2077, -0.394281, -0.91059, -0.208862, 0.983935, 0.0959516, 0.217889, -0.967948, -0.0866673, -0.207679, 0.91697, -0.392261, -0.207679, -0.91257, 0.400461, 0.217885, 0.972331, -0.0866657, 0.216814, -0.390034, -0.900792, 0.216724, -0.72168, 0.667385, 0.216721, 0.726071, -0.659177)
+[sub_resource type="BoxShape3D" id="BoxShape3D_km0rm"]
+size = Vector3(2, 0.5, 2)
 
 [node name="coin" type="RigidBody3D"]
+physics_material_override = SubResource("PhysicsMaterial_as7ab")
+script = ExtResource("1_xg0dk")
 
 [node name="Coin_tris" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0, 0)
 mesh = SubResource("ArrayMesh_kykj8")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-shape = SubResource("ConvexPolygonShape3D_xjr0j")
+transform = Transform3D(-1.09278e-08, 0.25, -1.09278e-08, 0, -1.09278e-08, -0.25, -0.25, -1.09278e-08, 4.77671e-16, -0.0014801, 0.00195408, 0.00824166)
+shape = SubResource("BoxShape3D_km0rm")

@@ -8,17 +8,13 @@ using System.Threading.Tasks;
 public partial class Chunk : StaticBody3D
 {
 	[Export] public CollisionShape3D CollisionShape { get; set; }
-
 	[Export] public MeshInstance3D MeshInstance { get; set; }
-
     //[Export] public Grass[] GrassMultiMeshArray {get; set;}
-
     private static readonly PackedScene _rigid_break = GD.Load<PackedScene>("res://effects/rigid_break2.tscn");
-
     private readonly Area3D _chunk_area = new() {Position = new Vector3(ChunkManager.Dimensions.X,0,ChunkManager.Dimensions.Z)*0.5f};
     private readonly CollisionShape3D _chunk_bounding_box = new() {
-            Shape = new BoxShape3D { Size = new Vector3(ChunkManager.Dimensions.X, ChunkManager.Dimensions.Y, ChunkManager.Dimensions.Z) }
-        };
+        Shape = new BoxShape3D { Size = new Vector3(ChunkManager.Dimensions.X, ChunkManager.Dimensions.Y, ChunkManager.Dimensions.Z) }
+    };
 
 	// 3d int array for holding blocks
     // each 32bit int contains packed block info: block type (10 bits), z (5 bits), y (5 bits), x (5 bits) 
@@ -31,10 +27,13 @@ public partial class Chunk : StaticBody3D
 	public override void _Ready() {
 		Scale = new Vector3(ChunkManager.VOXEL_SCALE, ChunkManager.VOXEL_SCALE, ChunkManager.VOXEL_SCALE);
         _chunk_area.AddChild(_chunk_bounding_box);
+        //_chunk_area.ShapeOwnerSetDisabled((uint)_chunk_area.GetShapeOwners()[0],true);
         _chunk_area.SetCollisionLayerValue(1, true);
         _chunk_area.SetCollisionLayerValue(2, true);
+        _chunk_area.SetCollisionLayerValue(3, true);
         _chunk_area.SetCollisionMaskValue(1, true);
         _chunk_area.SetCollisionMaskValue(2, true);
+        _chunk_area.SetCollisionMaskValue(3, true);
         AddChild(_chunk_area);
 	}
 
@@ -48,20 +47,38 @@ public partial class Chunk : StaticBody3D
             ChunkManager.VOXEL_SCALE * ChunkPosition.X * ChunkManager.Dimensions.X,
             ChunkManager.VOXEL_SCALE * ChunkPosition.Y * ChunkManager.Dimensions.Y * ChunkManager.SUBCHUNKS,
             ChunkManager.VOXEL_SCALE * ChunkPosition.Z * ChunkManager.Dimensions.Z);
-        CallDeferred(MethodName.SetGlobalPositionAndLoadData, newpos, ChunkPosition);
+        CallDeferred(MethodName.SetGlobalPositionAndLoadData, newpos, position);
 	}
 
     public void SaveLocalChunkDataAndFree(Vector3I chunkpos)
     {
         var saved_breakable = new List<DestructibleMeshData>();
+        var to_remove = new List<DestructibleMesh>();
         foreach (var child in _chunk_area.GetOverlappingBodies())
         {
-            if (child.GetParent().GetParent() is DestructibleMesh d && d.Health > 0.0f)
+            if (child.GetParent().GetParent() is DestructibleMesh d && !d.BrokenScene.Visible)
             {
                 var data = new DestructibleMeshData(d);
                 saved_breakable.Add(data);
-                d.QueueFree();
+                to_remove.Add(d);
             }
+            if (child is RigidBody3D coin)
+            {
+                coin.QueueFree();
+            }
+        }
+        foreach (var child in _chunk_area.GetOverlappingAreas())
+        {
+            if (child.GetParent().GetParent() is DestructibleMesh d && !d.BrokenScene.Visible)
+            {
+                var data = new DestructibleMeshData(d);
+                saved_breakable.Add(data);
+                to_remove.Add(d);
+            }
+        }
+        foreach (var d in to_remove)
+        {
+            d.Free();
         }
         ChunkManager.Instance.BREAKABLE_MESH_CACHE.TryRemove(chunkpos, out _);
         ChunkManager.Instance.BREAKABLE_MESH_CACHE.TryAdd(chunkpos, saved_breakable);
@@ -88,7 +105,7 @@ public partial class Chunk : StaticBody3D
             mesh.AddChild(mesh.IntactScene);
             ((PhysicsBody3D)mesh.IntactScene.GetChild(0)).GlobalTransform = data.IntactTransform;
             mesh.BrokenScene.GlobalTransform = data.BrokenTransform;
-            AddSibling(mesh);
+            GetTree().Root.AddChild(mesh);
         }
     }
 
@@ -120,7 +137,7 @@ public partial class Chunk : StaticBody3D
 
     public void UpdateRigidBodies() {
         foreach (Node3D child in _chunk_area.GetOverlappingBodies()) {
-            if (child is RigidBody3D rb) {
+            if (child is RigidBody3D rb && rb.Sleeping) {
                 //GD.Print("updating rigid body ", rb);
                 rb.MoveAndCollide(Vector3.Zero);
             }

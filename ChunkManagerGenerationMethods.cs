@@ -18,6 +18,8 @@ public partial class ChunkManager : Node {
     // in the Generate() method, noise >= this value doesnt generate blocks
     public const float NOISE_CUTOFF = 0.2f;
 
+
+
 	public static readonly Noise CELLNOISE = new FastNoiseLite(){NoiseType = FastNoiseLite.NoiseTypeEnum.Cellular
 	, CellularDistanceFunction = FastNoiseLite.CellularDistanceFunctionEnum.Manhattan,
 	FractalType = FastNoiseLite.FractalTypeEnum.Fbm, CellularReturnType = FastNoiseLite.CellularReturnTypeEnum.CellValue};
@@ -95,8 +97,6 @@ public partial class ChunkManager : Node {
             result = new int[CSP3*SUBCHUNKS];
         }
 
-        var rnd = new RandomNumberGenerator();
-
         List<Vector3I> filledBlocks = new();
         
         for (int subchunk = 0; subchunk < SUBCHUNKS; subchunk++) {
@@ -153,11 +153,11 @@ public partial class ChunkManager : Node {
                             {
                                 blockType = BlockManager.BlockID("Check1");
                             }
-                            else if (y == 3 && block_idx-CSP2 > 0 && !IsBlockEmpty(result[block_idx-CSP2]) && rnd.Randf() > 0.99)
+                            else if (y == 3 && block_idx-CSP2 > 0 && !IsBlockEmpty(result[block_idx-CSP2]) && RNG.Randf() > 0.99)
                             {
                                 // spawn tree or totem
                                 result[block_idx-CSP2] = PackBlockType(BlockManager.BlockID("Dirt"));
-                                var blockSet = rnd.Randf() > 0.5 ? GenStructure.GenerateTotem(rnd.RandiRange(3,15)) : GenStructure.GenerateTree();
+                                var blockSet = RNG.Randf() > 0.5 ? GenStructure.GenerateTotem(RNG.RandiRange(3,15)) : GenStructure.GenerateTree();
 
                                 // blockset is a dictionary of block positions and block info ints (with all bits initialized)
                                 foreach ((var v, var genblockinfo) in blockSet)
@@ -182,10 +182,10 @@ public partial class ChunkManager : Node {
 
                             // apply damage to upper layer blocks
                             int _damamount = 0, _damtype = 0;
-                            if (rnd.Randf() < 0.5)
+                            if (RNG.Randf() < 0.5)
                             {
-                                _damtype = rnd.RandiRange(1, 7);
-                                _damamount = rnd.RandiRange(0, 31);
+                                _damtype = RNG.RandiRange(1, 7);
+                                _damamount = RNG.RandiRange(0, 31);
                             }
                             
                             result[block_idx] = PackAllBlockInfo(blockType,_damtype,_damamount,0,0,0);
@@ -207,10 +207,55 @@ public partial class ChunkManager : Node {
                         var groundheight = (int)(10*(noise+1)/2);
                         if (globalBlockPosition.Y<=groundheight)
                         {
+                            if (groundheight != 0 && globalBlockPosition.Y==groundheight && block_idx-CSP2 > 0 && !IsBlockEmpty(result[block_idx-CSP2]) && RNG.Randf() > 0.99)
+                                {
+                                    result[block_idx-CSP2] = PackBlockType(BlockManager.BlockID("Stone"));
+                                    var randroll = RNG.Randf();
+                                    Dictionary<Vector3I,int> blockSet;
+
+                                    if (randroll < 0.3333)
+                                    {
+                                        blockSet = GenStructure.GenerateTotem(RNG.RandiRange(3,15));
+                                    }
+                                    else if (randroll >= 0.3333 && randroll < 0.6667)
+                                    {
+                                        blockSet = GenStructure.GenerateTree();
+                                    }
+                                    else
+                                    {
+                                        // do not add this block to FilledBlocks, since it should never be a slope candidate
+                                        result[block_idx] = PackAllBlockInfo(BlockManager.BlockID("Grass"),0,0,0,0,0);
+   
+                                        // spawn a rock
+                                        var rocksize = RNG.RandiRange(0,2);
+                                        var newpos = globalBlockPosition + new Godot.Vector3(0.5f,1.0f,0.5f);
+
+                                        Instance.CallDeferred(nameof(InitializeMeshData), chunkPosition, newpos, rocksize);
+                                        continue;
+                                    }
+
+                                    // spawn tree or totem
+                                    // blockset is a dictionary of block positions and block info ints (with all bits initialized)
+                                    foreach ((var v, var genblockinfo) in blockSet)
+                                    {
+                                        Vector3I p = new(x + v.X, y + v.Y, z + v.Z);
+                                        if (p.X >= 0 && p.X < CSP && p.Y >= 0 && p.Y < CSP && p.Z >= 0 && p.Z < CSP)
+                                        {
+                                            var newidx = BlockIndex(p);
+                                            result[newidx] = PackAllBlockInfo(genblockinfo,0,0,0,0,0);
+                                            if (!IsBlockEmpty(result[newidx])) filledBlocks.Add(p);
+                                        }
+                                        Instance.BLOCKCACHE[chunkPosition] = result;
+                                        SetBlockChunkNeighbour(chunkPosition,p,Vector3I.Zero, genblockinfo);
+                                        result = Instance.BLOCKCACHE[chunkPosition];
+                                    }
+                                    continue;
+                                }
+
                             if (globalBlockPosition.Y < groundheight && globalBlockPosition.Y > groundheight - 3) blockType = BlockManager.BlockID("Stone");
-                            else if (globalBlockPosition.Y == groundheight) blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
+                            else if (globalBlockPosition.Y == groundheight) blockType = RNG.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
                             else if (globalBlockPosition.Y > groundheight) blockType = BlockManager.BlockID("Air");
-                            else blockType = rnd.Randf() > 0.9 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Stone");
+                            else blockType = RNG.Randf() > 0.9 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Stone");
                         }
                         else
                         {
@@ -221,7 +266,7 @@ public partial class ChunkManager : Node {
                             if (noise3d*(1.0f-(globalBlockPosition.Y/58.0f))+0.001 >= Instance._cutoff)
                             {
                                 if (noiseabove < Instance._cutoff) {
-                                    blockType = rnd.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
+                                    blockType = RNG.Randf() > 0.99 ? BlockManager.BlockID("GoldOre") : BlockManager.BlockID("Grass");
                                 }
                                 else if (noisebelow > noise3d) blockType = BlockManager.BlockID("Stone");
                                 else blockType = BlockManager.BlockID("Dirt");
@@ -239,9 +284,7 @@ public partial class ChunkManager : Node {
 
         // loop over all filled blocks again, add slopes
         //Dictionary<Vector3I,int> packedSlopeBlockData = new();
-
         
-
         // add corner and side slopes
         // corner slopes should make the block below the same type
         // we need to set the result first because neighbour checks the concurrent dictionary
@@ -258,8 +301,37 @@ public partial class ChunkManager : Node {
         return Mathf.Pow(Mathf.Sin((x - Mathf.Round(x)) * 2.45f),11) + Mathf.Round(x);
     }
 
-    #endregion
+    public static void InitializeMeshData(Vector3I chunk_pos, Godot.Vector3 global_pos, int mesh_idx)
+    {
+        GD.Print("generated destructo mesh at chunk ", chunk_pos);
+        var newpos = global_pos;
+        var angle = RNG.Randf()*Mathf.Pi*2;
+        var mesh = DestructibleMeshScenes[mesh_idx].Duplicate() as DestructibleMesh;
+        Instance.GetTree().Root.AddChild(mesh);
+        mesh.Rotate(Godot.Vector3.Up, angle);
+        mesh.GlobalPosition = newpos;
+        mesh.IntactScene.GlobalPosition = newpos;
+        var intact_mesh = (MeshInstance3D)mesh.IntactScene.GetChild(0).GetChild(0);
+        mesh.SetIntactMeshBaseScaleAndPosition(intact_mesh.Scale, intact_mesh.Transform.Origin);
+        /*
+        var meshdata = new DestructibleMeshData(DestructibleMeshScenes[mesh_idx]);
+        meshdata.IntactTransform = meshdata.IntactTransform.Translated(-DestructibleMeshSceneOffset);
+        meshdata.IntactTransform = meshdata.IntactTransform.Rotated(Godot.Vector3.Up, angle);
+        meshdata.IntactTransform = meshdata.IntactTransform.Translated(newpos);
+        meshdata.BrokenTransform = meshdata.BrokenTransform.Translated(-DestructibleMeshSceneOffset);
+        meshdata.BrokenTransform = meshdata.BrokenTransform.Rotated(Godot.Vector3.Up, angle);
+        meshdata.BrokenTransform = meshdata.BrokenTransform.Translated(newpos);
 
+        if (!Instance.BREAKABLE_MESH_CACHE.ContainsKey(chunk_pos))
+        {
+            Instance.BREAKABLE_MESH_CACHE.TryAdd(chunk_pos,new List<DestructibleMeshData>(){meshdata});
+        }
+        else 
+        {
+            Instance.BREAKABLE_MESH_CACHE[chunk_pos].Add(meshdata);
+        }*/
+    }
+    #endregion
 
     // greedy chunk mesh both meshes the chunk, and also adds neighbouring blocks to the chunk in the block cache
     #region GreedyChunkMesh

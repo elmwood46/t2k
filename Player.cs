@@ -10,6 +10,7 @@ public partial class Player : CharacterBody3D, IReloadable
 	[Export] public CollisionShape3D CollisionShape { get; set; }
 	[Export] public Camera3D Camera { get; set; }
 	[Export] public Node3D CameraSmooth {get; set;}
+	[Export] public Area3D CoinPickupArea {get;set;}
 
 	[Export] public RayCast3D RayCast { get; set; }
 	[Export] public MeshInstance3D BlockHighlight { get; set; }
@@ -68,7 +69,14 @@ public partial class Player : CharacterBody3D, IReloadable
 	private AnimationTree _animationTree;
 	private AnimationNodeStateMachinePlayback _stateMachinePlayback;
 
+	private int _money = 0;
+
 	public static Player Instance { get; private set; }
+
+    public override string ToString() 
+    {
+        return $"Global Position: {Instance.GlobalPosition}\nMoney: {Instance._money}";
+    }
 
 	#region ready
 	public override void _Ready()
@@ -205,7 +213,7 @@ public partial class Player : CharacterBody3D, IReloadable
 				};
 				ChunkManager.DamageBlocks(d);
 			
-				if (false) {
+				if (true) {
 					//ChunkManager.Instance.DamageBlocks(new Vector3I[] {(Vector3I)(intBlockPosition - chunk.GlobalPosition)}, 5);
 
 						// LINE ATTACK PATTERN
@@ -262,6 +270,7 @@ public partial class Player : CharacterBody3D, IReloadable
 		}
 		#endregion
 
+		CheckForCoins();
 		AlignWorldModelToLookDir();
 		UpdateRecoil((float) delta);
 		UpdateAnimations();

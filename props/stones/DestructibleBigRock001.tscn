@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://bdj6qwbu7kajf"]
+
+[ext_resource type="Script" path="res://props/breakable/DestructibleMesh.cs" id="1_f0bew"]
+[ext_resource type="PackedScene" uid="uid://bhk53nb1fa85u" path="res://props/stones/stone_big_001_whole.tscn" id="4_uhe2m"]
+[ext_resource type="PackedScene" uid="uid://clxs2n40xudrg" path="res://props/stones/stone_big_001_broken.tscn" id="5_gqpia"]
+
+[node name="DestructibleBigRock001" type="Node3D" node_paths=PackedStringArray("IntactScene", "BrokenScene")]
+script = ExtResource("1_f0bew")
+IntactPacked = ExtResource("4_uhe2m")
+BrokenPacked = ExtResource("5_gqpia")
+IntactScene = NodePath("StoneBig001Whole")
+BrokenScene = NodePath("stone_big_001_broken")
+MaxHealth = 300.0
+
+[node name="StoneBig001Whole" parent="." instance=ExtResource("4_uhe2m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="stone_big_001_broken" parent="." instance=ExtResource("5_gqpia")]
+visible = false

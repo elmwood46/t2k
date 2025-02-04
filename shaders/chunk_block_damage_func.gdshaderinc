@@ -77,10 +77,10 @@ vec3[2] ApplyDamageShaders(
 
 	if (physicaldamage) {
 		// we have "broken block mode" which sets the scale of cracks
-		// it's scaled up by 6x for chunk blocks, because they are 
+		// it's scaled up by 6x for chunk blocks, because they are
 		// textured per-face (each face the UV goes 0.0-1.0)
 		// while broken blocks have one texture which is spread across the 6 faces
-		
+
 		vec2 uvscaled = uv;
 		if (!broken_block_mode) uvscaled *= 0.16666667f;
 		float cracks = texture(_cracks_texture, uvscaled).r;
@@ -90,7 +90,8 @@ vec3[2] ApplyDamageShaders(
 			cracksExtra = mix(1.0,cracksExtra,(damageratio-0.5)/0.5);
 		}
 		cracks = pow(cracks*cracksExtra, mix(0.0,20,damageratio));
-		finalcol *= cracks;//*cracksExtra;
+		finalcol -= vec3(1.0-cracks);//*cracksExtra;
+		finalcol *= (1.0-damageratio*0.5);
 	}
 
 	return {finalcol,finalemission};

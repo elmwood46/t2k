@@ -20,7 +20,7 @@ public partial class InteractableComponent : Node
 	private CharacterBody3D GetCharacterHoveredByCurCamera() {
 		foreach (CharacterBody3D c in _charactersHovering.Keys) {
 			var cur_cam = GetViewport()?.GetCamera3D();
-			if (c.FindChildren("*","Camera3D").Contains((Node)cur_cam)) {
+			if (c.FindChildren("*","Camera3D").Contains(cur_cam)) {
 				return c;
 			}
 		}

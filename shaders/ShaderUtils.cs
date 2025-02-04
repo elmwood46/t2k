@@ -6,6 +6,8 @@ using Godot;
 
 public static class ShaderUtils
 {
+    private static readonly ShaderMaterial _weaponClipShaderMaterial = new(){Shader=ResourceLoader.Load<Shader>("res://shaders/WeaponClipAndFOV.gdshader")};
+
     public static void ApplyClipAndFovShaderToViewModel(Node3D node3D, float fovOrNegativeForUnchanged = -1.0f)
     {
         var allMeshInstances = node3D.GetChildrenRecursive<MeshInstance3D>();
@@ -22,13 +24,9 @@ public static class ShaderUtils
 
             for (int surfaceIdx = 0; surfaceIdx < mesh.GetSurfaceCount(); surfaceIdx++)
             {
-                var baseMaterial = mesh.SurfaceGetMaterial(surfaceIdx) as BaseMaterial3D;
-                if (baseMaterial == null) continue;
+                if (mesh.SurfaceGetMaterial(surfaceIdx) is not BaseMaterial3D baseMaterial) continue;
 
-                var weaponShaderMaterial = new ShaderMaterial
-                {
-                    Shader = GD.Load<Shader>("res://shaders/WeaponClipAndFOV.gdshader")
-                };
+                var weaponShaderMaterial = _weaponClipShaderMaterial.Duplicate() as ShaderMaterial;
 
                 weaponShaderMaterial.SetShaderParameter("texture_albedo", baseMaterial.AlbedoTexture);
                 weaponShaderMaterial.SetShaderParameter("texture_metallic", baseMaterial.MetallicTexture);

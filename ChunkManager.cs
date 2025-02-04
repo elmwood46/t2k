@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,11 +22,16 @@ public partial class ChunkManager : Node, IReloadable
 	public ConcurrentDictionary<Vector3I, List<Vector3I>> DeferredMeshUpdates = new();
 	public ConcurrentStack<byte> DamagingBlocks = new(); 
 
+    public static readonly DestructibleMesh[] DestructibleMeshScenes = new DestructibleMesh[3];
+	public static readonly Godot.Vector3 DestructibleMeshSceneOffset = new(0.0f,-1000.0f,0.0f);
+
+	public static readonly Godot.RandomNumberGenerator RNG = new();
+
 	private List<Chunk> _chunks;
 	[Export] public PackedScene ChunkScene { get; set; }
 	// this is the number of chunks rendered in the x and z direction, centered around the player
 	// the "render distance"
-	const int _width = 3;
+	const int _width = 4;
 	const int _y_width = 1;
 	const int _width_sq = (1+_width/2)*(1+_width/2);
 
@@ -37,6 +43,8 @@ public partial class ChunkManager : Node, IReloadable
 	public const int BLOCK_SLOPE_BITS_OFFSET = 24;
 	private Godot.Vector3 _playerPosition;
 	private object _playerPositionLock = new();
+
+	public bool FinishedInitializing = false;
 
 	private static readonly Vector3I[] VECTOR_NEIGHBOUR_SET = {
 		Vector3I.Down,
@@ -60,10 +68,37 @@ public partial class ChunkManager : Node, IReloadable
 		Vector3I.Back
 	};
 
+	private static readonly Vector3I[] VECTOR_NEIGHBOUR_SET_ADJ_HORZ = {
+		Vector3I.Left,
+		Vector3I.Right,
+		Vector3I.Forward,
+		Vector3I.Back
+	};
+
 	#region init
 	public override void _Ready()
 	{
 		if (Engine.IsEditorHint()) return;
+
+		var meshes = new[] 
+        {
+            ResourceLoader.Load<PackedScene>("res://props/stones/DestructibleBigRock001.tscn").Instantiate() as DestructibleMesh,
+            ResourceLoader.Load<PackedScene>("res://props/stones/DestructibleMedRock001.tscn").Instantiate() as DestructibleMesh,
+            ResourceLoader.Load<PackedScene>("res://props/stones/DestructibleSmallRock001.tscn").Instantiate() as DestructibleMesh
+        };
+		
+
+		for (int i=0; i<DestructibleMeshScenes.Length; i++)
+		{
+			DestructibleMeshScenes[i] = meshes[i];
+			AddChild(DestructibleMeshScenes[i]);
+			DestructibleMeshScenes[i].Translate(DestructibleMeshSceneOffset);
+			if (i==0) {
+				//DestructibleMeshScenes[i].GlobalPosition += 20.0f*Godot.Vector3.Up;
+				((RigidBody3D)DestructibleMeshScenes[i].GetChild(0).GetChild(0)).Freeze = true;
+			}
+		}
+
 		BLOCKCACHE.Clear();
 		MESHCACHE.Clear();
 
@@ -130,6 +165,7 @@ public async void InitChunks()
 
 		Instance.DeferredMeshUpdates.Clear();
 
+		FinishedInitializing = true;
 
 		if (!Engine.IsEditorHint())
 		{
@@ -184,8 +220,6 @@ public async void InitChunks()
 				if (newChunkX != chunkX || newChunkZ != chunkZ)
 				{
 					var newPosition = new Vector3I(newChunkX, chunkPosition.Y, newChunkZ);
-
-
 
 					Instance._positionToChunk.TryRemove(chunkPosition, out _);
 					Instance._chunkToPosition[chunk] = newPosition;
@@ -287,6 +321,12 @@ public async void InitChunks()
 					{
 						blockinfo = RepackDamageData(blockinfo, packedDamageType, BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD);
 
+						// spawn coins when breaking gold block
+						if (GetBlockID(blockinfo) == BlockManager.BlockID("GoldOre")) {
+							var coinAmount = RNG.RandiRange(3,20);
+							var spawner = CoinSpawner.Create(chunkTilePosition*CHUNK_SIZE+blockToDamage-Godot.Vector3.One*0.5f,coinAmount,1+coinAmount/100);
+            				Instance.CallDeferred(MethodName.AddSibling, spawner);
+						}
 						// go from padded chunk position to chunk position
 						if (!chunkDestroyedBlocksLists.TryGetValue(chunkTilePosition, out var particle_spawn_list))
 						{
@@ -592,7 +632,7 @@ public async void InitChunks()
 			foreach (var pos in  Instance.DeferredMeshUpdates.Keys.Except(newPositions.Values)) {
 				if (_positionToChunk.ContainsKey(pos)) {
 					_positionToChunk[pos].CallDeferred(nameof(Chunk.Update));
-					Thread.Sleep(50);
+					Thread.Sleep(100);
 				}
 			}
 			
@@ -601,7 +641,7 @@ public async void InitChunks()
 			// update chunks which changed position
 			foreach ((var chunk, var pos) in newPositions) {
 				chunk.CallDeferred(nameof(Chunk.UpdateChunkPosition), pos);
-				Thread.Sleep(50);
+				Thread.Sleep(100);
 			}
 
 			var removes = Instance.MESHCACHE.Keys.Except(_chunkToPosition.Values);

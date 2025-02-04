@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://cq62vl3lgal1j"]
+
+[ext_resource type="Script" path="res://props/breakable/DestructibleMesh.cs" id="1_xnf8s"]
+[ext_resource type="PackedScene" uid="uid://chp2ignjvrvyg" path="res://props/stones/stone_mid_001_whole.tscn" id="2_flova"]
+[ext_resource type="PackedScene" uid="uid://mbwuvcmhkaf0" path="res://props/stones/stone_mid_001_broken.tscn" id="3_y4yo2"]
+
+[node name="DestructibleMedRock001" type="Node3D" node_paths=PackedStringArray("IntactScene", "BrokenScene")]
+script = ExtResource("1_xnf8s")
+IntactPacked = ExtResource("2_flova")
+BrokenPacked = ExtResource("3_y4yo2")
+IntactScene = NodePath("Stone_mid_001_whole")
+BrokenScene = NodePath("stone_mid_001_broken")
+MaxHealth = 200.0
+
+[node name="Stone_mid_001_whole" parent="." instance=ExtResource("2_flova")]
+
+[node name="stone_mid_001_broken" parent="." instance=ExtResource("3_y4yo2")]

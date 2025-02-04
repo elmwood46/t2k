@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://dhu4sqgl8emk" path="res://props/stones/stone_small_001_whole.tscn" id="2_vxjx2"]
 [ext_resource type="PackedScene" uid="uid://ddjjgcthsrexa" path="res://props/stones/stone_small_001_broken.tscn" id="3_q4yj3"]
 
-[node name="DestructibleRock" type="Node3D" node_paths=PackedStringArray("IntactScene", "BrokenScene")]
+[node name="DestructibleSmallRock001" type="Node3D" node_paths=PackedStringArray("IntactScene", "BrokenScene")]
 script = ExtResource("1_evltg")
 IntactPacked = ExtResource("2_vxjx2")
 BrokenPacked = ExtResource("3_q4yj3")

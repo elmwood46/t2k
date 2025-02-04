@@ -121,10 +121,29 @@ public partial class Player : CharacterBody3D
         worldModel.Rotation = new Vector3(0, Head.Rotation.Y, 0);
     }
 
+    public void CheckForCoins()
+    {
+        var overlap = CoinPickupArea.GetOverlappingBodies();
+        foreach (var obj in overlap)
+        {
+            if (obj is Coin coin && !coin.MoveTowardPlayer)
+            {
+                coin.MoveTowardPlayer = true;
+            }
+        }
+    }
+
+    public static void AddMoney(int amount)
+    {
+        Instance._money += amount;
+    }
+
 	public void PushAwayRigidBodies() {
 		for (int i=0; i<GetSlideCollisionCount();i++) {
 			var c = GetSlideCollision(i);
-			if (c.GetCollider() is RigidBody3D r) {
+            var collider = c.GetCollider();
+            //if ( collider is Chunk) GD.Print($"collided with chunk {collider}");
+            if (collider is not Coin && collider is RigidBody3D r) {
 				var push_dir = -c.GetNormal();
 				var veldiff = Velocity.Dot(push_dir) - r.LinearVelocity.Dot(push_dir);
 				veldiff = Mathf.Max(veldiff, 0f);

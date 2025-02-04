@@ -90,7 +90,7 @@ public partial class RigidBreak : Node3D
     public bool EighthStrength { get; set; } = false;
     public bool OnlyOneParticle { get; set; } = false;
 
-    public Timer t;
+    public Timer _death_timer;
 
     private Node3D _explosionCentre;
 
@@ -142,14 +142,20 @@ public partial class RigidBreak : Node3D
         
         AddChild(_BrokenScene);
 
-        t = new Timer
+        _death_timer = new Timer(){WaitTime = DecayTime*0.25, Autostart = false, OneShot = true};
+        AddChild(_death_timer);
+        _death_timer.Timeout += () => {
+            CallDeferred(MethodName.QueueFree);
+            RemoveFromGroup("RigidBreak");
+        };
+        var t = new Timer
         {
             Autostart = false,
-            WaitTime = DecayTime
+            WaitTime = DecayTime*0.75,
+            OneShot = true
         };
          t.Timeout += () => {
-            RemoveFromGroup("RigidBreak");
-            QueueFree();
+            _death_timer.Start();
         };
         AddChild(t);
         t.Start();
@@ -180,7 +186,8 @@ public partial class RigidBreak : Node3D
     {
         if (_BrokenScene == null) return;
 
-        
+        /*
+        // apply starting impulse
         if (frames < 1f)
         {
             foreach (Node child in _BrokenScene.GetChildren())
@@ -188,11 +195,11 @@ public partial class RigidBreak : Node3D
                 if (child is RigidBody3D rb)
                 {
                     var dir = (_explosionCentre.GlobalPosition - Player.Instance.GlobalPosition).Normalized();
-                    //rb.ApplyImpulse(dir * 50f * (NoUpwardsImpulse ? new Vector3(1,0,1) : Vector3.One)) ;
-                    //rb.ApplyImpulse((rb.Position-_explosionCentre.Position).Normalized() * 50f * (NoUpwardsImpulse ? new Vector3(1,0,1) : Vector3.One));
+                    rb.ApplyImpulse(dir * 50f * (NoUpwardsImpulse ? new Vector3(1,0,1) : Vector3.One)) ;
+                    rb.ApplyImpulse((rb.Position-_explosionCentre.Position).Normalized() * 50f * (NoUpwardsImpulse ? new Vector3(1,0,1) : Vector3.One));
                 }
             }
-        }
+        }*/
 
         if ((int)frames %2 == 0)
         {
@@ -200,18 +207,14 @@ public partial class RigidBreak : Node3D
             {
                 if (child is RigidBody3D rb)
                 {
-                    if (t.TimeLeft < DecayTime/4)
+                    if (!_death_timer.IsStopped())
                     {
-                        rb.Scale = (float)Mathf.Max(t.TimeLeft/(DecayTime/4),0.1d)*Vector3.One;
-                    }
-                    else
-                    {
-                        rb.MoveAndCollide(rb.LinearVelocity*(float)delta);
+                        ((MeshInstance3D)rb.GetChild(0)).Scale = (float)Mathf.Max(_death_timer.TimeLeft/_death_timer.WaitTime,0.1)*Vector3.One;
+                        ((CollisionShape3D)rb.GetChild(1)).Scale = (float)Mathf.Max(_death_timer.TimeLeft/_death_timer.WaitTime,0.1)*Vector3.One;
                     }
                 }
             }
         }
-
         frames++;
     }
 }

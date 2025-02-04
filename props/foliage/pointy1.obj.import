@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://b63ippr0kbgg0"
+path="res://.godot/imported/pointy1.obj-bd1057cbcbb78c4314228698464d7146.mesh"
+
+[deps]
+
+files=["res://.godot/imported/pointy1.obj-bd1057cbcbb78c4314228698464d7146.mesh"]
+
+source_file="res://props/foliage/pointy1.obj"
+dest_files=["res://.godot/imported/pointy1.obj-bd1057cbcbb78c4314228698464d7146.mesh", "res://.godot/imported/pointy1.obj-bd1057cbcbb78c4314228698464d7146.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false
