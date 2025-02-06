@@ -19,7 +19,7 @@ public partial class Chunk : StaticBody3D
 	// 3d int array for holding blocks
     // each 32bit int contains packed block info: block type (10 bits), z (5 bits), y (5 bits), x (5 bits) 
     // this leaves 7 bits to implement block health or AO
-	public Vector3I ChunkPosition { get; private set; }
+	public Vector3I ChunkPosition { get; private set; } = Vector3I.MaxValue;
 
 	[Export]
 	public FastNoiseLite WallNoise { get; set; }
@@ -36,7 +36,7 @@ public partial class Chunk : StaticBody3D
         _chunk_area.SetCollisionMaskValue(3, true);
         AddChild(_chunk_area);
 	}
-
+    
     #region set chunk pos
 	public void SetChunkPosition(Vector3I position)
 	{
@@ -67,15 +67,6 @@ public partial class Chunk : StaticBody3D
                 coin.QueueFree();
             }
         }
-        foreach (var child in _chunk_area.GetOverlappingAreas())
-        {
-            if (child.GetParent().GetParent() is DestructibleMesh d && !d.BrokenScene.Visible)
-            {
-                var data = new DestructibleMeshData(d);
-                saved_breakable.Add(data);
-                to_remove.Add(d);
-            }
-        }
         foreach (var d in to_remove)
         {
             d.Free();
@@ -90,22 +81,44 @@ public partial class Chunk : StaticBody3D
         if (!ChunkManager.Instance.BREAKABLE_MESH_CACHE.TryGetValue(newchunkpos, out var saved_breakable)) return;
         foreach (DestructibleMeshData data in saved_breakable)
         {
-            var mesh = new DestructibleMesh
+            DestructibleMesh mesh;
+            if (data.isChestOpened >= 0)
             {
-                BrokenPacked = data.BrokenPacked,
-                IntactPacked = data.IntactPacked,
-                BrokenScene = data.BrokenPacked.Instantiate() as Node3D,
-                IntactScene = data.IntactPacked.Instantiate() as Node3D,
-                Health = data.Health,
-                MaxHealth = data.MaxHealth,
-                Type = data.Type,
-                PackedBlockDamageInfo = data.PackedBlockDamageInfo
-            };
+                var c = new DestructibleChest();
+                if (data.isChestOpened == 1) c.SetOpened();
+                mesh = c;
+            }
+            else mesh = new DestructibleMesh();
+            mesh.BrokenPacked = data.BrokenPacked;
+            mesh.IntactPacked = data.IntactPacked;
+            mesh.BrokenScene = data.BrokenPacked.Instantiate() as Node3D;
+            mesh.IntactScene = data.IntactPacked.Instantiate() as Node3D;
+            mesh.Health = data.Health;
+            mesh.MaxHealth = data.MaxHealth;
+            mesh.Type = data.Type;
+            mesh.PackedBlockDamageInfo = data.PackedBlockDamageInfo;
+            
             mesh.AddChild(mesh.BrokenScene);
             mesh.AddChild(mesh.IntactScene);
-            ((PhysicsBody3D)mesh.IntactScene.GetChild(0)).GlobalTransform = data.IntactTransform;
+            // necessary to preserve any scaling or transforms done to the broken scene
+            // in the editor
             mesh.BrokenScene.GlobalTransform = data.BrokenTransform;
+            ((PhysicsBody3D)mesh.IntactScene.GetChild(0)).GlobalTransform = data.IntactTransform;
+            if (mesh is DestructibleChest)
+            {
+                for (int i=0; i < 6; i++)
+                {
+                    ((Node3D)mesh.IntactScene.GetChild(0).GetChild(i)).Transform = data.ChestIntactLocalTransforms[i];
+                }
+            }
             GetTree().Root.AddChild(mesh);
+
+            // chests being loaded should never glow
+            // opened chests have less mass
+            if (data.isChestOpened == 1) {
+                ((DestructibleChest)mesh).TurnGlowOff();
+                ((RigidBody3D)mesh.IntactScene.GetChild(0)).Mass = DestructibleChest.MASS_WHEN_OPENED;
+            }
         }
     }
 

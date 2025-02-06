@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://c2jl3a6untkjq"]
+
+[ext_resource type="PackedScene" uid="uid://dc3uifgairky2" path="res://props/treasure/crates/BarrelB_whole.tscn" id="1_plyjg"]
+[ext_resource type="Script" path="res://props/breakable/DestructibleMesh.cs" id="1_u665o"]
+[ext_resource type="PackedScene" uid="uid://jdhyiuybc4bc" path="res://props/treasure/crates/BarrelB_broken.tscn" id="2_bepbe"]
+
+[node name="DestructibleBarrelYellow" type="Node3D" node_paths=PackedStringArray("IntactScene", "BrokenScene")]
+script = ExtResource("1_u665o")
+IntactPacked = ExtResource("1_plyjg")
+BrokenPacked = ExtResource("2_bepbe")
+IntactScene = NodePath("BarrelBWhole")
+BrokenScene = NodePath("BarrelB_broken")
+MaxHealth = 20.0
+Type = 2
+
+[node name="BarrelBWhole" parent="." instance=ExtResource("1_plyjg")]
+
+[node name="BarrelB_broken" parent="." instance=ExtResource("2_bepbe")]
+visible = false

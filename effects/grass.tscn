@@ -19,9 +19,10 @@ _surfaces = [{
 [node name="Grass" type="MultiMeshInstance3D"]
 material_override = ExtResource("1_p1tod")
 cast_shadow = 0
+gi_mode = 0
 script = ExtResource("2_ksoho")
 Density = 240.0
-BladeWidth = Vector2(0.5, 0.5)
-BladeHeight = Vector2(0.8, 1)
+BladeWidth = Vector2(2, 2.8)
+BladeHeight = Vector2(0.8, 1.3)
 SwayPitchDegrees = Vector2(1, 2)
 TerrainMesh = SubResource("ArrayMesh_sqa3a")

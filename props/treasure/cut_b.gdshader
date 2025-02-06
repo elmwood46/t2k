@@ -1,7 +1,7 @@
 shader_type spatial;
 render_mode cull_back, unshaded;
 
-#include "cut_distance.gdshaderinc"
+#include "res://props/treasure/coin/cut_distance.gdshaderinc"
 
 uniform sampler2D _noise;
 uniform sampler2D _spot_noise;

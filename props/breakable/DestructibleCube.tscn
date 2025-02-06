@@ -11,7 +11,7 @@ IntactPacked = ExtResource("2_msv0g")
 BrokenPacked = ExtResource("3_re3nl")
 IntactScene = NodePath("breakable_cube")
 BrokenScene = NodePath("breakable_cube_broke")
-Type = 2
+Type = 5
 
 [node name="breakable_cube" parent="." instance=ExtResource("2_msv0g")]
 

@@ -1,15 +1,18 @@
+using System;
 using System.Collections.Generic;
 using Godot;
 
 [Tool]
 public partial class Grass : MultiMeshInstance3D {
-    public static readonly ShaderMaterial GrassBladeMaterial = ResourceLoader.Load("res://shaders/grass/multimesh_grass_shader.tres") as ShaderMaterial;
+    //public static readonly ShaderMaterial GrassBladeMaterial = ResourceLoader.Load("res://shaders/grass/multimesh_grass_shader.tres") as ShaderMaterial;
 
     public Vector3 PlayerPosition { get; set; }
     public Vector3 ChunkPosition { get; set; }
 
+    public List<(Transform3D,Color)> Spawns {get; private set;}
+
     public override void _Ready() {
-        MaterialOverride = GrassBladeMaterial;
+        //MaterialOverride = GrassBladeMaterial;
     }
 
     [Export] public float Density
@@ -83,16 +86,16 @@ public partial class Grass : MultiMeshInstance3D {
     }
 
     public static List<(Transform3D, Color)> GenSpawns(Grass grass) {
-        return GrassFactory.Generate(
+        var spawns =  GrassFactory.Generate(
             grass.TerrainMesh,
             grass.Density,
             grass.BladeWidth,
             grass.BladeHeight,
             grass.SwayYawDegrees,
-            grass.SwayPitchDegrees,
-            grass.PlayerPosition,
-            grass.ChunkPosition
+            grass.SwayPitchDegrees
         );
+        grass.Spawns = spawns;
+        return spawns;
     }
 
     public static MultiMesh GenMultiMesh(Grass grass) {
@@ -114,7 +117,29 @@ public partial class Grass : MultiMeshInstance3D {
         return mm;
     }
 
+    public static MultiMesh Rebuild(Grass grass) {
+        var spawns = GenSpawns(grass);
+        var mm = new MultiMesh
+            {
+                InstanceCount = 0,
+                Mesh = MeshFactory.SimpleGrass(),
+                TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
+                UseCustomData = true,
+                UseColors = false
+            };
+        mm.InstanceCount = spawns.Count;
+        if (spawns.Count == 0) return mm;
+
+        for (int i=0;i<spawns.Count;i++) {
+            var spawn = spawns[i];
+            mm.SetInstanceTransform(i, spawn.Item1);
+            mm.SetInstanceCustomData(i, spawn.Item2);
+        }
+        return mm;
+    }
+
     public void Rebuild(List<(Transform3D,Color)> spawns = null) {
+        /*
         if (TerrainMesh == null) return;
         Multimesh ??= new MultiMesh
             {
@@ -124,15 +149,20 @@ public partial class Grass : MultiMeshInstance3D {
                 UseCustomData = true,
                 UseColors = false
             };
-                
-        spawns ??= GrassFactory.Generate(TerrainMesh, Density, BladeWidth, BladeHeight, SwayYawDegrees, SwayPitchDegrees, PlayerPosition, ChunkPosition);
+        */
+        spawns = GrassFactory.Generate(TerrainMesh, Density, BladeWidth, BladeHeight, SwayYawDegrees, SwayPitchDegrees);
+        Multimesh.InstanceCount = spawns.Count;
         if (spawns.Count == 0) return;
 
-	    Multimesh.InstanceCount = spawns.Count;
-        for (int i=0;i<Multimesh.InstanceCount;i++) {
+        for (int i=0;i<spawns.Count;i++) {
             var spawn = spawns[i];
             Multimesh.SetInstanceTransform(i, spawn.Item1);
             Multimesh.SetInstanceCustomData(i, spawn.Item2);
         }
+    }
+
+    internal void SetSpawns(List<(Transform3D, Color)> spawns)
+    {
+        Spawns = spawns;
     }
 }

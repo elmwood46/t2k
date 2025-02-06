@@ -23,7 +23,6 @@ uniform vec3 _acidcol : source_color;
 uniform vec3 _acidedge : source_color;
 uniform vec3 _pulsecol : source_color;
 
-
 group_uniforms Debug;
 uniform bool ENABLE_DEBUG = false;
 uniform float debug_damage_amount : hint_range(0.0,1.0);

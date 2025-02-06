@@ -3,7 +3,10 @@ using RandomNumberGenerator = Godot.RandomNumberGenerator;
 
 public enum DestructibleMeshType {
     Stone,
-    Treasure,
+    LV1Chest,
+	YellowCrate,
+	RedCrate,
+	BlueCrate,
     Cube
 }
 
@@ -21,6 +24,7 @@ public interface IHurtable
 /// The physicsbody3d's first child must be the meshinstance3d which holds its mesh and material data.
 /// The broken scene's root is a node3d and it has a number of rigid bodies as children which are the fragmented pieces of the intact scene.
 /// When the intact scene is broken, it is freed from the queue and the broken scene is made visible, its collisions are enabled, and it is moved to the position occupied by the intact scene.
+/// Destructlbe mesh which are meant to be static: set them to rigibody static kinematic mode. intact scene also NEEDS to have collision mask 1 disabled, and enable mask and layer 4.
 /// </summary>
 public partial class DestructibleMesh : Node3D, IHurtable
 {
@@ -46,24 +50,53 @@ public partial class DestructibleMesh : Node3D, IHurtable
 	private float _max_shake_factor = 0.05f;
 	private float _shake_factor = 0.0f;
 
-    private bool _is_broken = false;
-
+    protected bool _is_broken = false;
 
 	private static readonly PackedScene _break_particles = ResourceLoader.Load<PackedScene>("res://props/stones/break_object_particles.tscn");
     private static readonly Texture2D _stone_texture =  ResourceLoader.Load<Texture2D>("res://props/stones/Textures/T_Stone.png");
     private static readonly Texture2D _cube_texture = ResourceLoader.Load<Texture2D>("res://BlockTextures/EMPTY_TEXTURE.png");
+	private static readonly StandardMaterial3D _chest_texture = ResourceLoader.Load<StandardMaterial3D>("res://props/treasure/chest/Textures/chest_material3d.tres");
+	private static readonly Texture2D _crate_texture = ResourceLoader.Load<Texture2D>("res://props/treasure/crates/prototypebits_texture.png");
 
 	private static readonly RandomNumberGenerator RNG = new();
 
 	private Timer _death_timer = new(){Autostart = false};
+
+	public static bool IntactSceneIsRigidBody(DestructibleMeshType type)
+	{
+		return 
+			type == DestructibleMeshType.LV1Chest
+			|| type == DestructibleMeshType.YellowCrate
+			|| type == DestructibleMeshType.RedCrate
+			|| type == DestructibleMeshType.BlueCrate
+			|| type == DestructibleMeshType.Cube;
+	}
 
 	public override void _Ready()
 	{
         CallDeferred(MethodName.AddChild,_death_timer);
         Texture = Type switch {
             DestructibleMeshType.Stone => _stone_texture,
+			DestructibleMeshType.LV1Chest => _chest_texture.AlbedoTexture,
+			DestructibleMeshType.YellowCrate => _crate_texture,
             _ => _cube_texture
         };
+
+		if (IntactSceneIsRigidBody(Type))
+		{
+			((RigidBody3D)IntactScene.GetChild(0)).Freeze = true;
+			var _t = new Timer
+			{
+				Autostart = false,
+				WaitTime = 2,
+				OneShot = true
+			};
+			_t.Timeout += () => {
+				((RigidBody3D)IntactScene.GetChild(0)).Freeze = false;
+			};
+			AddChild(_t);
+			_t.Start();
+		}
 
 		_base_scale = ((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Scale;
 		_base_position = ((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Position;
@@ -72,8 +105,8 @@ public partial class DestructibleMesh : Node3D, IHurtable
 		_shaderMaterial = (ShaderMaterial)BlockManager.Instance.DestructibleObjectShader.Duplicate();
 		_shaderMaterial.SetShaderParameter("_texture_albedo", Texture);
         _shaderMaterial.SetShaderParameter("_damage_data", ChunkManager.GetBlockDamageData(PackedBlockDamageInfo));
-		if (IntactScene.GetChild(0).GetChild(0) is MeshInstance3D m) {
-			m.MaterialOverride = _shaderMaterial;
+		foreach (var child in IntactScene.GetChild(0).GetChildren()) {
+			if (child is MeshInstance3D m) m.MaterialOverride = _shaderMaterial;
 		}
 	}
 
@@ -85,18 +118,19 @@ public partial class DestructibleMesh : Node3D, IHurtable
 
 	public void TakeDamage(int damage, BlockDamageType type)
 	{
+		if (_is_broken) return;
 		Health -= damage;
 		if (Health <= 0) Health = 0;
 		var healthfact = 1.0f-Health/MaxHealth;
         var new_dmg = Mathf.RoundToInt(BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD*healthfact);
         PackedBlockDamageInfo = ChunkManager.AddBlockDamage(PackedBlockDamageInfo, type, new_dmg);
-		GD.Print($"set damage to: {Mathf.RoundToInt(BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD*healthfact)}");
+		//GD.Print($"set damage to: {Mathf.RoundToInt(BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD*healthfact)}");
 		_shaderMaterial.SetShaderParameter("_damage_data", ChunkManager.GetBlockDamageData(PackedBlockDamageInfo));
 
         // do shake effect
         // only shake if we took damage and are a static body
         // (rigid bodies already react to damage by being shoved, we don't need to do anything here)
-		if (damage <= 0 || IntactScene.GetChild(0) is not RigidBody3D rb || rb.Freeze == false) return;
+		if (damage <= 0 || IntactScene?.GetChild(0) is not RigidBody3D rb || rb.Freeze == false) return;
 		_hit_time = _max_hit_time;
 
 
@@ -104,7 +138,7 @@ public partial class DestructibleMesh : Node3D, IHurtable
 		scalex = Mathf.Lerp(_base_scale.X,_base_scale.X*_max_scale_factor,healthfact);
 		scaley = Mathf.Lerp(_base_scale.Y,_base_scale.Y*_max_scale_factor,healthfact);
 		scalez = Mathf.Lerp(_base_scale.Z,_base_scale.Z*_max_scale_factor,healthfact);
-		((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Scale = new Vector3(scalex,scaley,scalez);
+		((MeshInstance3D)IntactScene?.GetChild(0).GetChild(0)).Scale = new Vector3(scalex,scaley,scalez);
 
 		_shake_factor = Mathf.Lerp(0.0f,_max_shake_factor,healthfact);
 	}
@@ -122,28 +156,32 @@ public partial class DestructibleMesh : Node3D, IHurtable
 	}
 
 	public void Break(Vector3 collisionPoint, float force) {
-        if (_is_broken) return;
         _is_broken = true;
         if (((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Scale != _base_scale) ((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Scale = _base_scale;
         if (((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Position != _base_position) ((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Position = _base_position;
         // spawn coins
+		// first number is chance, second and third is min and max amount of coins
         var spawn_chance = Type switch {
-            DestructibleMeshType.Stone => 0.10f,
-            DestructibleMeshType.Treasure => 1.0f,
-            DestructibleMeshType.Cube => 1.0f,
-            _ => 0.0f
+            DestructibleMeshType.Stone => (0.10f,0,100),
+            DestructibleMeshType.LV1Chest => (0.0f,0,0), // treasure chests manage loot spawning separately
+            DestructibleMeshType.Cube => (1.0f,50,100),
+			DestructibleMeshType.YellowCrate => (1.0f,50,100),
+			DestructibleMeshType.RedCrate => (1.0f,100,150),
+			DestructibleMeshType.BlueCrate => (1.0f,150,200),
+            _ => (0.0f,0,0)
         };
-        if (RNG.Randf() < spawn_chance)
+        if (RNG.Randf() < spawn_chance.Item1)
         {
-            BrokenScene.GetChild(0).AddChild(CoinSpawner.Create(((Node3D)IntactScene.GetChild(0)).GlobalPosition,100,2.0));
+            AddSibling(CoinSpawner.Create(((Node3D)IntactScene.GetChild(0)).GlobalPosition,RNG.RandiRange(spawn_chance.Item2,spawn_chance.Item3),2.0));
         }
 
 		var part = _break_particles.Instantiate() as GpuParticles3D;
 		AddChild(part);
 		part.Emitting = true;
 		if (!BrokenScene.Visible) {
-			BrokenScene.Position = ((Node3D)IntactScene.GetChild(0)).Position;
-			BrokenScene.Rotation = ((Node3D)IntactScene.GetChild(0)).Rotation;
+			//BrokenScene.Position = ((Node3D)IntactScene.GetChild(0)).Position;
+			//BrokenScene.Rotation = ((Node3D)IntactScene.GetChild(0)).Rotation;
+			BrokenScene.Transform = ((Node3D)IntactScene.GetChild(0)).Transform;
 			BrokenScene.Visible = true;
 
 			if (IntactScene.GetChild(0) is PhysicsBody3D pb)
@@ -190,7 +228,7 @@ public partial class DestructibleMesh : Node3D, IHurtable
                 };
                 AddChild(_death_timer);
                 _death_timer.Timeout += () => {
-				    CallDeferred(MethodName.QueueFree);
+					this?.CallDeferred(MethodName.QueueFree);
                 };
                 _death_timer.Start();
 			};
@@ -202,6 +240,12 @@ public partial class DestructibleMesh : Node3D, IHurtable
     float _frame = 0;
 	public override void _PhysicsProcess(double delta)
 	{
+		// remove if fallen too far
+		if ( !_is_broken && IntactScene != null && ((Node3D)IntactScene?.GetChild(0)).GlobalPosition.Y < 0.0f && ((RigidBody3D)IntactScene.GetChild(0)).Freeze == false) {
+			_is_broken = true;
+			this?.CallDeferred(MethodName.QueueFree);
+			return;
+		}
         // scale broken fragments
 		if (_is_broken) {
             if (!_death_timer.IsStopped()) {

@@ -5,8 +5,8 @@
 [resource]
 render_priority = 0
 shader = ExtResource("1_qx2f6")
-shader_parameter/col_top = Color(0.74902, 0.878431, 0.87451, 1)
-shader_parameter/col_bottom = Color(0.307652, 0.473962, 0.341837, 1)
+shader_parameter/col_top = Color(0.286471, 0.492814, 0.451284, 1)
+shader_parameter/col_bottom = Color(0.615686, 0.796078, 0.760784, 1)
 shader_parameter/roughness_factor = 2.336
 shader_parameter/deg_sway_pitch_offset = 80.0
 shader_parameter/deg_sway_yaw_offset = 45.0

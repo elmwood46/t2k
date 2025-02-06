@@ -14,7 +14,7 @@ public partial class ChunkManager : Node
     const float INVSQRT2 = 0.70710678118f;
     private static readonly Vector3 SlopedNormalNegZ = new(0, INVSQRT2, -INVSQRT2);
     private static readonly Vector3 SlopedCornerNormalNegZ = new(INVSQRT2, INVSQRT2, -INVSQRT2);
-    public static int[] BatchUpdateBlockSlopeData(Vector3I chunkPosition, List<Vector3I> blockPositions, int[] chunk, bool excludeSlopes = false) {
+    public static void BatchUpdateBlockSlopeData(Vector3I chunkPosition, List<Vector3I> blockPositions, int[] chunk, bool excludeSlopes = false) {
         Dictionary<Vector3I,int> packedSlopeBlockData = new();
         foreach (var blockPosition in blockPositions) {
             var block = chunk[BlockIndex(blockPosition)];
@@ -32,9 +32,10 @@ public partial class ChunkManager : Node
             //var blockbelow = GetBlockNeighbour(chunkPosition, blockPosition, Vector3I.Down)!=0;
             var blockflip = false;//IsTripleBlockAbove(chunkPosition, blockPosition) && !IsBlockBelow(chunkPosition, blockPosition);
 
-            var blockinfo = Instance.BLOCKCACHE[chunkPosition][BlockIndex(blockPosition)];
-            blockinfo = RepackSlopeData(blockinfo,GetBlockSlopeType(blockinfo),GetBlockSlopeRotationBits(blockinfo),blockflip?1:0);
-            Instance.BLOCKCACHE[chunkPosition][BlockIndex(blockPosition)] = blockinfo;
+            //var blockinfo = Instance.BLOCKCACHE[chunkPosition][BlockIndex(blockPosition)];
+            block = RepackSlopeData(block,GetBlockSlopeType(block),GetBlockSlopeRotationBits(block),blockflip?1:0);
+            chunk[BlockIndex(blockPosition)] = block;
+            //Instance.BLOCKCACHE[chunkPosition][BlockIndex(blockPosition)] = blockinfo;
             
             //var _flip = 1;
             //if (blockflip) _flip = -1;
@@ -59,7 +60,6 @@ public partial class ChunkManager : Node
             var i = BlockIndex(p);
             chunk[i] = RepackSlopeData(chunk[i],packedSlopeData);
         }
-        return chunk;
     }
 
     public static int BlockPackSlopeInfo(Vector3I chunkPosition, Vector3I blockPosition, bool blockflip) {
@@ -419,11 +419,11 @@ public partial class ChunkManager : Node
             var newp = p-delta*CSP;
             if (!Instance.BLOCKCACHE.TryGetValue(chunkPosition+delta, out var neighbour)) {
                 neighbour = new int[CSP3*SUBCHUNKS];
+                Instance.BLOCKCACHE[chunkPosition+delta] = neighbour;
             }
 
             var new_idx = BlockIndex(newp);
             neighbour[new_idx] = newBlockInfo;
-            Instance.BLOCKCACHE[chunkPosition+delta] = neighbour;
             Instance.DeferredMeshUpdates.TryAdd(chunkPosition+delta,new());
             Instance.DeferredMeshUpdates.TryAdd(chunkPosition,new());
         }

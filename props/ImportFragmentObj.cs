@@ -10,7 +10,7 @@ public partial class ImportFragmentObj : EditorScenePostImport
     public override GodotObject _PostImport(Node scene)
     {
         // add collision shapes to the imported objects
-        ResourceSaver.Save(Iterate(scene), $"res://props/stones/{scene.Name}.tscn");
+        ResourceSaver.Save(Iterate(scene), $"res://props/treasure/chest/{scene.Name}.tscn");
         return scene; // Remember to return the imported scene
     }
 

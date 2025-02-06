@@ -6,8 +6,8 @@ public static class GrassFactory
 {
     // random barycentric coordinates
     static Vector3 RandBcc() {
-        float u = GD.Randf();
-        float v = GD.Randf();
+        var u = (float)Random.Shared.NextDouble();
+        var v = (float)Random.Shared.NextDouble();
         if (u+v >= 1.0f) {
             u = 1.0f - u;
             v = 1.0f - v;
@@ -50,17 +50,9 @@ public static class GrassFactory
         return Mathf.Sqrt(s*(s-ab)*(s-bc)*(s-ca)); 
     }
 
-    public static List<(Transform3D, Color)> Generate
-        (Mesh mesh,
-        float density,
-        Vector2 bladewidth,
-        Vector2 bladeheight,
-        Vector2 degyaw,
-        Vector2 degpitch,
-        Vector3 player_pos,
-        Vector3 chunk_pos) 
+    public static List<(Transform3D, Color)> Generate (Mesh mesh,float density,Vector2 bladewidth,Vector2 bladeheight,Vector2 degyaw,Vector2 degpitch)
     {
-        if (mesh == null) {
+        if (mesh == null || mesh.GetSurfaceCount() == 0) {
             //GD.PrintErr("TerrainMesh is not set!");
             return new List<(Transform3D, Color)>();
         }
@@ -82,7 +74,8 @@ public static class GrassFactory
        // var dropoff = Mathf.Pow(2,-player_dist/Mathf.RoundToInt(Chunk.CHUNK_SIZE*1.5f*Chunk.VOXEL_SCALE)); // halve density every 1.5 chunks
         //density *= dropoff;
         //if (density < 50.0f) return spawns;
-
+        var radyaw = (Mathf.DegToRad(degyaw.X),Mathf.DegToRad(degyaw.Y));
+        var radpitch = (Mathf.DegToRad(degpitch.X),Mathf.DegToRad(degpitch.Y));
         for (int i=0;i<indices.Length;i+=3) {
             var j = indices[i];
 			var k = indices[i + 1];
@@ -94,6 +87,9 @@ public static class GrassFactory
 			);
             
             var bladesPerFace = (int)Mathf.Round(area * density);
+            // HACK - set sloped blocks to generate more grass blades
+            if (normals[j].Dot(Vector3.Up) < 0.8f) bladesPerFace*=3;
+            
             for (int blade=0;blade<bladesPerFace;blade++) {
                 var uvw = RandBcc();
                 var pos = FromBccVector3(uvw,positions[j],positions[k],positions[l]);
@@ -103,17 +99,18 @@ public static class GrassFactory
                 //dropoff = Mathf.Pow(2,-player_dist/(Chunk.CHUNK_SIZE*1.5f*Chunk.VOXEL_SCALE));
                 //if (blade > (int)bladesPerFace*dropoff) continue;
 
-                var normal = FromBccVector3(uvw,normals[j],normals[k],normals[l]);
-                var q1 = new Quaternion(Vector3.Up,Mathf.DegToRad(360.0f*GD.Randf()));
+                // made everything up for blocky world
+                var normal = Vector3.Up;///FromBccVector3(uvw,normals[j],normals[k],normals[l]);
+                var q1 = new Quaternion(Vector3.Up,Mathf.Tau*GD.Randf());
                 var q2 = ShortestArc(Vector3.Up,normal);
                 var transform = new Transform3D(new Basis(q2*q1),pos); // make grass blade snap to surface normal
                 var customParams = new Color( 
                     (float)GD.RandRange(bladewidth.X,bladewidth.Y),
                     (float)GD.RandRange(bladeheight.X,bladeheight.Y),
-                    (float)Mathf.DegToRad(GD.RandRange(degyaw.X,degyaw.Y)),
-                    (float)Mathf.DegToRad(GD.RandRange(degpitch.X,degpitch.Y))
+                    (float)GD.RandRange(radyaw.Item1,radyaw.Item2),
+                    (float)GD.RandRange(radpitch.Item1,radpitch.Item2)
                 );
-                spawns.Add(new (transform,customParams));
+                spawns.Add(new (transform, customParams));
             }
         }
         //GD.Print("generated ",spawns.Count," grass blades");

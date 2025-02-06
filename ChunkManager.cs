@@ -16,14 +16,24 @@ public partial class ChunkManager : Node, IReloadable
 	public ConcurrentDictionary<Vector3I, int[]> BLOCKCACHE = new();
 	public ConcurrentDictionary<Vector3I, ChunkMeshData> MESHCACHE = new();
 	public ConcurrentDictionary<Vector3I, List<DestructibleMeshData>> BREAKABLE_MESH_CACHE = new ();
+	public ConcurrentDictionary<Vector3I, Grass[]> GRASS_MULTIMESHES = new();
+	public ConcurrentBag<Grass[]> BAG_O_GRASS = new();
+	const int MAX_GRASS_DENSITY = 60;
+	const int GRASS_MULTIMESHES_PER_CHUNK = 1;
+	public static readonly PackedScene GrassScene = ResourceLoader.Load<PackedScene>("res://effects/grass.tscn");
+	public static readonly PackedScene DestroyedGrassPaticlesScene = ResourceLoader.Load<PackedScene>("res://effects/destroy_grass_particles.tscn");
 
 	// deferred mesh updates also holds a list of which blocks were filled in the chunk
 	// this allows for more efficient processing of sloped blocks when we mesh the chunk
 	public ConcurrentDictionary<Vector3I, List<Vector3I>> DeferredMeshUpdates = new();
-	public ConcurrentStack<byte> DamagingBlocks = new(); 
+	public ConcurrentStack<byte> DamagingBlocks = new();
 
-    public static readonly DestructibleMesh[] DestructibleMeshScenes = new DestructibleMesh[3];
+	const int NUM_MESH_SPAWNS = 6;
+	private int DESTRUCTO_CHEST_IDX;
+    public static readonly DestructibleMesh[] DestructibleMeshScenes = new DestructibleMesh[NUM_MESH_SPAWNS];
+	public static readonly DestructibleMeshData[] DestructibleMeshDatas = new DestructibleMeshData[NUM_MESH_SPAWNS];
 	public static readonly Godot.Vector3 DestructibleMeshSceneOffset = new(0.0f,-1000.0f,0.0f);
+	public static readonly Transform3D DestroyedGrassOffset = new(new Basis(), DestructibleMeshSceneOffset);
 
 	public static readonly Godot.RandomNumberGenerator RNG = new();
 
@@ -31,7 +41,7 @@ public partial class ChunkManager : Node, IReloadable
 	[Export] public PackedScene ChunkScene { get; set; }
 	// this is the number of chunks rendered in the x and z direction, centered around the player
 	// the "render distance"
-	const int _width = 4;
+	const int _width = 5;
 	const int _y_width = 1;
 	const int _width_sq = (1+_width/2)*(1+_width/2);
 
@@ -80,23 +90,43 @@ public partial class ChunkManager : Node, IReloadable
 	{
 		if (Engine.IsEditorHint()) return;
 
+		lock (_playerPositionLock)
+		{
+			_playerPosition = Player.Instance != null ? Player.Instance.GlobalPosition : Godot.Vector3.Zero;
+		}
+
+		// set up mesh spawning static bodies
 		var meshes = new[] 
         {
             ResourceLoader.Load<PackedScene>("res://props/stones/DestructibleBigRock001.tscn").Instantiate() as DestructibleMesh,
             ResourceLoader.Load<PackedScene>("res://props/stones/DestructibleMedRock001.tscn").Instantiate() as DestructibleMesh,
-            ResourceLoader.Load<PackedScene>("res://props/stones/DestructibleSmallRock001.tscn").Instantiate() as DestructibleMesh
+            ResourceLoader.Load<PackedScene>("res://props/stones/DestructibleSmallRock001.tscn").Instantiate() as DestructibleMesh,
+			ResourceLoader.Load<PackedScene>("res://props/treasure/chest/DestructibleChest.tscn").Instantiate() as DestructibleChest,
+			ResourceLoader.Load<PackedScene>("res://props/breakable/DestructibleCube.tscn").Instantiate() as DestructibleMesh,
+			ResourceLoader.Load<PackedScene>("res://props/treasure/crates/DestructibleBarrelYellow.tscn").Instantiate() as DestructibleMesh
         };
-		
 
-		for (int i=0; i<DestructibleMeshScenes.Length; i++)
+		for (int i=0; i<NUM_MESH_SPAWNS; i++)
 		{
 			DestructibleMeshScenes[i] = meshes[i];
 			AddChild(DestructibleMeshScenes[i]);
-			DestructibleMeshScenes[i].Translate(DestructibleMeshSceneOffset);
-			if (i==0) {
-				//DestructibleMeshScenes[i].GlobalPosition += 20.0f*Godot.Vector3.Up;
+			
+			var intact_mesh = (MeshInstance3D)DestructibleMeshScenes[i].IntactScene.GetChild(0).GetChild(0);
+			DestructibleMeshScenes[i].SetIntactMeshBaseScaleAndPosition(intact_mesh.Scale, intact_mesh.Transform.Origin);
+
+			if (DestructibleMeshScenes[i] is DestructibleChest) DESTRUCTO_CHEST_IDX = i;
+			if (((RigidBody3D)DestructibleMeshScenes[i].GetChild(0).GetChild(0)).Freeze == false)
+			{
 				((RigidBody3D)DestructibleMeshScenes[i].GetChild(0).GetChild(0)).Freeze = true;
 			}
+
+            var meshdata = new DestructibleMeshData(DestructibleMeshScenes[i])
+            {
+                BrokenTransform = ((Node3D)DestructibleMeshScenes[i].GetChild(1)).GlobalTransform
+            };
+            DestructibleMeshDatas[i] = meshdata;
+			// hide the mesh scenes
+			DestructibleMeshScenes[i].Translate(DestructibleMeshSceneOffset);
 		}
 
 		BLOCKCACHE.Clear();
@@ -116,7 +146,7 @@ public partial class ChunkManager : Node, IReloadable
 
 		GD.Print("chunks: ", _chunks.Count);
 
-		InitChunks();
+		CallDeferred(MethodName.InitChunks);
 	}
 
 public async void InitChunks()
@@ -156,6 +186,17 @@ public async void InitChunks()
 				return Task.CompletedTask;
 			}));
 		}
+		await Task.WhenAll(tasks);
+
+		tasks.Clear();
+		foreach (var meshpos in Instance.MESHCACHE.Keys.Union(Instance.DeferredMeshUpdates.Keys))
+		{
+			tasks.Add(Task.Run(() => {
+				SpawnGrass(meshpos);
+				Thread.Sleep(10);
+				return Task.CompletedTask;
+			}));
+        }
 		await Task.WhenAll(tasks);
 
 		foreach (var chunk in _chunks)
@@ -246,7 +287,6 @@ public async void InitChunks()
 			var _blockidx = BlockIndex(blockpos);
 			_blocks[_blockidx] = RepackBlockType(_blocks[_blockidx], block_type);
 
-			Instance.BLOCKCACHE[chunkTilePosition] = _blocks;
 			Instance.MESHCACHE[chunkTilePosition] = BuildChunkMesh(chunkTilePosition);
 
 			if (Instance._positionToChunk.TryGetValue(chunkTilePosition, out var chunk)) {
@@ -293,14 +333,13 @@ public async void InitChunks()
 			tasks.Add(Task.Run(()=>
 			{
 				var chunk_was_not_damaged = true;
-				var _blocks = TryGetChunkBlockData(chunkTilePosition);
 
 				// output dictionary of block positions where particles need to be spawned (for destroyed blocks) and textures for spawned particles
-				if (_blocks == null) return Task.CompletedTask;
+				if (!Instance.BLOCKCACHE.TryGetValue(chunkTilePosition, out var _blocks)) return Task.CompletedTask;
 
 				// array of tuples with block global position as Item1 and damage as Item2
 				foreach ((var blockToDamage, var blockDamageAmount) in blockList)
-				{				
+				{
 					var block_idx = BlockIndex(blockToDamage);
 					var blockinfo = _blocks[block_idx];
 
@@ -309,6 +348,16 @@ public async void InitChunks()
 
 					// increase block damage percentage
 					var block_damaged = (float)GetBlockDamageInteger(blockinfo);
+
+					// spawn grass particles if damaging an unsloped grass block for the first time
+					if (block_damaged == 0 && GetBlockID(blockinfo) == BlockManager.BlockID("Grass") && !IsBlockSloped(blockinfo))
+					{
+						var grass_particles = DestroyedGrassPaticlesScene.Instantiate() as GpuParticles3D;
+						Instance.CallDeferred(MethodName.AddSibling, grass_particles);
+						grass_particles.CallDeferred(Node3D.MethodName.SetGlobalPosition,chunkTilePosition*CHUNK_SIZE+blockToDamage-new Godot.Vector3(0.5f,0,0.5f));
+					}
+
+					// calculate block damage
 					block_damaged += blockDamageAmount*GetBlockFragility(blockinfo);
 					var dam_rounded = Mathf.RoundToInt(block_damaged);
 					if (dam_rounded > GetBlockDamageInteger(blockinfo)) chunk_was_not_damaged = false;
@@ -342,10 +391,6 @@ public async void InitChunks()
 					}
 				}
 				if (chunk_was_not_damaged) return Task.CompletedTask;
-
-
-				//GD.Print("updating single where blocks were broken ",chunkTilePosition);
-				Instance.BLOCKCACHE[chunkTilePosition] = _blocks;
 				Thread.Sleep(10);
 				return Task.CompletedTask;
 			}));
@@ -357,7 +402,6 @@ public async void InitChunks()
 		{
 			tasks.Add(Task.Run(()=>
 			{
-				var _blocks = TryGetChunkBlockData(chunkTilePosition);
 				// update mesh and collision shape
 				// recalculate mesh slopes
 				if (chunkDestroyedBlocksLists.TryGetValue(chunkTilePosition, out var spawnList)) {
@@ -389,9 +433,6 @@ public async void InitChunks()
 						}
 					}
 				} else return Task.CompletedTask;
-
-				//GD.Print("updating single where blocks were broken ",chunkTilePosition);
-				Instance.BLOCKCACHE[chunkTilePosition] = _blocks;
 				Thread.Sleep(10);
 				return Task.CompletedTask;
 			}));
@@ -431,6 +472,8 @@ public async void InitChunks()
 		}
 		await Task.WhenAll(tasks);
 
+		Instance.DamagingBlocks.TryPop(out _);
+
 		tasks.Clear();
 		foreach (var chunkTilePosition in neighboursToUpdate.Union(chunkBlockMapping.Keys))
 		{
@@ -446,6 +489,56 @@ public async void InitChunks()
 				return Task.CompletedTask;
 			}));
 		}
+		await Task.WhenAll(tasks);
+
+		tasks.Clear();
+		// update grass
+		var grass_updates = new ConcurrentDictionary<Grass,List<int>>();
+		foreach (var (chunk, destroyed_block_set) in chunkDestroyedBlocksLists)
+		{
+			if (!Instance.GRASS_MULTIMESHES.ContainsKey(chunk)) continue;
+
+			if (Instance.GRASS_MULTIMESHES.TryGetValue(chunk, out var grass_lods))
+			{
+				var keys = destroyed_block_set.Keys.ToHashSet();
+				if (slopeUpdateSet.TryGetValue(chunk, out var slopeUpdateList)) 
+				{
+					foreach (var pos in slopeUpdateList)
+					{
+						keys.Add(pos);
+					}
+				}
+				foreach (var grass in grass_lods)
+				{
+					tasks.Add(Task.Run(() => {
+						var spawns = grass.Spawns;
+						for (int i=0; i< spawns.Count; i++)
+						{
+							var block_pos = (Vector3I)spawns[i].Item1.Origin+Vector3I.One;
+							if (keys.Contains(block_pos)||keys.Contains(block_pos+Vector3I.Down))
+							{
+								if (!grass_updates.TryGetValue(grass, out var idx_list))
+								{
+									idx_list = new(){i};
+									grass_updates[grass] = idx_list;
+								} else idx_list.Add(i);
+								//grass.Multimesh.SetInstanceTransform(i,DestroyedGrassOffset);
+							}
+						}
+						return Task.CompletedTask;
+					}));
+				}
+			}
+		}
+		await Task.WhenAll(tasks);
+
+		foreach (var (grass, updatelist) in grass_updates)
+		{
+			foreach (var i in updatelist)
+			{
+				grass.Multimesh.SetInstanceTransform(i,DestroyedGrassOffset);
+			}
+		}
 
 		// update chunk tile positions and spawn rigid bodies
 		/*
@@ -460,14 +553,17 @@ public async void InitChunks()
 		}*/
 
 		await Task.WhenAll(tasks);
-		Instance.DamagingBlocks.TryPop(out _);
 	}
 	#endregion
-
+	
+	private float seconds = 0.0f;
+	private int prev_seconds = 0;
+	#region phys process
 	public override void _PhysicsProcess(double delta)
 	{
 		if (!Engine.IsEditorHint())
 		{
+			var chunkpos = GlobalPositionToChunkPosition(_playerPosition);
 			lock (_playerPositionLock)
 			{
 				//var chunkpos = GlobalPositionToChunkPosition(_playerPosition);
@@ -477,8 +573,44 @@ public async void InitChunks()
 					GD.Print("player chunk position: ", GlobalPositionToChunkPosition(_playerPosition));
 				}*/
 			}
+			var newchunkpos = GlobalPositionToChunkPosition(_playerPosition);
+			if (newchunkpos != chunkpos)
+			{
+				foreach (var pos in Instance.GRASS_MULTIMESHES.Keys)
+				{
+					var grass_lods = Instance.GRASS_MULTIMESHES[pos];
+					foreach (var grass in grass_lods) grass.Visible = true;
+					// HACK - disable grass lod in physics process
+					/*
+					var diff = pos - newchunkpos;
+					var lod = GetGrassLODForPos(diff);
+					if (lod < GRASS_MULTIMESHES_PER_CHUNK) grass_lods[lod].Visible = true;*/
+				}
+			}
+		}
+
+		seconds += (float)delta;
+		if (seconds > prev_seconds)
+		{
+			prev_seconds += 1;
+			var i=0;
+			var j=0;
+			foreach (var child in GetTree().Root.GetChildren())
+			{
+				if (child is DestructibleMesh mesh)
+				{
+					i++;
+				}
+				if (child is DestructibleChest chest)
+				{
+					j++;
+				}
+			}
+			//GD.Print("number of destructible meshes: ", i);
+			//GD.Print("number of destructible chests: ", j);
 		}
 	}
+	#endregion
 
 	#region updates
 
@@ -546,6 +678,102 @@ public async void InitChunks()
 		return null;
 	}
 	#endregion
+
+	public static Task SpawnGrass(Vector3I chunkPositionIndex)
+	{
+		if (!Instance.MESHCACHE.TryGetValue(chunkPositionIndex,out var mesh)) return Task.CompletedTask;
+		var grass_lods = new Grass[GRASS_MULTIMESHES_PER_CHUNK];
+		var terrainmesh = mesh.GetSurface(ChunkMeshData.GRASS_SURFACE);
+		var lod = GetGrassLODForPos(chunkPositionIndex);
+		for (int i=0; i < grass_lods.Length; i++)
+		{
+            grass_lods[i] = GrassScene.Instantiate() as Grass;
+            grass_lods[i].TerrainMesh = terrainmesh;
+            grass_lods[i].Density = MAX_GRASS_DENSITY*(i == 0 ? 1 : 0.0f);
+            grass_lods[i].Multimesh = Grass.GenMultiMesh(grass_lods[i]);
+			Instance.CallDeferred(MethodName.AddNewGrassLODToTree,grass_lods[i],chunkPositionIndex*CHUNK_SIZE, i==lod);
+		}
+		Instance.GRASS_MULTIMESHES[chunkPositionIndex] = grass_lods;
+		return Task.CompletedTask;
+	}
+	
+	public static int GetGrassLODForPos(Vector3I relativePosition)
+	{
+		var lod = Math.Max(Math.Abs(relativePosition.Y),Math.Max(Math.Abs(relativePosition.X),Math.Abs(relativePosition.Z)));
+		if (lod < 3) lod = 0;
+		lod = Math.Max(lod,0);
+		return lod;
+	}
+
+	async public static Task UpdateGrass(Vector3I chunkPositionIndex)
+	{
+		if (!Instance.MESHCACHE.TryGetValue(chunkPositionIndex,out var mesh)) return;
+		var subtasks = new List<Task>();
+		if (Instance.BAG_O_GRASS.IsEmpty) return;
+		Instance.BAG_O_GRASS.TryTake(out var grass_lods);
+		var terrainmesh = mesh.GetSurface(ChunkMeshData.GRASS_SURFACE);
+
+		//var density = MAX_GRASS_DENSITY/grass_lods.Length;
+		subtasks.Add(Task.Run(() => {
+			for (int i=0; i < grass_lods.Length; i++)
+			{
+				var spawns = GrassFactory.Generate(
+					terrainmesh,
+					grass_lods[i].Density,
+					grass_lods[i].BladeWidth,
+					grass_lods[i].BladeHeight,
+					grass_lods[i].SwayYawDegrees,
+					grass_lods[i].SwayPitchDegrees
+					);
+				grass_lods[i].SetSpawns(spawns);
+				var mm = grass_lods[i].Multimesh;
+				mm.InstanceCount = spawns.Count;
+				for (int s=0;s<spawns.Count;s++) {
+					var spawn = spawns[s];
+					mm.SetInstanceTransform(s, spawn.Item1);
+					mm.SetInstanceCustomData(s, spawn.Item2);
+				}
+				Instance.CallDeferred(MethodName.UpdateGrassPositionAndMultiMesh,grass_lods[i],chunkPositionIndex*CHUNK_SIZE,mm);	
+			}
+		}));
+		await Task.WhenAll(subtasks);
+		Instance.GRASS_MULTIMESHES[chunkPositionIndex] = grass_lods;
+		return;
+	}
+
+	/// <summary>
+	/// Hibernates the grass lods. Remove them from the dictionary and move them to the bag.
+	/// </summary>
+	/// <param name="pos"></param>
+	private static void RemoveGrassToBag(Vector3I pos)
+	{
+		if (Instance.GRASS_MULTIMESHES.TryGetValue(pos, out var grass_lods))
+		{
+			foreach (var grass in grass_lods)
+			{
+				if (grass==null) continue;
+				grass.CallDeferred(Node3D.MethodName.SetVisible,false);
+			}
+			Instance.GRASS_MULTIMESHES.TryRemove(pos, out _);
+			if (!Instance.BAG_O_GRASS.Contains(grass_lods)) Instance.BAG_O_GRASS.Add(grass_lods);
+		}
+	}
+
+	private static void UpdateGrassPositionAndMultiMesh(Grass grass, Vector3I global_position, MultiMesh m_mesh)
+	{
+		// HACK - disable grass lod by making visible false
+		grass.Visible = true; // false;
+		grass.Multimesh = m_mesh;
+		grass.GlobalPosition = global_position;
+	}
+
+	private static void AddNewGrassLODToTree(Grass grass, Vector3I global_position, bool start_visible)
+	{
+		Instance.AddChild(grass);
+		//grass.MaterialOverride = Grass.GrassBladeMaterial;
+		grass.GlobalPosition = global_position;	
+		grass.Visible = start_visible;
+	}
 
 	#region thread process
 	private async void ThreadProcess()
@@ -625,8 +853,7 @@ public async void InitChunks()
 				}));
 				Thread.Sleep(10);
 			}
-			if (tasks.Count > 0)
-				await Task.WhenAll(tasks);
+			await Task.WhenAll(tasks);
 
 			// update chunks which need a deferred mesh update and aren't covered by the new positions
 			foreach (var pos in  Instance.DeferredMeshUpdates.Keys.Except(newPositions.Values)) {
@@ -650,6 +877,23 @@ public async void InitChunks()
 				Instance.MESHCACHE.TryRemove(pos, out _);
 			}
 
+			// update grass
+			foreach (var pos in Instance.GRASS_MULTIMESHES.Keys)
+				if (!Instance.MESHCACHE.ContainsKey(pos))
+					RemoveGrassToBag(pos);
+			tasks.Clear();
+			foreach (var pos in Instance.MESHCACHE.Keys)
+			{
+				if (!Instance.GRASS_MULTIMESHES.ContainsKey(pos))
+				{
+					tasks.Add(Task.Run(() => {
+						return UpdateGrass(pos);
+					}));
+				}
+				Thread.Sleep(10);
+			}
+			await Task.WhenAll(tasks);
+
 			/*
 			List<Vector3I> removes = new();
 			foreach (var (pos, mesh) in Instance.MESHCACHE)
@@ -672,6 +916,7 @@ public async void InitChunks()
 	}
 	#endregion
 
+	
 
     #region static block info
 
@@ -743,6 +988,11 @@ public async void InitChunks()
 
     public static int GetBlockDamageData(int blockInfo) {
         return (blockInfo>>BLOCK_DAMAGE_BITS_OFFSET) & 0xff;
+    }
+
+	private static bool IsBlockDamaged(int blockinfo)
+    {
+        return GetBlockDamageData(blockinfo) != 0;
     }
 
     public static int GetBlockDamageInteger(int blockInfo) {

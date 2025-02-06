@@ -1,0 +1,94 @@
+[gd_scene load_steps=11 format=3 uid="uid://df11li3khs87i"]
+
+[ext_resource type="Material" uid="uid://d0tmy2wkubu6g" path="res://effects/grass_break_particle_material.tres" id="3_c8gnq"]
+
+[sub_resource type="Curve" id="Curve_qm07a"]
+_data = [Vector2(0, 1), 0.0, 0.05199, 0, 0, Vector2(1, 0), -2.86648, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_y7qub"]
+curve = SubResource("Curve_qm07a")
+
+[sub_resource type="Curve" id="Curve_qadte"]
+min_value = -360.0
+max_value = 360.0
+_data = [Vector2(0, 243.593), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_qeasa"]
+curve = SubResource("Curve_qadte")
+
+[sub_resource type="Curve" id="Curve_75msa"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(0.99187, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_5vh1n"]
+curve = SubResource("Curve_75msa")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_r8nve"]
+lifetime_randomness = 0.17
+particle_flag_align_y = true
+angle_min = 222.2
+angle_max = 222.2
+angle_curve = SubResource("CurveTexture_qeasa")
+spread = 180.0
+initial_velocity_min = 1.0
+initial_velocity_max = 3.0
+gravity = Vector3(0, 1, 0)
+scale_min = 0.05
+scale_max = 0.18
+scale_curve = SubResource("CurveTexture_5vh1n")
+color = Color(0.798935, 0.908109, 0.885515, 1)
+alpha_curve = SubResource("CurveTexture_y7qub")
+turbulence_enabled = true
+turbulence_noise_strength = 1.18
+turbulence_noise_scale = 6.159
+turbulence_noise_speed_random = 2.89
+turbulence_influence_min = 0.057
+turbulence_influence_max = 0.068
+turbulence_initial_displacement_min = 1.49012e-06
+turbulence_initial_displacement_max = 1.49012e-06
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_acggy"]
+_surfaces = [{
+"aabb": AABB(-1, 0, -1, 2, 1e-05, 4),
+"attribute_data": PackedByteArray(255, 255, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0),
+"format": 34896613399,
+"index_count": 3,
+"index_data": PackedByteArray(0, 0, 1, 0, 2, 0),
+"material": ExtResource("3_c8gnq"),
+"name": "Plane",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 3,
+"vertex_data": PackedByteArray(255, 255, 0, 0, 0, 0, 255, 191, 255, 127, 0, 0, 255, 255, 255, 191, 0, 0, 0, 0, 0, 0, 255, 191, 255, 255, 255, 127, 255, 255, 255, 127, 255, 255, 255, 127)
+}]
+blend_shape_mode = 0
+
+[sub_resource type="GDScript" id="GDScript_4yaeo"]
+script/source = "extends Timer
+
+func _ready():
+	$\"..\".emitting = true
+	wait_time = $\"..\".lifetime
+	timeout.connect(_on_timer_timeout)
+	start()
+	
+
+func _on_timer_timeout():
+	$\"..\".queue_free()
+	print(\"destroyed grass particles\")
+"
+
+[node name="DestroyGrassParticles" type="GPUParticles3D"]
+cast_shadow = 0
+amount = 40
+lifetime = 1.5
+explosiveness = 1.0
+randomness = 0.33
+process_material = SubResource("ParticleProcessMaterial_r8nve")
+draw_pass_1 = SubResource("ArrayMesh_acggy")
+
+[node name="Timer" type="Timer" parent="."]
+one_shot = true
+script = SubResource("GDScript_4yaeo")

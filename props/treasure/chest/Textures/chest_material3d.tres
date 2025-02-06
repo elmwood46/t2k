@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" load_steps=4 format=3 uid="uid://cd3s6dinpblyj"]
+
+[ext_resource type="Texture2D" uid="uid://cfl6hcfs4sn5h" path="res://props/treasure/chest/Textures/chest_01_1001_BaseColor.png" id="1_06k4e"]
+[ext_resource type="Texture2D" uid="uid://cbx0vw1mfknep" path="res://props/treasure/chest/Textures/chest_01_1001_Metallic.png" id="2_yt66o"]
+[ext_resource type="Texture2D" uid="uid://cu3al5iqyw1i4" path="res://props/treasure/chest/Textures/chest_01_1001_Normal.png" id="3_p5cpd"]
+
+[resource]
+resource_name = "Material #5"
+cull_mode = 2
+albedo_color = Color(0.79059, 0.79059, 0.79059, 1)
+albedo_texture = ExtResource("1_06k4e")
+metallic = 1.0
+metallic_texture = ExtResource("2_yt66o")
+roughness = 0.858579
+normal_enabled = true
+normal_texture = ExtResource("3_p5cpd")

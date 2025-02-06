@@ -39,7 +39,6 @@ points = PackedVector3Array(1, 1, 1, 1, -1, 1, 1, 1, -1, -1, 1, 1, 1, -1, -1, -1
 
 [node name="@RigidBody3D@423552" type="RigidBody3D" parent="."]
 mass = 20.0
-freeze_mode = 1
 
 [node name="BlenderCube" type="MeshInstance3D" parent="@RigidBody3D@423552"]
 mesh = SubResource("ArrayMesh_qfift")

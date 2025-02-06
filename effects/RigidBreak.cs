@@ -209,8 +209,13 @@ public partial class RigidBreak : Node3D
                 {
                     if (!_death_timer.IsStopped())
                     {
-                        ((MeshInstance3D)rb.GetChild(0)).Scale = (float)Mathf.Max(_death_timer.TimeLeft/_death_timer.WaitTime,0.1)*Vector3.One;
-                        ((CollisionShape3D)rb.GetChild(1)).Scale = (float)Mathf.Max(_death_timer.TimeLeft/_death_timer.WaitTime,0.1)*Vector3.One;
+                        foreach (var rbc in rb.GetChildren())
+                        {
+                            if (rbc is MeshInstance3D m)
+                                m.Scale = (float)Mathf.Max(_death_timer.TimeLeft/_death_timer.WaitTime,0.1)*Vector3.One;
+                            else if (rbc is CollisionShape3D c)
+                                c.Scale = (float)Mathf.Max(_death_timer.TimeLeft/_death_timer.WaitTime,0.1)*Vector3.One;
+                        }
                     }
                 }
             }
