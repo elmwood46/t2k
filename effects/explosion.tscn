@@ -202,11 +202,10 @@ emission_energy_multiplier = 8.76
 material = SubResource("StandardMaterial3D_ccuhh")
 size = Vector3(0.05, 0.05, 0.05)
 
-[node name="Explosion" type="Node3D" node_paths=PackedStringArray("ExplosionParticles", "ExplosionSound", "ExplosionAnimation", "ExplosionAnimationMeshes", "ExplosionCollisionArea")]
+[node name="Explosion" type="Node3D" node_paths=PackedStringArray("ExplosionParticles", "ExplosionSound", "ExplosionAnimationMeshes", "ExplosionCollisionArea")]
 script = ExtResource("1_72nc2")
 ExplosionParticles = NodePath("GPUParticles3D")
 ExplosionSound = NodePath("explodeSound")
-ExplosionAnimation = NodePath("mesh/AnimationPlayer")
 ExplosionAnimationMeshes = NodePath("mesh")
 ExplosionCollisionArea = NodePath("Area3D")
 

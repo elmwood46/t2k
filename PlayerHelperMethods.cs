@@ -172,6 +172,25 @@ public partial class Player : CharacterBody3D
 		}
 	}
 
+    /// <summary>
+    /// Add camera shake amount between 0 and 1, adds as a proportion of max camera shake.
+    /// </summary>
+    /// <param name="amount">The percentage (between 0 and 1) of max camera shake to add. A value of 0.2 adds 20% camera shake.</param>
+    public void AddCameraShake(float amount) 
+    {
+        amount = Mathf.Clamp(amount, 0, 1);
+        _camera_shake_amount = Mathf.Clamp((float)_camera_shake_amount+amount*MaxCameraShake, 0, MaxCameraShake);
+    }
+
+    public void DoCameraShake()
+    {
+        if (_camera_shake_amount <= 0) return;
+        var shake = new Vector3((float)GD.RandRange(-_camera_shake_amount, _camera_shake_amount), (float)GD.RandRange(-_camera_shake_amount, _camera_shake_amount), (float)GD.RandRange(-_camera_shake_amount, _camera_shake_amount));
+        CameraShake.Position = shake;
+        _camera_shake_amount = Mathf.Max(_camera_shake_amount - CameraShakeDecay, 0);
+        if (_camera_shake_amount == 0) CameraShake.Position = Vector3.Zero;
+    }
+
 	private bool SnapUpStairsCheck(float delta)
 	{
 		if (!(IsOnFloor() || _snappedToStairsLastFrame)) return false;
@@ -336,5 +355,15 @@ public partial class Player : CharacterBody3D
         pos.Y = Mathf.Sin(time * BOB_FREQ) * BOB_AMP;
         pos.X = Mathf.Cos(time * BOB_FREQ / 2) * BOB_AMP;
         return pos;
+    }
+
+    public void TakeDamage(int damage, BlockDamageType damageType) {
+        //if (IsDead) return;
+        CurrentHealth -= damage;
+        if (CurrentHealth <= 0) {
+            CurrentHealth = 0;
+            // TODO implement player death
+            GD.Print("Player died");
+        }
     }
 }

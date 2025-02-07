@@ -347,7 +347,7 @@ public partial class ChunkManager : Node
     }
 
     public static bool BlockHasNeighbor(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection) {
-        return GetBlockNeighbour(chunkPosition, blockPosition, neighborDirection) != 0;
+        return !IsBlockEmpty(GetBlockNeighbour(chunkPosition, blockPosition, neighborDirection));
     }
 
     public static void SetBlockNeighbourIfNotEmpty(Vector3I chunkPosition, Vector3I blockPosition, Vector3I neighborDirection, int newBlockInfo)

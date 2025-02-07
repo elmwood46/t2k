@@ -3,21 +3,26 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-public partial class Player : CharacterBody3D, IReloadable
+public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
 {
+	[Export] public int MaxHealth = 100;
+	public int CurrentHealth { get; private set; }
+
 	[Export] public Node3D Head { get; set; }
 	[Export] public Node3D HeadCrouched { get; set; }
 	[Export] public CollisionShape3D CollisionShape { get; set; }
 	[Export] public Camera3D Camera { get; set; }
 	[Export] public Node3D CameraSmooth {get; set;}
+	[Export] public Node3D CameraShake {get; set;}
+	[Export (PropertyHint.Range,"0.01,1.5,0.01")] public float MaxCameraShake = 0.5f;
+	[Export (PropertyHint.Range,"0.001,0.05,0.001")] public double CameraShakeDecay { get; private set; } = 0.05f;
+	private double _camera_shake_amount = 0.0f;
 	[Export] public Area3D CoinPickupArea {get;set;}
-
 	[Export] public RayCast3D RayCast { get; set; }
 	[Export] public MeshInstance3D BlockHighlight { get; set; }
 	[Export] public ShapeCast3D ShapeCast { get; set; }
     [Export] public RayCast3D StairsAheadRay { get; set; }
 	[Export] public RayCast3D StairsBelowRay { get; set; }
-
 
 	[Export] public float MouseSensitivity = 0.3f;
     [Export] public float WalkSpeed = 5.0f;
@@ -60,7 +65,7 @@ public partial class Player : CharacterBody3D, IReloadable
 	const int VIEW_MODEL_LAYER = 2;
 	const int WORLD_MODEL_LAYER = 3;
 	private float _cameraXRotation;
-	private Vector3 _savedCameraGlobalPos ; 
+	private Vector3 _savedCameraGlobalPos;
 	private Vector3 _cameraPosReset = new(float.PositiveInfinity,999,999);
 
 	private float _gravity = ProjectSettings.GetSetting("physics/3d/default_gravity").AsSingle();
@@ -81,6 +86,7 @@ public partial class Player : CharacterBody3D, IReloadable
 	#region ready
 	public override void _Ready()
 	{
+		CurrentHealth = MaxHealth;
 		Instance = this;
 		_crouch_speed = WalkSpeed * 0.8f;
 		_standing_height = ((CapsuleShape3D)CollisionShape.Shape).Height;
@@ -186,82 +192,25 @@ public partial class Player : CharacterBody3D, IReloadable
 		if (RayCast.IsColliding() && RayCast.GetCollider() is Chunk chunk)
 		{
 			BlockHighlight.Visible = true;
-			var inv_vox_size = 1/ChunkManager.VOXEL_SCALE;
-
-			var blockPosition = RayCast.GetCollisionPoint() - 0.5f * ChunkManager.VOXEL_SCALE * RayCast.GetCollisionNormal();
-			blockPosition *= inv_vox_size;
-			var intBlockPosition = new Vector3I(
-				Mathf.FloorToInt(blockPosition.X),
-				Mathf.FloorToInt(blockPosition.Y),
-				Mathf.FloorToInt(blockPosition.Z));
-			BlockHighlight.GlobalPosition = new Vector3(
-					Mathf.FloorToInt(blockPosition.X)*ChunkManager.VOXEL_SCALE,
-					Mathf.FloorToInt(blockPosition.Y)*ChunkManager.VOXEL_SCALE,
-					Mathf.FloorToInt(blockPosition.Z)*ChunkManager.VOXEL_SCALE
-				)
-				+ new Vector3(0.5f, 0.5f, 0.5f)*ChunkManager.VOXEL_SCALE;
-			//intBlockPosition.X = Math.Clamp(intBlockPosition.X, 0, Chunk.Dimensions.X);
-			//intBlockPosition.Y = Math.Clamp(intBlockPosition.Y, 0, Chunk.Dimensions.Y);
-			//intBlockPosition.Z = Math.Clamp(intBlockPosition.Z, 0, Chunk.Dimensions.Z);
+			var collision_pos = RayCast.GetCollisionPoint() - 0.5f * ChunkManager.VOXEL_SCALE * RayCast.GetCollisionNormal();
+			BlockHighlight.GlobalPosition = ChunkManager.VOXEL_SCALE * ((Vector3)ChunkManager.GlobalPositionToBlockPosition(collision_pos) + Vector3.One * 0.5f);
 
 			if (Input.IsActionJustPressed("Break"))
 			{
-				//int b = ChunkManager.TryGetBlockInfoFromGlobalBlockPosition(intBlockPosition);
-				Dictionary<Vector3I,int> d = new()
-				{
-					[intBlockPosition] = 5000
-				};
-				ChunkManager.DamageBlocks(d);
-			
-				if (true) {
-					//ChunkManager.Instance.DamageBlocks(new Vector3I[] {(Vector3I)(intBlockPosition - chunk.GlobalPosition)}, 5);
+				ChunkManager.TryDamageBlock(collision_pos, 5000);
 
-						// LINE ATTACK PATTERN
-						Dictionary<Vector3I,int> blockDamages = new();
-						int l = 3;
-						int w = 4;
-						Basis rot = new(Vector3.Up, Head.Rotation.Y);
-						for (int x = -w/2; x <= w/2; x++)
-						{
-							for (int y = -w/2; y <= w/2; y++)
-							{
-								for (int z = -l; z <= 0; z++)
-								{
-									Vector3I bpos = intBlockPosition + (Vector3I)(rot * new Vector3(x, y, z));
-									int damage = Mathf.Max(20+z,0);
-									blockDamages[bpos] = damage;
-								}
-							}
-						}
-						ChunkManager.DamageBlocks(blockDamages);
-
-                    // SPHERICAL BLOCK DAMAGE PATTERN
-					/*List<Vector3I> blocksInSphere = new();
-					int r = Mathf.CeilToInt(10.0f);
-
-					for (int x = -r; x <= r; x++)
-					{
-						for (int y = -r; y <= r; y++)
-						{
-							for (int z = -r; z <= r; z++)
-							{
-								Vector3I bpos = intBlockPosition + new Vector3I(x, y, z);
-
-								// Check if the block is within the sphere
-								if (bpos.Y >= 0 && bpos.Y <=Chunk.Dimensions.Y && intBlockPosition.DistanceTo(bpos) <= r)
-								{
-									blocksInSphere.Add(bpos);
-								}
-							}
-						}
-					}
-					ChunkManager.Instance.DamageBlocks(blocksInSphere.ToArray(), Mathf.CeilToInt(5));*/
-				}
+				bool damage_line, damage_sphere;
+				damage_line = false;
+				damage_sphere = true;
+				if (damage_line) // damage line in looking direction
+					 ChunkManager.DamageLine(collision_pos,-Camera.GlobalTransform.Basis.Z.Normalized(),40,1000,4,false);
+				if (damage_sphere)
+					ChunkManager.DamageSphere(collision_pos,5,100,true);
 			}
 
 			if (Input.IsActionJustPressed("Place"))
 			{
-				ChunkManager.TrySetBlock((Vector3I)(intBlockPosition + RayCast.GetCollisionNormal()), BlockManager.BlockID("Stone"));
+				ChunkManager.TrySetBlock(collision_pos + RayCast.GetCollisionNormal()*ChunkManager.VOXEL_SCALE, BlockManager.BlockID("Stone"));
 			}
 		}
 		else
@@ -295,7 +244,7 @@ public partial class Player : CharacterBody3D, IReloadable
 
 		// jump
 		// DEBUG we increase jump speed
-		if (Input.IsActionPressed("Jump"))// && (IsOnFloor() || _snappedToStairsLastFrame))
+		if (Input.IsActionJustPressed("Jump"))// && (IsOnFloor() || _snappedToStairsLastFrame))
 		{
 			velocity.Y = JumpVelocity;
 		} else {
@@ -356,6 +305,7 @@ public partial class Player : CharacterBody3D, IReloadable
 		}
 
 		ResetCameraSmooth((float)delta);
+		DoCameraShake();
 
         // FOV
         var velocity_clamped = Mathf.Clamp(velocity.Length(), 0.5f, SprintSpeed * 2.0f);

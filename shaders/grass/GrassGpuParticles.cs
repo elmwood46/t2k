@@ -6,7 +6,6 @@ public partial class GrassGpuParticles : Node3D
 {
     // Grass Particles Shader parameters
     [ExportCategory("Grass Particles Shader")]
-
     [Export] public GpuParticles3D GpuParticlesInstance { get; set; }
 
     [ExportGroup("Particles")]

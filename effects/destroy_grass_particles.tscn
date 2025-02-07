@@ -73,11 +73,9 @@ func _ready():
 	wait_time = $\"..\".lifetime
 	timeout.connect(_on_timer_timeout)
 	start()
-	
 
 func _on_timer_timeout():
 	$\"..\".queue_free()
-	print(\"destroyed grass particles\")
 "
 
 [node name="DestroyGrassParticles" type="GPUParticles3D"]

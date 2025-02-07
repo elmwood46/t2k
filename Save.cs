@@ -5,11 +5,6 @@ using System.Linq;
 using MessagePack;
 using MessagePack.Resolvers;
 
-public interface IReloadable
-{
-    void LoadSavedState();
-}
-
 [MessagePackObject]
 public class ArrayMeshData
 {

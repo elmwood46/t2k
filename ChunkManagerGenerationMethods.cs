@@ -149,11 +149,11 @@ public partial class ChunkManager : Node {
                         if (globalBlockPosition.Y<=groundheight)
                         {
                             // spawn a structure or a destructible mesh
-                            if (groundheight != 0 && globalBlockPosition.Y==groundheight && block_idx-CSP2 > 0 && !IsBlockEmpty(result[block_idx-CSP2]) && RNG.Randf() > 0.99)
+                            if (groundheight != 0 && globalBlockPosition.Y==groundheight && block_idx-CSP2 > 0 && !IsBlockEmpty(result[block_idx-CSP2]) && Random.Shared.NextSingle() > 0.99)
                                 {
                                     //result[block_idx-CSP2] = PackBlockType(BlockManager.BlockID("Stone"));
 
-                                    var randroll = RNG.Randf();
+                                    var randroll = Random.Shared.NextSingle();
                                     Dictionary<Vector3I,int> blockSet;
 
                                     if (randroll < 0.3333)
@@ -309,73 +309,49 @@ public partial class ChunkManager : Node {
         var col_face_masks = new UInt32[CSP3*6];
         var slope_blocks = new Dictionary<int, UInt32[]>();
 
-        // method which 
-        int dx, dy, dz;
-        dx = dy = dz = 0;
-        var delta = new Vector3I(dx,dy,dz);
-        var prev_delta = delta;
-        var targ_chunk = chunk_blocks;
-        int modify_chunk_blocks(int x, int y, int z) {
-            // read padded blocks from neighboring chunks
-            prev_delta = delta;
-            dx = x > CHUNK_SIZE ? 1 : x < 1 ? -1 : 0;
-            dy = y > CHUNK_SIZE ? 1 : y < 1 ? -1 : 0;
-            dz = z > CHUNK_SIZE ? 1 : z < 1 ? -1 : 0;
-            delta = new Vector3I(dx,dy,dz);
-            
-            if (prev_delta != delta) {
-                if (!Instance.BLOCKCACHE.TryGetValue(chunk_index+delta, out var new_chunk)) {
-                    new_chunk = chunk_blocks;
-                }
-                targ_chunk = new_chunk;
-            }
-
-            var islocal = targ_chunk==chunk_blocks;
-
-            var block_pos = new Vector3I(x,y,z) - (islocal ? Vector3I.Zero : delta*CHUNK_SIZE);
-            var idx = BlockIndex(block_pos);
-            idx += subchunk*CSP3; // move up one subchunk
-            var blockinfo = targ_chunk[idx];
-
-            // HACK set blockinfo to zero to prevent sloped air blocks bug
-            if (IsBlockEmpty(blockinfo)) blockinfo = 0;
-            if (islocal)
-                chunk_blocks[BlockIndex(block_pos)] = blockinfo;
-
-            return blockinfo;
-        }
-
         // populate from neighbouring chunks
+        // TODO remove this - this apparently has no effect at all versus doing it in the main loop below
+        
         for (int x=0;x<CSP;x+=CSP-1) {
-            for (int y=0;y<CSP;y++) {
-                for (int z=0;z<CSP;z++) {
-                    modify_chunk_blocks(x,y,z);
+            var shift = x == CSP-1 ? 1 : -1;
+            var dd = new Vector3I(shift,0,0);
+            if (Instance.BLOCKCACHE.TryGetValue(chunk_index + dd, out var new_chunk)) {
+                for (int y=0;y<CSP;y++) {
+                    for (int z=0;z<CSP;z++) {
+                        var block_pos = new Vector3I(x,y,z);
+                        chunk_blocks[BlockIndex(block_pos)] = new_chunk[BlockIndex(block_pos - dd*CHUNK_SIZE)];
+                    }
                 }
             }
         }
-        dx = dy = dz = 0;
-        delta = new Vector3I(dx,dy,dz);
-        prev_delta = delta;
-        targ_chunk = chunk_blocks;
-        for (int x=0;x<CSP;x++) {
-            for (int y=0;y<CSP;y+=CSP-1) {
-                for (int z=0;z<CSP;z++) {
-                    modify_chunk_blocks(x,y,z);
+
+        for (int y=0;y<CSP;y+=CSP-1) {
+            var shift = y == CSP-1 ? 1 : -1;
+            var dd = new Vector3I(0,shift,0);
+            if (Instance.BLOCKCACHE.TryGetValue(chunk_index + dd, out var new_chunk)) {
+                for (int x=0;x<CSP;x++) {
+                    for (int z=0;z<CSP;z++) {
+                        var block_pos = new Vector3I(x,y,z);
+                        chunk_blocks[BlockIndex(block_pos)] = new_chunk[BlockIndex(block_pos - dd*CHUNK_SIZE)];
+                    }
                 }
             }
         }
-        dx = dy = dz = 0;
-        delta = new Vector3I(dx,dy,dz);
-        prev_delta = delta;
-        targ_chunk = chunk_blocks;
-        for (int x=0;x<CSP;x++) {
-            for (int y=0;y<CSP;y++) {
-                for (int z=0;z<CSP;z+=CSP-1) {
-                    modify_chunk_blocks(x,y,z);
+
+        for (int z=0;z<CSP;z+=CSP-1) {
+            var shift = z == CSP-1 ? 1 : -1;
+            var dd = new Vector3I(0,0,shift);
+            if (Instance.BLOCKCACHE.TryGetValue(chunk_index + dd, out var new_chunk)) {
+                for (int y=0;y<CSP;y++) {
+                    for (int x=0;x<CSP;x+=CSP-1) {
+                        var block_pos = new Vector3I(x,y,z);
+                        chunk_blocks[BlockIndex(block_pos)] = new_chunk[BlockIndex(block_pos - dd*CHUNK_SIZE)];
+                    }
                 }
             }
         }
         
+
         // update chunk slope data if we have a list for it
         if (filledBlocks == null)
         {
@@ -394,19 +370,43 @@ public partial class ChunkManager : Node {
 
         // generate binary 0 1 voxel representation for each axis
         // central chunk loop
+        int dx, dy, dz;
         dx = dy = dz = 0;
-        delta = new Vector3I(dx,dy,dz);
-        prev_delta = delta;
-        targ_chunk = chunk_blocks;
+        var delta = new Vector3I(dx,dy,dz);
+        Vector3I prev_delta;
+        var targ_chunk = chunk_blocks;
         for (int x=0;x<CSP;x++) {
             for (int y=0;y<CSP;y++) {
                 for (int z=0;z<CSP;z++) {
-                    var blockinfo = modify_chunk_blocks(x,y,z);
+                    // read padded blocks from neighboring chunks
+                    prev_delta = delta;
+                    dx = x > CHUNK_SIZE ? 1 : x < 1 ? -1 : 0;
+                    dy = y > CHUNK_SIZE ? 1 : y < 1 ? -1 : 0;
+                    dz = z > CHUNK_SIZE ? 1 : z < 1 ? -1 : 0;
+                    delta = new Vector3I(dx,dy,dz);
+                    
+                    if (prev_delta != delta) {
+                        if (!Instance.BLOCKCACHE.TryGetValue(chunk_index+delta, out var new_chunk)) {
+                            new_chunk = chunk_blocks;
+                        }
+                        targ_chunk = new_chunk;
+                    }
+
+                    var islocal = targ_chunk==chunk_blocks;
+
+                    var block_pos = new Vector3I(x,y,z) - (islocal ? Vector3I.Zero : delta*CHUNK_SIZE);
+                    var idx = BlockIndex(block_pos);
+                    idx += subchunk*CSP3; // move up one subchunk
+                    var blockinfo = targ_chunk[idx];
+
+                    // HACK set blockinfo to zero to prevent sloped air blocks bug
+                    if (IsBlockEmpty(blockinfo)) blockinfo = 0;
+                    chunk_blocks[BlockIndex(new Vector3I(x,y,z))] = blockinfo;
 
                     if (IsBlockSloped(blockinfo)) {
-                        if (dx != 0 || dy != 0 || dz != 0) continue;  // dont add sloped blocks if we are in padded space
+                        if (dx != 0 || dy != 0 || dz != 0) continue;  // dont add sloped blocks if we are in padded space, this causes overlap in world space
                         // add sloped blocks and IDs to a separate list
-                        var idx = BlockIndex(new Vector3I(x,y,z));
+                        idx = BlockIndex(new Vector3I(x,y,z));
                         if (!slope_blocks.TryGetValue(idx, out _ )) {
                             slope_blocks.Add(idx, new UInt32[] {(uint)blockinfo});
                         }
@@ -484,8 +484,6 @@ public partial class ChunkManager : Node {
 
     #region BuildChunkMesh
     public static ChunkMeshData BuildChunkMesh(Vector3I chunk_index, List<Vector3I> filledBlocks = null) {
-
-
         static int get_surface_tool_index(int blockinfo, int axis) {
             var blockId = GetBlockID(blockinfo);
             if (blockId == BlockManager.Instance.LavaBlockId)

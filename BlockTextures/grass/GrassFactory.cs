@@ -6,8 +6,8 @@ public static class GrassFactory
 {
     // random barycentric coordinates
     static Vector3 RandBcc() {
-        var u = (float)Random.Shared.NextDouble();
-        var v = (float)Random.Shared.NextDouble();
+        var u = Random.Shared.NextSingle();
+        var v = Random.Shared.NextSingle();
         if (u+v >= 1.0f) {
             u = 1.0f - u;
             v = 1.0f - v;

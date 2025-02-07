@@ -10,11 +10,6 @@ public enum DestructibleMeshType {
     Cube
 }
 
-public interface IHurtable
-{
-	void TakeDamage(int damage, BlockDamageType type);
-}
-
 /// <summary>
 /// Destructible mesh is designed to work with a specific scene setup.
 /// You need a root node3d with the destructible mesh script (making the Node3D of class DestructibleMesh).
