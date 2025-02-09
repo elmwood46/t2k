@@ -1,8 +1,6 @@
 [gd_resource type="CurveTexture" load_steps=2 format=3 uid="uid://xvl8rsywq8k4"]
 
-[sub_resource type="Curve" id="Curve_yclak"]
-_data = [Vector2(0, 1), 0.0, -2.58628, 0, 0, Vector2(1, 0), 0.00682426, 0.0, 0, 0]
-point_count = 2
+[ext_resource type="Curve" uid="uid://cscawxjfqlc52" path="res://effects/curves/curve_pulse_falloff.tres" id="1_1vx2c"]
 
 [resource]
-curve = SubResource("Curve_yclak")
+curve = ExtResource("1_1vx2c")

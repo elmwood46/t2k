@@ -37,6 +37,8 @@ public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
 	[Export] public float Mass = 80.0f;
 	[Export] public float PushForce = 5.0f;
 
+	private RigidBody3D _held_object = null;
+	const float MAX_PICKUP_MASS = 100.0f;
     private float _movespeed; // used for tracking players current move speed after applying sprinting or crouching etc
 	const float MAX_STEP_HEIGHT = 0.55f; // Raycasts length should match this. StairsAhead one should be slightly longer.
 	private bool _snappedToStairsLastFrame = false;
@@ -201,7 +203,7 @@ public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
 
 				bool damage_line, damage_sphere;
 				damage_line = false;
-				damage_sphere = true;
+				damage_sphere = false;
 				if (damage_line) // damage line in looking direction
 					 ChunkManager.DamageLine(collision_pos,-Camera.GlobalTransform.Basis.Z.Normalized(),40,1000,4,false);
 				if (damage_sphere)

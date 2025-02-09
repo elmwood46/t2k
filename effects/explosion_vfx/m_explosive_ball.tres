@@ -7,6 +7,4 @@ render_priority = 0
 shader = ExtResource("1_g70be")
 shader_parameter/CloudSpeed = Vector2(0, 1)
 shader_parameter/CloudIntensity = 0.2
-shader_parameter/CloudDissolve = 0.0
 shader_parameter/ExplosionColour = Color(0.975547, 0.300357, 0, 1)
-shader_parameter/ExplosionAmount = 0.0

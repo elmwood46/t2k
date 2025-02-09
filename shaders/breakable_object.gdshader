@@ -22,6 +22,12 @@ uniform vec3 _acidedge : source_color;
 group_uniforms BlockInfo;
 uniform int _damage_data;
 
+group_uniforms ExplosionFuse;
+uniform sampler2D _fuse_pulse_curve;
+uniform vec4 _fuse_pulse_colour : source_color;
+uniform float _fuse_ratio;
+uniform bool _fuse_is_active;
+
 #include "res://shaders/chunk_block_damage_func.gdshaderinc"
 
 void fragment() {
@@ -58,5 +64,12 @@ void fragment() {
 	{
 		SPECULAR = 1.0;
 		ROUGHNESS = texture(_roughness, uvscale*UV).r * normscale;
+	}
+	
+	if (_fuse_is_active)
+	{
+		float pulseRatio = texture(_fuse_pulse_curve, vec2(_fuse_ratio,0.0)).r;
+		ALBEDO = mix(ALBEDO, _fuse_pulse_colour.rgb,pulseRatio);
+		EMISSION += pulseRatio*2.0;
 	}
 }

@@ -49,14 +49,15 @@ points = PackedVector3Array(7.77773, -57.8362, -67.5569, 42.321, 81.3278, -4.461
 [node name="StaticBody3D" type="RigidBody3D" parent="."]
 collision_layer = 9
 collision_mask = 8
+mass = 100.0
 freeze = true
 freeze_mode = 1
 
 [node name="Stone_mid_001" type="MeshInstance3D" parent="StaticBody3D"]
-transform = Transform3D(0.01, 0, 0, 0, 0, -0.01, 0, 0.01, 0, 0, 0, 0)
+transform = Transform3D(0.01, 0, 0, 0, 0, -0.01, 0, 0.01, 0, 0, -0.195804, 0)
 mesh = SubResource("ArrayMesh_v5mws")
 skeleton = NodePath("")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
-transform = Transform3D(0.01, 0, 0, 0, 0, -0.01, 0, 0.01, 0, 0, 0, 0)
+transform = Transform3D(0.01, 0, 0, 0, 0, -0.01, 0, 0.01, 0, 0, -0.195804, 0)
 shape = SubResource("ConvexPolygonShape3D_pm3r6")

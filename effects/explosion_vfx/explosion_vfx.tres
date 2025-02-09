@@ -24,12 +24,12 @@ texture = SubResource("GradientTexture1D_5r8pd")
 texture_type = 1
 
 [sub_resource type="VisualShaderNodeFrame" id="VisualShaderNodeFrame_ny0ff"]
-size = Vector2(1156, 951)
+size = Vector2(1156, 230)
 title = "Dark Base Colour"
 attached_nodes = PackedInt32Array(10, 11)
 
 [sub_resource type="VisualShaderNodeFrame" id="VisualShaderNodeFrame_2q1kb"]
-size = Vector2(2316, 2325)
+size = Vector2(2316, 1730)
 title = "Emissive Bright Colour"
 tint_color = Color(0.582031, 0.481253, 0.278511, 0.75)
 attached_nodes = PackedInt32Array(2, 5, 9, 8, 7, 4, 3, 19)
@@ -48,7 +48,7 @@ parameter_name = "CloudDissolve"
 hint = 1
 
 [sub_resource type="VisualShaderNodeFrame" id="VisualShaderNodeFrame_e8vte"]
-size = Vector2(2336, 1385)
+size = Vector2(2336, 1150)
 title = "CloudDissolver"
 attached_nodes = PackedInt32Array(14, 16, 15, 18, 20, 21)
 
@@ -303,7 +303,6 @@ void fragment() {
 
 }
 "
-graph_offset = Vector2(-157.824, 61.7172)
 nodes/vertex/0/position = Vector2(1560, 160)
 nodes/vertex/2/node = SubResource("VisualShaderNodeInput_ut0x3")
 nodes/vertex/2/position = Vector2(60, 220)

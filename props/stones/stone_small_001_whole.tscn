@@ -55,6 +55,7 @@ points = PackedVector3Array(-0.190948, 0.0660536, 0.0227426, 0.2064, 0.0472, 0.1
 [node name="StaticBody3D" type="RigidBody3D" parent="."]
 collision_layer = 9
 collision_mask = 8
+mass = 10.0
 physics_material_override = SubResource("PhysicsMaterial_brde5")
 freeze = true
 freeze_mode = 1

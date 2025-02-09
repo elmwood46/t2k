@@ -49,6 +49,7 @@ points = PackedVector3Array(-84.5197, 135.967, -92.2908, 39.8214, -133.34, -118.
 [node name="StaticBody3D" type="RigidBody3D" parent="."]
 collision_layer = 9
 collision_mask = 8
+mass = 500.0
 freeze = true
 freeze_mode = 1
 

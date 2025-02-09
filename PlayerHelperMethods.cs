@@ -72,6 +72,39 @@ public partial class Player : CharacterBody3D
         if (Input.IsActionPressed("Sprint")) return SprintSpeed;
         return WalkSpeed;
     }
+
+    public void HoldRigidBody() {
+        throw new NotImplementedException("HoldRigidBody");
+        /*
+		// confirms the first collider is the player character body; if not, something is wrong 
+		if (ShapeCast.GetCollisionCount() > 0 && ShapeCast.GetCollider(0) != this)
+			return;
+
+		for (int i = 0; i < ShapeCast.GetCollisionCount(); i++) {
+            if (ShapeCast.GetCollider(i) is RigidBody3D r && r.Freeze == false) {
+                r.LinearVelocity = 
+                r.GlobalTransform = GlobalTransform;
+                r.LinearVelocity = Velocity;
+                r.AngularVelocity = Vector3.Zero;
+                r.ApplyCentralImpulse(Velocity * 10);
+            }
+			var collider = ShapeCast.GetCollider(i) as Node;
+			if (collider?.GetNodeOrNull("InteractableComponent") is InteractableComponent interactable)
+				return interactable;
+		}
+		return;        */
+    }
+
+        // TODO holding rigid body
+    public void UpdateHeldRigidBody() {
+        throw new NotImplementedException("UpdateHeldRigidBody");
+        if (_held_object == null) return;
+        /*
+        _heldRigidBody.GlobalTransform = GlobalTransform;
+        _heldRigidBody.LinearVelocity = Velocity;
+        _heldRigidBody.AngularVelocity = Vector3.Zero;*/
+    }
+
 	public InteractableComponent? GetInteractableComponentAtShapecast() {
 		// confirms the first collider is the player character body; if not, something is wrong 
 		if (ShapeCast.GetCollisionCount() > 0 && ShapeCast.GetCollider(0) != this)

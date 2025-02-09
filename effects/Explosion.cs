@@ -3,27 +3,26 @@ using Godot;
 
 public partial class Explosion : Node3D
 {
-	[Export] public float ExplosionRadius {get;set;} = 3.0f;
 	public const float DEFAULT_CHAR_BODY_MASS = 10.0f;
+	[Export] public float ExplosionRadius {get;set;} = 3.0f;
 	[Export] public float Damage {get;set;} = 10.0f;
 	[Export] public float ExplosionForce {get;set;} = 100.0f;
-	[Export] public GpuParticles3D ExplosionParticles;
-	[Export] public AudioStreamPlayer3D ExplosionSound;
+	[Export] public Node3D ExplosionVfxScene;
 	private AnimationPlayer _explosionAnimation;
-	[Export] public Node3D ExplosionAnimationMeshes;
-	[Export] public Area3D ExplosionCollisionArea;
+	private Area3D _explosionCollisionArea;
 
 	// Called when the node enters the scene tree for the first time.
 	public override async void _Ready()
 	{
+		_explosionCollisionArea = new Area3D();
+		AddChild(_explosionCollisionArea);
         CollisionShape3D collisionShape = new()
         {
             Shape = new SphereShape3D { Radius = ExplosionRadius }
         };
-        ExplosionCollisionArea.AddChild(collisionShape);
-		ExplosionAnimationMeshes.Visible = false;
-		AddChild(ExplosionAnimationMeshes);
-		foreach (var child in ExplosionAnimationMeshes.GetChildren())
+        _explosionCollisionArea.AddChild(collisionShape);
+		ExplosionVfxScene.Visible = false;
+		foreach (var child in ExplosionVfxScene.GetChildren())
 		{
 			if (child is AnimationPlayer a)
 			{
@@ -40,20 +39,11 @@ public partial class Explosion : Node3D
 
 		ChunkManager.DamageSphere(GlobalPosition, ExplosionRadius, (int)Damage, true);
 		PushAwayObjects();
-		Explode();
-		
-		// Delay collision checking by a frame
-		/*
-		GetTree().CreateTimer(0.05f).Timeout += () => {
-			PushAwayObjects();
-			Explode();
-		};*/
+		PlayExplosionAnimation();
 	}
 
-
-
 	private void PushAwayObjects() {
-		Godot.Collections.Array<Node3D> _colliding_nodes = ExplosionCollisionArea.GetOverlappingBodies();
+		Godot.Collections.Array<Node3D> _colliding_nodes = _explosionCollisionArea.GetOverlappingBodies();
 
 		foreach (Node3D node in _colliding_nodes) {
 			GD.Print("body found: " + node.Name);
@@ -66,7 +56,6 @@ public partial class Explosion : Node3D
 				mass = DEFAULT_CHAR_BODY_MASS; // characterBody3D has no mass so we set it here
 			}
 			else if (node is RigidBody3D rb) {
-				//GD.Print(node.Name + " mass: " + rb.Mass);
 				mass = Mathf.Max(0.01f,rb.Mass);
 			}
 
@@ -78,42 +67,33 @@ public partial class Explosion : Node3D
 				* force_dir;
 
 			if (node is CharacterBody3D c) {
-				/*GD.Print("PLAYER applying impulse: ", knockbackFromRadius);
-				GD.Print("PLAYER body dist: ", bodyDist);
-				GD.Print("PLAYER force dir: ", force_dir);*/
 				c.Velocity += knockbackFromRadius;
 			}
 			else if (node is RigidBody3D rb) {
-				/*GD.Print("RBODY applying impulse: ", knockbackFromRadius);
-				GD.Print("RBODY body dist: ", bodyDist);
-				GD.Print("RBODY force dir: ", force_dir);*/
 				rb.ApplyImpulse(knockbackFromRadius);
 			}
 
 			if (node is PhysicsBody3D pb && pb.GetParent().GetParent() is DestructibleMesh mesh) {
-				mesh.TakeDamage(ChunkManager.SphereDamageDropoff(GlobalPosition, body_position, Damage, ExplosionRadius), BlockDamageType.Physical);
+				mesh.TakeDamage(ChunkManager.SphereDamageDropoff(GlobalPosition,((Node3D) mesh.IntactScene.GetChild(0)).GlobalPosition, Damage, ExplosionRadius), BlockDamageType.Fire);
 			}
 
 			if (node is IHurtable hurtable) {
-				hurtable.TakeDamage(ChunkManager.SphereDamageDropoff(GlobalPosition, body_position, Damage, ExplosionRadius), BlockDamageType.Physical);
+				hurtable.TakeDamage(ChunkManager.SphereDamageDropoff(GlobalPosition, body_position, Damage, ExplosionRadius), BlockDamageType.Fire);
 			}
 		}
 	}
 
-	private void Explode() {
-		ExplosionAnimationMeshes.Visible = true;
-		_explosionAnimation.Play("explode");
-		ExplosionSound.Play();
-		ExplosionParticles.Emitting = true;
+	private void PlayExplosionAnimation() {
+		ExplosionVfxScene.Visible = true;
+		_explosionAnimation.Play("init");
 
 		// timer to destroy explosion after animation
-        Timer _animation_timer = new()
+        var _animation_timer = new Timer()
         {
             WaitTime = _explosionAnimation.CurrentAnimationLength
         };
         _animation_timer.Timeout += () => {
-			ExplosionParticles.Emitting = false;
-			ExplosionAnimationMeshes.Visible = false;
+			ExplosionVfxScene.Visible = false;
 			QueueFree();
 		};
 		AddChild(_animation_timer);

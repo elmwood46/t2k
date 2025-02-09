@@ -88,7 +88,12 @@ public partial class Chunk : StaticBody3D
                 if (data.isChestOpened == 1) c.SetOpened();
                 mesh = c;
             }
+            else if (data.Type == DestructibleMeshType.RedCrate)
+            {
+                mesh = new DestructibleRedCrate();
+            }
             else mesh = new DestructibleMesh();
+            
             mesh.BrokenPacked = data.BrokenPacked;
             mesh.IntactPacked = data.IntactPacked;
             mesh.BrokenScene = data.BrokenPacked.Instantiate() as Node3D;
@@ -122,7 +127,7 @@ public partial class Chunk : StaticBody3D
         }
     }
 
-    public void UpdateChunkPosition(Vector3I position) {
+    public void SetChunkPosAndUpdate(Vector3I position) {
 
         SetChunkPosition(position);
         Update();

@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Godot;
 using RandomNumberGenerator = Godot.RandomNumberGenerator;
 
@@ -34,7 +35,7 @@ public partial class DestructibleMesh : Node3D, IHurtable
 	public Texture2D Texture { get; set; }
 	public float Health = -1.0f;
     public int PackedBlockDamageInfo = 0;
-	private ShaderMaterial _shaderMaterial;
+	protected ShaderMaterial _shaderMaterial;
 
 	private Vector3 _base_scale;
 	private Vector3 _base_position;
@@ -57,7 +58,7 @@ public partial class DestructibleMesh : Node3D, IHurtable
 
 	private Timer _death_timer = new(){Autostart = false};
 
-	public static bool IntactSceneIsRigidBody(DestructibleMeshType type)
+	public static bool IntactSceneIsDynamic(DestructibleMeshType type)
 	{
 		return 
 			type == DestructibleMeshType.LV1Chest
@@ -70,14 +71,18 @@ public partial class DestructibleMesh : Node3D, IHurtable
 	public override void _Ready()
 	{
         CallDeferred(MethodName.AddChild,_death_timer);
+
+
+
         Texture = Type switch {
             DestructibleMeshType.Stone => _stone_texture,
 			DestructibleMeshType.LV1Chest => _chest_texture.AlbedoTexture,
 			DestructibleMeshType.YellowCrate => _crate_texture,
+			DestructibleMeshType.RedCrate => _crate_texture,
             _ => _cube_texture
         };
 
-		if (IntactSceneIsRigidBody(Type))
+		if (IntactSceneIsDynamic(Type))
 		{
 			((RigidBody3D)IntactScene.GetChild(0)).Freeze = true;
 			var _t = new Timer
@@ -97,7 +102,9 @@ public partial class DestructibleMesh : Node3D, IHurtable
 		_base_position = ((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Position;
 		if (Health == -1) Health = MaxHealth;
 		BrokenScene.Visible = false;
-		_shaderMaterial = (ShaderMaterial)BlockManager.Instance.DestructibleObjectShader.Duplicate();
+		// shadermaterial for red crates is set in the red crate script
+		// for all other destructible meshes, they share this shader material here
+		_shaderMaterial ??= (ShaderMaterial)BlockManager.Instance.DestructibleObjectShader.Duplicate();
 		_shaderMaterial.SetShaderParameter("_texture_albedo", Texture);
         _shaderMaterial.SetShaderParameter("_damage_data", ChunkManager.GetBlockDamageData(PackedBlockDamageInfo));
 		foreach (var child in IntactScene.GetChild(0).GetChildren()) {
@@ -115,6 +122,8 @@ public partial class DestructibleMesh : Node3D, IHurtable
 	{
 		if (_is_broken) return;
 		Health -= damage;
+
+		if (Type == DestructibleMeshType.RedCrate) return; // red crates are indestructible bombs and don't use the damage shader
 		if (Health <= 0) Health = 0;
 		var healthfact = 1.0f-Health/MaxHealth;
         var new_dmg = Mathf.RoundToInt(BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD*healthfact);
@@ -232,9 +241,39 @@ public partial class DestructibleMesh : Node3D, IHurtable
 		}
 	}
 
-    float _frame = 0;
+    double _frame = 0.0;
 	public override void _PhysicsProcess(double delta)
 	{
+		
+		if (_frame > 5 && !_is_broken && IntactScene != null && !IntactSceneIsDynamic(Type))
+		{
+			var rb = (RigidBody3D)IntactScene.GetChild(0);
+			var col = rb.GetChild(1) as CollisionShape3D;
+
+			var unfreeze = true;
+			foreach (var vertex in ((ConvexPolygonShape3D)col.Shape).Points)
+			{
+				// HACK rigid body static kinematic objects are assumed to have no x or z rotation 
+				var chunkpos = ChunkManager.GlobalPositionToChunkPosition(rb.GlobalTransform*col.Transform*(vertex*0.01f));
+				if (ChunkManager.Instance.BLOCKCACHE.TryGetValue(chunkpos, out var blocks))
+				{
+					var padded_block_idx = ChunkManager.BlockIndex(ChunkManager.GlobalPositionToPaddedBlockPosition(rb.GlobalTransform*col.Transform*(vertex*0.01f)));
+					if (!ChunkManager.IsBlockEmpty(blocks[padded_block_idx]))
+					{
+						unfreeze = false;
+						break;
+					}
+				}
+			}
+			if (unfreeze)
+			{
+				rb.SetCollisionLayerValue(1, true);
+				rb.SetCollisionMaskValue(1, true);
+				rb.Freeze = false;
+			}
+		}
+		_frame += delta;
+
 		// remove if fallen too far
 		if ( !_is_broken && IntactScene != null && ((Node3D)IntactScene?.GetChild(0)).GlobalPosition.Y < 0.0f && ((RigidBody3D)IntactScene.GetChild(0)).Freeze == false) {
 			_is_broken = true;

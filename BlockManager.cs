@@ -204,6 +204,10 @@ public partial class BlockManager : Node
 		DestructibleObjectShader.SetShaderParameter("_burncol", burned_colour);
 		DestructibleObjectShader.SetShaderParameter("_acidcol", acid_colour);
 		DestructibleObjectShader.SetShaderParameter("_acidedge", acid_edge);
+		DestructibleObjectShader.SetShaderParameter("_fuse_pulse_curve", GD.Load("res://shaders/pulse_damage_curve.tres"));
+		DestructibleObjectShader.SetShaderParameter("_fuse_pulse_colour", new Color(1.0f, 1.0f, 1.0f));
+		DestructibleObjectShader.SetShaderParameter("_fuse_ratio", 0.0f);
+		DestructibleObjectShader.SetShaderParameter("_fuse_is_active", false);
 
 		 // Save the image to a file (PNG format)
         /*
