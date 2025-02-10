@@ -73,37 +73,96 @@ public partial class Player : CharacterBody3D
         return WalkSpeed;
     }
 
+    #region holding rigid body
+    private float _hold_counter = 0.0f;
+    private float _pickup_time = 0.5f;
     public void HoldRigidBody() {
-        throw new NotImplementedException("HoldRigidBody");
-        /*
+        if (_held_object != null) return;
 		// confirms the first collider is the player character body; if not, something is wrong 
 		if (ShapeCast.GetCollisionCount() > 0 && ShapeCast.GetCollider(0) != this)
 			return;
 
+        if (ShapeCast.GetCollisionCount() == 0)
+        {
+            _hold_counter = 0.0f;
+            return;
+        }
+
 		for (int i = 0; i < ShapeCast.GetCollisionCount(); i++) {
-            if (ShapeCast.GetCollider(i) is RigidBody3D r && r.Freeze == false) {
-                r.LinearVelocity = 
-                r.GlobalTransform = GlobalTransform;
-                r.LinearVelocity = Velocity;
-                r.AngularVelocity = Vector3.Zero;
-                r.ApplyCentralImpulse(Velocity * 10);
+            if (ShapeCast.GetCollider(i) is RigidBody3D r && r.Freeze == false && r.Mass <= MAX_PICKUP_MASS) {
+                if (_hold_counter < _pickup_time) _hold_counter ++;
+                else 
+                {
+                    _hold_counter = 0.0f;
+                    _held_object = r;
+                    GD.Print("picked up ", _held_object);
+                    r.LinearVelocity = Vector3.Zero;
+                    r.AngularVelocity = Vector3.Zero;
+                    //r.Freeze = true;
+                    //r.FreezeMode = RigidBody3D.FreezeModeEnum.Kinematic;
+                }
             }
-			var collider = ShapeCast.GetCollider(i) as Node;
-			if (collider?.GetNodeOrNull("InteractableComponent") is InteractableComponent interactable)
-				return interactable;
 		}
-		return;        */
+		return;
+    }
+
+    public void ReleaseHeldRigidBody()
+    {
+        if (_held_object == null) return;
+        _held_object.Freeze = false;
+        _held_object = null;
     }
 
         // TODO holding rigid body
     public void UpdateHeldRigidBody() {
-        throw new NotImplementedException("UpdateHeldRigidBody");
         if (_held_object == null) return;
-        /*
-        _heldRigidBody.GlobalTransform = GlobalTransform;
-        _heldRigidBody.LinearVelocity = Velocity;
-        _heldRigidBody.AngularVelocity = Vector3.Zero;*/
+        if (_held_object.GlobalPosition.DistanceSquaredTo(Head.GlobalPosition) > 13.0f) {
+            _held_object = null;
+            return;
+        }
+        var targ_position = Camera.GlobalTransform * new Vector3(0, 0, -2.0f);
+        var dist = targ_position.DistanceTo(_held_object.GlobalPosition);
+        var vel_mag = 20.0f*Mathf.Max(1.0f, 5.0f*dist)/Mathf.Max(1.0f,_held_object.Mass);
+        //_held_object.ApplyForce(5.0f*dist*(targ_position - _held_object.GlobalPosition));
+        _held_object.LinearVelocity = vel_mag*(targ_position - _held_object.GlobalPosition);
+        
+        var dir = targ_position.DirectionTo(Head.GlobalPosition);
+        var targ_rotation = new Basis(Quaternion.FromEuler(Vector3.Back.SignedAngleTo(dir, Vector3.Up) * Vector3.Up));
+        var curr_rotation = _held_object.Transform.Basis;
+        _held_object.AngularVelocity = 2.0f*CalcAngularVelocity(curr_rotation, targ_rotation);
+
+        //_held_object.Basis = new Basis(targ_rotation);
+        //_held_object.GlobalPosition = _held_object.GlobalPosition.Lerp(targ_position, 0.2f);
     }
+
+    public static Vector3 CalcAngularVelocity(Basis fromBasis, Basis toBasis)
+    {
+        Quaternion q1 = fromBasis.GetRotationQuaternion();
+        Quaternion q2 = toBasis.GetRotationQuaternion();
+        
+        // Quaternion that transforms q1 into q2
+        Quaternion qt = q2 * q1.Inverse();
+        
+        // Angle from quaternion
+        float angle = 2.0f * Mathf.Acos(qt.W);
+
+        // Ensure we use the representation with the smallest angle
+        if (angle > Mathf.Pi)
+        {
+            qt = new Quaternion(-qt.X, -qt.Y, -qt.Z, -qt.W);
+            angle = Mathf.Tau - angle;
+        }
+
+        // Prevent divide by zero
+        if (angle < 0.0001f)
+            return Vector3.Zero;
+
+        // Axis from quaternion
+        Vector3 axis = new Vector3(qt.X, qt.Y, qt.Z) / Mathf.Sqrt(1.0f - qt.W * qt.W);
+        
+        return axis * angle;
+    }
+    #endregion
 
 	public InteractableComponent? GetInteractableComponentAtShapecast() {
 		// confirms the first collider is the player character body; if not, something is wrong 

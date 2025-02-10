@@ -182,14 +182,6 @@ public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
 
 
 		#region block break
-		// do cube fragmenting stuff
-		if (RayCast.IsColliding() && RayCast.GetCollider() is Node3D pb) {
-			if (Input.IsActionJustPressed("Break")) {
-				//if (pb.GetParent().GetParent() is DestructibleMesh mesh)
-					//mesh.Break(RayCast.GetCollisionPoint(),PushForce);
-			}
-		}
-
         // do block modify stuff
 		if (RayCast.IsColliding() && RayCast.GetCollider() is Chunk chunk)
 		{
@@ -197,7 +189,7 @@ public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
 			var collision_pos = RayCast.GetCollisionPoint() - 0.5f * ChunkManager.VOXEL_SCALE * RayCast.GetCollisionNormal();
 			BlockHighlight.GlobalPosition = ChunkManager.VOXEL_SCALE * ((Vector3)ChunkManager.GlobalPositionToBlockPosition(collision_pos) + Vector3.One * 0.5f);
 
-			if (Input.IsActionJustPressed("Break"))
+			if (Input.IsActionJustPressed("Break") && _held_object == null)
 			{
 				ChunkManager.TryDamageBlock(collision_pos, 5000);
 
@@ -230,6 +222,19 @@ public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
 	#region physics process
 	public override void _PhysicsProcess(double delta)
 	{
+		#region holding
+		if (Input.IsActionPressed("Break") && _held_object == null)
+		{
+			HoldRigidBody();
+		}
+		if (Input.IsActionJustReleased("Break") && _held_object != null)
+		{
+			ReleaseHeldRigidBody();
+		}
+		UpdateHeldRigidBody();
+
+		#endregion
+
 		if (IsOnFloor() || _snappedToStairsLastFrame)
 		{
 			_lastFrameOnFloor = Engine.GetPhysicsFrames();
