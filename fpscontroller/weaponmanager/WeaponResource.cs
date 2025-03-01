@@ -145,6 +145,7 @@ public partial class WeaponResource : Resource
         WeaponManager.Instance.ShowMuzzleFlash();
 
         var raycast = WeaponManager.Instance.BulletRaycast;
+        raycast.SetCollisionMaskValue(9, true);
         Vector2 recoil = WeaponManager.GetCurrentRecoil();
         raycast.Rotation = new Vector3(recoil.X, recoil.Y, raycast.Rotation.Z); 
         raycast.TargetPosition = new Vector3(0,0,-RAYCAST_DIST);
@@ -163,8 +164,21 @@ public partial class WeaponResource : Resource
                 r.ApplyImpulse(-normal * _rigidBodyPushForce/r.Mass, pos - r.GlobalPosition);
             }
 
-            if (obj.HasMethod("TakeDamage")) {
-                obj.Call("TakeDamage", Damage);
+            // inflict damage
+            if (obj is IHurtable hurtable_obj) 
+            {
+                GD.Print("dealing damage melee to " + hurtable_obj.GetType().Name);
+                hurtable_obj.TakeDamage(Damage,DamageType.Physical);
+            }
+
+            // check for destructible object
+            if (obj is PhysicsBody3D pb)
+            {
+				if (pb.GetParent().GetParent() is DestructibleMesh mesh)
+                {
+                    mesh.TakeDamage(Damage, DamageType.Physical);
+                    if (mesh.Health <= 0) mesh.Break(raycast.GetCollisionPoint(),_rigidBodyPushForce);
+                }
             }
         }
         if (_num_shots_fired%2==0) WeaponManager.Instance.MakeBulletTrail(bullet_target_pos);

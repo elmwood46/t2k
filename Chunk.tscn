@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://da5ax8fx3rml2"]
+[gd_scene load_steps=4 format=3 uid="uid://da5ax8fx3rml2"]
 
 [ext_resource type="Script" path="res://Chunk.cs" id="1_02ktv"]
 
@@ -11,13 +11,22 @@ cellular_distance_function = 2
 cellular_jitter = 0.0
 cellular_return_type = 0
 
-[node name="Chunk" type="StaticBody3D" node_paths=PackedStringArray("CollisionShape", "MeshInstance")]
+[sub_resource type="NavigationMesh" id="NavigationMesh_1gdx1"]
+sample_partition_type = 1
+agent_max_slope = 61.0
+
+[node name="Chunk" type="StaticBody3D" node_paths=PackedStringArray("CollisionShape", "MeshInstance", "NavRegion")]
 script = ExtResource("1_02ktv")
 CollisionShape = NodePath("CollisionShape3D")
 MeshInstance = NodePath("MeshInstance3D")
+NavRegion = NodePath("NavigationRegion3D")
 WallNoise = SubResource("FastNoiseLite_qcpys")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 gi_mode = 0
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+navigation_mesh = SubResource("NavigationMesh_1gdx1")

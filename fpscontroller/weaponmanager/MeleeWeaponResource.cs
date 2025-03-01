@@ -12,6 +12,7 @@ public partial class MeleeWeaponResource : WeaponResource
         WeaponManager.Instance.QueueAnim(ViewIdleAnim);
 
         var raycast = WeaponManager.Instance.BulletRaycast;
+        raycast.SetCollisionMaskValue(9, true);
         raycast.TargetPosition = new Vector3(0,0,-Mathf.Abs(MaxHitDist));
         raycast.ForceRaycastUpdate();
 
@@ -20,6 +21,7 @@ public partial class MeleeWeaponResource : WeaponResource
 
         if (raycast.IsColliding())
         {
+            GD.Print("melee hit collided with " + raycast.GetCollider().GetType().Name);
             WeaponManager.Instance.PlaySound(ShootSound);
             var obj = raycast.GetCollider();
             var nrml = raycast.GetCollisionNormal();
@@ -30,7 +32,8 @@ public partial class MeleeWeaponResource : WeaponResource
             // inflict damage
             if (obj is IHurtable hurtable_obj) 
             {
-                hurtable_obj.TakeDamage(Damage,BlockDamageType.Physical);
+                GD.Print("dealing damage melee to " + hurtable_obj.GetType().Name);
+                hurtable_obj.TakeDamage(Damage,DamageType.Physical);
             }
 
             // check for destructible object
@@ -38,7 +41,7 @@ public partial class MeleeWeaponResource : WeaponResource
             {
 				if (pb.GetParent().GetParent() is DestructibleMesh mesh)
                 {
-                    mesh.TakeDamage(Damage, BlockDamageType.Physical);
+                    mesh.TakeDamage(Damage, DamageType.Physical);
                     if (mesh.Health <= 0) mesh.Break(raycast.GetCollisionPoint(),_rigidBodyPushForce);
                 }
             }

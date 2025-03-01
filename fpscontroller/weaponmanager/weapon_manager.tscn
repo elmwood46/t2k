@@ -11,5 +11,6 @@ CurrentWeapon = ExtResource("2_s0dyl")
 [node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
 
 [node name="RayCast3D" type="RayCast3D" parent="."]
+collision_mask = 271
 
 [node name="MuzzleFlash" parent="." instance=ExtResource("2_33ryx")]

@@ -89,7 +89,7 @@ public partial class Player : CharacterBody3D
         }
 
 		for (int i = 0; i < ShapeCast.GetCollisionCount(); i++) {
-            if (ShapeCast.GetCollider(i) is RigidBody3D r && r.Freeze == false && r.Mass <= MAX_PICKUP_MASS) {
+            if (ShapeCast.GetCollider(i) is RigidBody3D r && r.Freeze == false && r.Mass <= MAX_PICKUP_MASS && !r.IsQueuedForDeletion()) {
                 if (_hold_counter < _pickup_time) _hold_counter ++;
                 else 
                 {
@@ -106,9 +106,20 @@ public partial class Player : CharacterBody3D
 		return;
     }
 
+    public static bool ObjectIsHeldRigidBody(RigidBody3D obj)
+    {
+        return Instance._held_object == obj;
+    }
+
+    public static void SetHeldObjectToNull()
+    {
+        Instance._held_object = null;
+    }
+
     public void ReleaseHeldRigidBody()
     {
         if (_held_object == null) return;
+        if (_held_object.IsQueuedForDeletion()) return;
         _held_object.Freeze = false;
         _held_object = null;
     }
@@ -116,6 +127,7 @@ public partial class Player : CharacterBody3D
         // TODO holding rigid body
     public void UpdateHeldRigidBody() {
         if (_held_object == null) return;
+        if (_held_object.IsQueuedForDeletion()) return;
         if (_held_object.GlobalPosition.DistanceSquaredTo(Head.GlobalPosition) > 13.0f) {
             _held_object = null;
             return;
@@ -449,7 +461,7 @@ public partial class Player : CharacterBody3D
         return pos;
     }
 
-    public void TakeDamage(int damage, BlockDamageType damageType) {
+    public void TakeDamage(int damage, DamageType damageType) {
         //if (IsDead) return;
         CurrentHealth -= damage;
         if (CurrentHealth <= 0) {

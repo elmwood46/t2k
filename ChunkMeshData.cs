@@ -74,6 +74,21 @@ public class ChunkMeshData {
         }
     }
 
+    public ArrayMesh GetNavigableSurfaces()
+    {
+        var ret = new ArrayMesh();
+        for (byte type = 0; type < ALL_SURFACES; type++) {
+            if (type != LAVA_SURFACE && HasSurfaceOfType(type)) {
+                var surface = _surfaces[type];
+                ret.AddSurfaceFromArrays(
+                    Mesh.PrimitiveType.Triangles,
+                    surface.SurfaceGetArrays(0)
+                );
+            }
+        }
+        return ret;
+    }
+
     public Dictionary<int,Dictionary<int,List<float>>> SerializeSurfaceData()
     {
         List<float> extract_array_data(Godot.Collections.Array surfaceArray, int arrayType) {

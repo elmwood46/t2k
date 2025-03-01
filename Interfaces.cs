@@ -3,7 +3,7 @@ using System;
 
 public interface IHurtable
 {
-	void TakeDamage(int damage, BlockDamageType type);
+	void TakeDamage(int damage, DamageType type);
 }
 
 public interface ISaveStateLoadable

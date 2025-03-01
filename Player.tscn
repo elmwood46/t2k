@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://Player.cs" id="1_ppsmb"]
 [ext_resource type="Shader" path="res://pix_shader_imports/pixel_postprocess.gdshader" id="2_ws1qy"]
 [ext_resource type="PackedScene" uid="uid://dvpv1rc1oo10c" path="res://fpscontroller/weaponmanager/weapon_manager.tscn" id="2_y8l63"]
-[ext_resource type="Resource" uid="uid://i7tuf5jj3yv8" path="res://fpscontroller/weaponmanager/weapons/knife/knife.tres" id="3_5tsw3"]
+[ext_resource type="Resource" uid="uid://dbqqt7myed2m0" path="res://fpscontroller/weaponmanager/weapons/p90/p90.tres" id="4_47xcd"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_k2qdg"]
 radius = 0.3
@@ -51314,16 +51314,16 @@ states/CrouchBlendSpace2D/node = SubResource("AnimationNodeBlendSpace2D_lor6y")
 states/CrouchBlendSpace2D/position = Vector2(52.75, 312)
 states/End/position = Vector2(712.5, 99.75)
 states/MidJump/node = SubResource("AnimationNodeAnimation_fp3lk")
-states/MidJump/position = Vector2(320, -218.25)
+states/MidJump/position = Vector2(319.5, -218.25)
 states/MidJumpCrouch/node = SubResource("AnimationNodeAnimation_c4ltp")
 states/MidJumpCrouch/position = Vector2(509.5, -142.5)
 states/RunBlendSpace2D/node = SubResource("AnimationNodeBlendSpace2D_ap6ym")
-states/RunBlendSpace2D/position = Vector2(41, -87.75)
+states/RunBlendSpace2D/position = Vector2(41, -88.75)
 states/Start/position = Vector2(-57.5, 87.5)
 states/WalkBlendSpace2D/node = SubResource("AnimationNodeBlendSpace2D_0voxk")
 states/WalkBlendSpace2D/position = Vector2(437.5, 296.75)
 transitions = ["RunBlendSpace2D", "MidJump", SubResource("AnimationNodeStateMachineTransition_co10a"), "MidJump", "RunBlendSpace2D", SubResource("AnimationNodeStateMachineTransition_xn5dk"), "RunBlendSpace2D", "WalkBlendSpace2D", SubResource("AnimationNodeStateMachineTransition_f3ydm"), "WalkBlendSpace2D", "RunBlendSpace2D", SubResource("AnimationNodeStateMachineTransition_4ujg0"), "RunBlendSpace2D", "CrouchBlendSpace2D", SubResource("AnimationNodeStateMachineTransition_yhrrt"), "CrouchBlendSpace2D", "RunBlendSpace2D", SubResource("AnimationNodeStateMachineTransition_v8jl3"), "CrouchBlendSpace2D", "WalkBlendSpace2D", SubResource("AnimationNodeStateMachineTransition_c0xdk"), "WalkBlendSpace2D", "CrouchBlendSpace2D", SubResource("AnimationNodeStateMachineTransition_rsvat"), "WalkBlendSpace2D", "MidJump", SubResource("AnimationNodeStateMachineTransition_dwfab"), "MidJump", "WalkBlendSpace2D", SubResource("AnimationNodeStateMachineTransition_r867i"), "CrouchBlendSpace2D", "MidJump", SubResource("AnimationNodeStateMachineTransition_k2uyf"), "MidJump", "CrouchBlendSpace2D", SubResource("AnimationNodeStateMachineTransition_s80fa"), "RunBlendSpace2D", "MidJumpCrouch", SubResource("AnimationNodeStateMachineTransition_1eqwi"), "MidJumpCrouch", "RunBlendSpace2D", SubResource("AnimationNodeStateMachineTransition_b3k7i"), "WalkBlendSpace2D", "MidJumpCrouch", SubResource("AnimationNodeStateMachineTransition_7cio2"), "MidJumpCrouch", "WalkBlendSpace2D", SubResource("AnimationNodeStateMachineTransition_nhadw"), "CrouchBlendSpace2D", "MidJumpCrouch", SubResource("AnimationNodeStateMachineTransition_ht5i3"), "MidJumpCrouch", "CrouchBlendSpace2D", SubResource("AnimationNodeStateMachineTransition_ffrut")]
-graph_offset = Vector2(-268.495, -205.091)
+graph_offset = Vector2(-128.495, -5.091)
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_4wd8q"]
 radius = 0.25
@@ -51368,7 +51368,7 @@ size = Vector3(1.05, 1.05, 1.05)
 radius = 2.0
 
 [node name="Player" type="CharacterBody3D" node_paths=PackedStringArray("Head", "HeadCrouched", "CollisionShape", "Camera", "CameraSmooth", "CameraShake", "CoinPickupArea", "RayCast", "BlockHighlight", "ShapeCast", "StairsAheadRay", "StairsBelowRay")]
-collision_layer = 9
+collision_layer = 265
 collision_mask = 9
 floor_max_angle = 1.0472
 script = ExtResource("1_ppsmb")
@@ -52330,8 +52330,8 @@ root_node = NodePath("../DesertDroidContainer/desert_droid")
 tree_root = SubResource("AnimationNodeStateMachine_ey27y")
 anim_player = NodePath("../DesertDroidContainer/desert_droid/AnimationPlayer")
 parameters/CrouchBlendSpace2D/blend_position = Vector2(0.000533342, 0.0128534)
-parameters/RunBlendSpace2D/blend_position = Vector2(-0.000533342, 0.00257063)
-parameters/WalkBlendSpace2D/blend_position = Vector2(0.00256085, 0.00188327)
+parameters/RunBlendSpace2D/blend_position = Vector2(0.00141847, 0.00263858)
+parameters/WalkBlendSpace2D/blend_position = Vector2(-1.18156, 0.00263858)
 
 [node name="Head" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.95, 0)
@@ -52364,6 +52364,7 @@ max_results = 2
 
 [node name="PostProcessing" type="MeshInstance3D" parent="Head/HeadCrouch/CameraShake/CameraSmooth/Camera3D"]
 transform = Transform3D(0.707107, 0, -0.707107, -0.353553, 0.866025, -0.353553, 0.612372, 0.5, 0.612372, -0.960723, -2.02482, -8.65184)
+visible = false
 layers = 2
 cast_shadow = 0
 extra_cull_margin = 16384.0
@@ -52386,7 +52387,7 @@ shape = SubResource("SeparationRayShape3D_hvg2x")
 
 [node name="WeaponManager" parent="." node_paths=PackedStringArray("BulletRaycast", "ViewModelContainer", "WorldModelContainer") instance=ExtResource("2_y8l63")]
 BulletRaycast = NodePath("../Head/HeadCrouch/CameraShake/CameraSmooth/Camera3D/BulletRay")
-CurrentWeapon = ExtResource("3_5tsw3")
+CurrentWeapon = ExtResource("4_47xcd")
 ViewModelContainer = NodePath("../Head/HeadCrouch/CameraShake/CameraSmooth/Camera3D/HandViewModel")
 WorldModelContainer = NodePath("../HandWorldModel")
 

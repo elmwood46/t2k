@@ -72,8 +72,6 @@ public partial class DestructibleMesh : Node3D, IHurtable
 	{
         CallDeferred(MethodName.AddChild,_death_timer);
 
-
-
         Texture = Type switch {
             DestructibleMeshType.Stone => _stone_texture,
 			DestructibleMeshType.LV1Chest => _chest_texture.AlbedoTexture,
@@ -81,6 +79,8 @@ public partial class DestructibleMesh : Node3D, IHurtable
 			DestructibleMeshType.RedCrate => _crate_texture,
             _ => _cube_texture
         };
+
+		((RigidBody3D)IntactScene.GetChild(0)).FreezeMode = RigidBody3D.FreezeModeEnum.Kinematic;
 
 		if (IntactSceneIsDynamic(Type))
 		{
@@ -118,7 +118,7 @@ public partial class DestructibleMesh : Node3D, IHurtable
 		_base_position = base_position;
 	}
 
-	public void TakeDamage(int damage, BlockDamageType type)
+	public void TakeDamage(int damage, DamageType type)
 	{
 		if (_is_broken) return;
 		Health -= damage;

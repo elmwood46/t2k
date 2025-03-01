@@ -61,7 +61,8 @@ public partial class CoinSpawner : Node3D
         ret.SetCollisionLayerValue(3,true);
         ret.SetCollisionMaskValue(1,true);
         ret.SetCollisionMaskValue(2,false);
-        ret.SetCollisionMaskValue(3,false);
+        ret.SetCollisionMaskValue(3,true);
+        ret.SetCollisionMaskValue(9,true);
 
         AddSibling(ret);
         CallDeferred(MethodName.SetupCoin,ret);

@@ -3,8 +3,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,16 +16,23 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 	public ConcurrentDictionary<Vector3I, List<DestructibleMeshData>> BREAKABLE_MESH_CACHE = new ();
 
 	// TODO grass LODS only work for a VOXEL_SCALE of 1.0
+	const bool DISABLE_GRASS_LODS = true;
 	public ConcurrentDictionary<Vector3I, Grass[]> GRASS_MULTIMESHES = new();
 	public ConcurrentBag<Grass[]> BAG_O_GRASS = new();
 	const int MAX_GRASS_DENSITY = 60;
-	const int GRASS_MULTIMESHES_PER_CHUNK = 1;
+	const int GRASS_MULTIMESHES_PER_CHUNK = 0;
 	public static readonly PackedScene GrassScene = ResourceLoader.Load<PackedScene>("res://effects/grass.tscn");
 	public static readonly PackedScene DestroyedGrassPaticlesScene = ResourceLoader.Load<PackedScene>("res://effects/destroy_grass_particles.tscn");
 
 	// deferred mesh updates also holds a list of which blocks were filled in the chunk
 	// this allows for more efficient processing of sloped blocks when we mesh the chunk
 	public ConcurrentDictionary<Vector3I, List<Vector3I>> DeferredMeshUpdates = new();
+
+
+	// deferred object loading
+	// stops game lagging when spawning many objects by spacing out their spawn times
+	public ConcurrentDictionary<Vector3I,ConcurrentQueue<DestructibleMeshData>> DeferredDestructibleMeshesSpawn = new();
+	public static readonly SemaphoreSlim _spawn_obj_semaphore = new(1, 1);
 
 	const int NUM_MESH_SPAWNS = 7;
 	private int DESTRUCTO_CHEST_IDX;
@@ -181,7 +186,27 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 				}
 			}
 		}
+		await Task.WhenAll(tasks);
 
+		tasks.Clear();
+		
+		for (int x = -_width_sq; x<_width_sq; x++)
+		{
+			for (int z = -_width_sq; z<_width_sq; z++)
+			{
+				if (x >= -halfWidth && x < halfWidth && z >= -halfWidth && z < halfWidth) continue;
+				for (int y = 0; y < _y_width; y++)
+				{
+					var pos = new Vector3I(x, y, z);
+
+					//tasks.Add(Task.Run(() =>
+					//{
+						TryUpdateOrGenerateChunkBlockData(pos);
+						//return Task.CompletedTask;
+					//}));
+				}
+			}
+		}
 		await Task.WhenAll(tasks);
 
 		tasks.Clear();
@@ -215,7 +240,8 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 
 		if (!Engine.IsEditorHint())
 		{
-			new Thread(new ThreadStart(ThreadProcess)).Start();
+			new Thread(new ThreadStart(ThreadProcess)){IsBackground = true}.Start();
+			new Thread(new ThreadStart(ThreadObjectSpawning)){IsBackground = true}.Start();
 		}
 	}
 	#endregion
@@ -484,7 +510,7 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 						else continue;
 
 						// DEBUG add physical damage for all attacks
-						var packedDamageType = GetBlockDamageTypeFlag(blockinfo)|PackDamageFlag(BlockDamageType.Physical);
+						var packedDamageType = GetBlockDamageTypeFlag(blockinfo)|PackDamageFlag(DamageType.Physical);
 
 						if (dam_rounded >= BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD)
 						{
@@ -561,7 +587,6 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 			{
 				tasks.Add(Task.Run(()=>
 				{
-					//ChunkMeshData meshData;
 					if (slopeUpdateSet.TryGetValue(chunkTilePosition, out var slopeUpdateList)) {
 						BatchUpdateBlockSlopeData(chunkTilePosition, slopeUpdateList, Instance.BLOCKCACHE[chunkTilePosition], true);
 					}
@@ -967,7 +992,7 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 				foreach (var pos in  Instance.DeferredMeshUpdates.Keys.Except(newPositions.Values)) {
 					if (_positionToChunk.ContainsKey(pos)) {
 						_positionToChunk[pos].CallDeferred(nameof(Chunk.Update));
-						Thread.Sleep(10);
+						Thread.Sleep(16);
 					}
 				}
 				
@@ -977,7 +1002,7 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 				// update chunks which changed position
 				foreach ((var chunk, var pos) in newPositions) {
 					chunk.CallDeferred(nameof(Chunk.SetChunkPosAndUpdate), pos);
-					Thread.Sleep(10);
+					Thread.Sleep(16);
 				}
 
 				// remove all mesh data which is outside the render distance
@@ -988,20 +1013,25 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 				}
 
 				// update grass LODS to be inside the rendered distance
-				foreach (var pos in Instance.GRASS_MULTIMESHES.Keys)
-					if (!Instance.MESHCACHE.ContainsKey(pos))
-						RemoveGrassToBag(pos);
-				tasks.Clear();
-				foreach (var pos in Instance.MESHCACHE.Keys)
+				// HACK removed this check because we're not using grass LODS for now
+				if (!DISABLE_GRASS_LODS)
 				{
-					if (!Instance.GRASS_MULTIMESHES.ContainsKey(pos))
+					foreach (var pos in Instance.GRASS_MULTIMESHES.Keys)
+						if (!Instance.MESHCACHE.ContainsKey(pos))
+							RemoveGrassToBag(pos);
+					tasks.Clear();
+					foreach (var pos in Instance.MESHCACHE.Keys)
 					{
-						tasks.Add(Task.Run(() => {
-							return UpdateGrass(pos);
-						}));
-						Thread.Sleep(10);
+						if (!Instance.GRASS_MULTIMESHES.ContainsKey(pos))
+						{
+							tasks.Add(Task.Run(() => {
+								return UpdateGrass(pos);
+							}));
+							Thread.Sleep(10);
+						}
 					}
 				}
+
 				await Task.WhenAll(tasks);
 
 				/*
@@ -1031,6 +1061,40 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 	}
 	#endregion
 
+	#region threaded spawns
+    async private static void ThreadObjectSpawning() {
+        while (true) {
+            /*if (Instance.DeferredDestructibleMeshesSpawn.IsEmpty) {
+                Thread.Sleep(100);
+                continue;
+            }*/
+			await _spawn_obj_semaphore.WaitAsync();
+			var isEmpty = true;
+			try
+			{
+				lock (Instance.DeferredDestructibleMeshesSpawn)
+				{
+					foreach (var (chunk_pos, mesh_queue) in Instance.DeferredDestructibleMeshesSpawn) {
+						var chunk = PositionToChunk(chunk_pos);
+						if (chunk != null && mesh_queue.TryDequeue(out var meshdata))
+						{
+							isEmpty = false;
+							var mesh = Chunk.UnpackMeshData(meshdata);
+							chunk.CallDeferred(Chunk.MethodName.AddSibling,mesh);
+							Thread.Sleep(8);
+						}
+					}
+				}
+			}
+			finally
+			{
+				_spawn_obj_semaphore.Release();
+				Thread.Sleep(isEmpty ? 100 : 1);
+			}
+        }
+    }
+	#endregion
+
     #region static block info
     public static int PackAllBlockInfo(int blockType, int damageType, int damageAmount, int slopeType, int slopeRotation, int blockflip) {
         return PackBlockType(blockType) | PackDamageData(damageType, damageAmount)<<BLOCK_DAMAGE_BITS_OFFSET| PackSlopeData(slopeType, slopeRotation, blockflip)<<BLOCK_SLOPE_BITS_OFFSET;
@@ -1048,14 +1112,14 @@ public partial class ChunkManager : Node, ISaveStateLoadable
         return (damageTypeFlag<<5) | damageAmount;
     }
 
-	public static int RepackDamageFlag(int blockinfo, BlockDamageType flag) {
+	public static int RepackDamageFlag(int blockinfo, DamageType flag) {
 		return blockinfo | (PackDamageData(PackDamageFlag(flag),0)<<BLOCK_DAMAGE_BITS_OFFSET);
 	}
 
-	public static int PackDamageFlag(BlockDamageType damageType) {
+	public static int PackDamageFlag(DamageType damageType) {
 		return damageType switch  {
-            BlockDamageType.Physical => 1,
-            BlockDamageType.Fire => 1<<1,
+            DamageType.Physical => 1,
+            DamageType.Fire => 1<<1,
             _ => 1<<2
         };
 	}
@@ -1071,7 +1135,7 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 	/// <param name="updateflag">sets the damage type flag, adding it to any existing ones</param>
 	/// <param name="set_health">sets the new health integer, a value between 0 and BlockManager.BLOCK_BREAK_DAMAGE_THREASHOLD inclusive</param>
 	/// <returns>A new blockinfo integer with the damage flag updated and a new damage integer set.</returns>
-	public static int AddBlockDamage(int blockinfo, BlockDamageType updateflag, int set_health)
+	public static int AddBlockDamage(int blockinfo, DamageType updateflag, int set_health)
 	{
 		var newflag = GetBlockDamageTypeFlag(blockinfo)|PackDamageFlag(updateflag);
 		var newhealth = Mathf.Clamp(set_health,0,BlockManager.BLOCK_BREAK_DAMAGE_THRESHOLD);

@@ -27,7 +27,7 @@ public enum BlockSpecies {
 }
 
 // used to shade blocks when they get damaged
-public enum BlockDamageType {
+public enum DamageType {
     Physical, // 6th bit in block info integer
     Fire,    // 7th bit in block info integer
     Acid     // 8th bit

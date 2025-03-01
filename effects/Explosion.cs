@@ -74,11 +74,11 @@ public partial class Explosion : Node3D
 			}
 
 			if (node is PhysicsBody3D pb && pb.GetParent().GetParent() is DestructibleMesh mesh) {
-				mesh.TakeDamage(ChunkManager.SphereDamageDropoff(GlobalPosition,((Node3D) mesh.IntactScene.GetChild(0)).GlobalPosition, Damage, ExplosionRadius), BlockDamageType.Fire);
+				mesh.TakeDamage(ChunkManager.SphereDamageDropoff(GlobalPosition,((Node3D) mesh.IntactScene.GetChild(0)).GlobalPosition, Damage, ExplosionRadius), DamageType.Fire);
 			}
 
 			if (node is IHurtable hurtable) {
-				hurtable.TakeDamage(ChunkManager.SphereDamageDropoff(GlobalPosition, body_position, Damage, ExplosionRadius), BlockDamageType.Fire);
+				hurtable.TakeDamage(ChunkManager.SphereDamageDropoff(GlobalPosition, body_position, Damage, ExplosionRadius), DamageType.Fire);
 			}
 		}
 	}

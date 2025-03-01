@@ -7,7 +7,6 @@ public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
 {
 	[Export] public int MaxHealth = 100;
 	public int CurrentHealth { get; private set; }
-
 	[Export] public Node3D Head { get; set; }
 	[Export] public Node3D HeadCrouched { get; set; }
 	[Export] public CollisionShape3D CollisionShape { get; set; }
@@ -105,7 +104,7 @@ public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
 		Input.MouseMode = Input.MouseModeEnum.Captured;
 	}
 	#endregion
-	#region input
+	#region rotate head
 	public override void _Input(InputEvent @event)
 	{
 		if (@event is InputEventMouseMotion)
@@ -151,6 +150,7 @@ public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
 		// HACK debug restart
 		if (Input.IsActionJustReleased("DebugRestart"))
 		{
+			SaveManager.LoadSavedState();
 			GetTree().ReloadCurrentScene();
 		}
 		//HACK toggle wireframe
@@ -167,7 +167,7 @@ public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
 
 
 		#region saving and loading
-		if (Input.IsActionJustReleased("Reload"))
+		if (Input.IsActionJustReleased("LoadGame"))
 		{
 			SaveManager.LoadSavedState();
 		}
@@ -195,7 +195,7 @@ public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
 
 				bool damage_line, damage_sphere;
 				damage_line = false;
-				damage_sphere = false;
+				damage_sphere = true;
 				if (damage_line) // damage line in looking direction
 					 ChunkManager.DamageLine(collision_pos,-Camera.GlobalTransform.Basis.Z.Normalized(),40,1000,4,false);
 				if (damage_sphere)
@@ -235,6 +235,8 @@ public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
 
 		#endregion
 
+
+		#region moving
 		if (IsOnFloor() || _snappedToStairsLastFrame)
 		{
 			_lastFrameOnFloor = Engine.GetPhysicsFrames();
@@ -318,6 +320,7 @@ public partial class Player : CharacterBody3D, ISaveStateLoadable, IHurtable
         var velocity_clamped = Mathf.Clamp(velocity.Length(), 0.5f, SprintSpeed * 2.0f);
         float target_fov = BASE_FOV + FOV_CHANGE * velocity_clamped;
         Camera.Fov = Mathf.Lerp(Camera.Fov, target_fov, 0.25f);
+		#endregion
 	}
 	#endregion
 }

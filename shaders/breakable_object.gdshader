@@ -65,7 +65,7 @@ void fragment() {
 		SPECULAR = 1.0;
 		ROUGHNESS = texture(_roughness, uvscale*UV).r * normscale;
 	}
-	
+
 	if (_fuse_is_active)
 	{
 		float pulseRatio = texture(_fuse_pulse_curve, vec2(_fuse_ratio,0.0)).r;

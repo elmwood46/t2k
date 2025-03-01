@@ -1,5 +1,5 @@
 using Godot;
-using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,6 +21,8 @@ public partial class Chunk : StaticBody3D
     // this leaves 7 bits to implement block health or AO
 	public Vector3I ChunkPosition { get; private set; } = Vector3I.MaxValue;
 
+    [Export] public NavigationRegion3D NavRegion {get;set;}
+
 	[Export]
 	public FastNoiseLite WallNoise { get; set; }
 
@@ -35,6 +37,7 @@ public partial class Chunk : StaticBody3D
         _chunk_area.SetCollisionMaskValue(2, true);
         _chunk_area.SetCollisionMaskValue(3, true);
         AddChild(_chunk_area);
+        NavRegion.GlobalPosition += Vector3.Up;
 	}
     
     #region set chunk pos
@@ -53,13 +56,29 @@ public partial class Chunk : StaticBody3D
     public void SaveLocalChunkDataAndFree(Vector3I chunkpos)
     {
         var saved_breakable = new List<DestructibleMeshData>();
+
+        // Removes all remaining meshes fom the deferred mesh spawns and adds them to a list (passed by reference).
+        // This is done to prevent meshes spawning in chunks whose positions have already been updated, causing the meshes to fall through the map.
+        lock (ChunkManager.Instance.DeferredDestructibleMeshesSpawn)
+        {
+            if (ChunkManager.Instance.DeferredDestructibleMeshesSpawn.TryGetValue(chunkpos, out var queue))
+            {
+                while (queue.TryDequeue(out var meshdata)) 
+                {
+                    saved_breakable.Add(meshdata);
+                }
+            }
+        }
+
+        // remove all meshes from the chunk area and add them to the saved_breakable list
         var to_remove = new List<DestructibleMesh>();
         foreach (var child in _chunk_area.GetOverlappingBodies())
         {
             if (child.GetParent().GetParent() is DestructibleMesh d && !d.BrokenScene.Visible)
             {
                 var data = new DestructibleMeshData(d);
-                saved_breakable.Add(data);
+                if (!saved_breakable.Contains(data)) saved_breakable.Add(data);
+                else GD.Print("duplicate mesh data found");
                 to_remove.Add(d);
             }
             if (child is RigidBody3D coin)
@@ -75,83 +94,107 @@ public partial class Chunk : StaticBody3D
         ChunkManager.Instance.BREAKABLE_MESH_CACHE.TryAdd(chunkpos, saved_breakable);
     }
 
+    public static DestructibleMesh UnpackMeshData(DestructibleMeshData data)
+    {
+        DestructibleMesh mesh;
+        if (data.isChestOpened >= 0)
+        {
+            var c = new DestructibleChest();
+            if (data.isChestOpened == 1) c.SetOpened();
+            mesh = c;
+        }
+        else if (data.Type == DestructibleMeshType.RedCrate)
+        {
+            mesh = new DestructibleRedCrate();
+        }
+        else mesh = new DestructibleMesh();
+        
+        mesh.BrokenPacked = data.BrokenPacked;
+        mesh.IntactPacked = data.IntactPacked;
+        mesh.BrokenScene = data.BrokenPacked.Instantiate() as Node3D;
+        mesh.IntactScene = data.IntactPacked.Instantiate() as Node3D;
+        mesh.Health = data.Health;
+        mesh.MaxHealth = data.MaxHealth;
+        mesh.Type = data.Type;
+        mesh.PackedBlockDamageInfo = data.PackedBlockDamageInfo;
+        
+        mesh.AddChild(mesh.BrokenScene);
+        mesh.AddChild(mesh.IntactScene);
+        // necessary to preserve any scaling or transforms done to the broken scene
+        // in the editor
+        mesh.BrokenScene.GlobalTransform = data.BrokenTransform;
+        ((PhysicsBody3D)mesh.IntactScene.GetChild(0)).GlobalTransform = data.IntactTransform;
+        if (mesh is DestructibleChest)
+        {
+            for (int i=0; i < 6; i++)
+            {
+                ((Node3D)mesh.IntactScene.GetChild(0).GetChild(i)).Transform = data.ChestIntactLocalTransforms[i];
+            }
+        }
+
+        // chests being loaded should never glow
+        // opened chests have less mass
+        if (data.isChestOpened == 1) {
+            ((DestructibleChest)mesh).TurnGlowOff();
+            ((RigidBody3D)mesh.IntactScene.GetChild(0)).Mass = DestructibleChest.MASS_WHEN_OPENED;
+        }
+
+        return mesh;
+    }
+
     public void SetGlobalPositionAndLoadData(Vector3 newpos, Vector3I newchunkpos)
     {
         SetGlobalPosition(newpos);
         if (!ChunkManager.Instance.BREAKABLE_MESH_CACHE.TryGetValue(newchunkpos, out var saved_breakable)) return;
         foreach (DestructibleMeshData data in saved_breakable)
         {
-            DestructibleMesh mesh;
-            if (data.isChestOpened >= 0)
+            if (ChunkManager.Instance.DeferredDestructibleMeshesSpawn.TryGetValue(newchunkpos, out var queue))
             {
-                var c = new DestructibleChest();
-                if (data.isChestOpened == 1) c.SetOpened();
-                mesh = c;
+                queue.Enqueue(data);
             }
-            else if (data.Type == DestructibleMeshType.RedCrate)
+            else
             {
-                mesh = new DestructibleRedCrate();
-            }
-            else mesh = new DestructibleMesh();
-            
-            mesh.BrokenPacked = data.BrokenPacked;
-            mesh.IntactPacked = data.IntactPacked;
-            mesh.BrokenScene = data.BrokenPacked.Instantiate() as Node3D;
-            mesh.IntactScene = data.IntactPacked.Instantiate() as Node3D;
-            mesh.Health = data.Health;
-            mesh.MaxHealth = data.MaxHealth;
-            mesh.Type = data.Type;
-            mesh.PackedBlockDamageInfo = data.PackedBlockDamageInfo;
-            
-            mesh.AddChild(mesh.BrokenScene);
-            mesh.AddChild(mesh.IntactScene);
-            // necessary to preserve any scaling or transforms done to the broken scene
-            // in the editor
-            mesh.BrokenScene.GlobalTransform = data.BrokenTransform;
-            ((PhysicsBody3D)mesh.IntactScene.GetChild(0)).GlobalTransform = data.IntactTransform;
-            if (mesh is DestructibleChest)
-            {
-                for (int i=0; i < 6; i++)
-                {
-                    ((Node3D)mesh.IntactScene.GetChild(0).GetChild(i)).Transform = data.ChestIntactLocalTransforms[i];
-                }
-            }
-            GetTree().Root.AddChild(mesh);
-
-            // chests being loaded should never glow
-            // opened chests have less mass
-            if (data.isChestOpened == 1) {
-                ((DestructibleChest)mesh).TurnGlowOff();
-                ((RigidBody3D)mesh.IntactScene.GetChild(0)).Mass = DestructibleChest.MASS_WHEN_OPENED;
+                ChunkManager.Instance.DeferredDestructibleMeshesSpawn.TryAdd(newchunkpos, new ConcurrentQueue<DestructibleMeshData>(new[]{data}));
             }
         }
     }
 
-    public void SetChunkPosAndUpdate(Vector3I position) {
-
-        SetChunkPosition(position);
-        Update();
+    async public void SetChunkPosAndUpdate(Vector3I position) {
+        await ChunkManager._spawn_obj_semaphore.WaitAsync();
+        try
+        {
+            SetChunkPosition(position);
+            Update();
+        }
+        finally
+        {
+            ChunkManager._spawn_obj_semaphore.Release();
+        }
     }
-
     #endregion
 
     #region update
-
-	async public void Update() {
+	public void Update() {
         var meshdata = ChunkManager.TryGetChunkMeshData(ChunkPosition);
         if (meshdata == null) return;
+        
+        CollisionShape.Shape = meshdata.GetTrimeshShape();
 
-        ArrayMesh meshdata_mesh = new();
-        ConcavePolygonShape3D meshdata_shape = new();
-        await Task.Run(() => {
-            meshdata_mesh = meshdata.GetUnifiedSurfaces();
-            meshdata_shape = meshdata.GetTrimeshShape();
-        });
-        MeshInstance.Mesh = meshdata_mesh;
-        CollisionShape.Shape = meshdata_shape;
-
+        /*
+        NavRegion.NavigationMesh.Clear();
+        NavRegion.NavigationMesh.CreateFromMesh(meshdata.GetNavigableSurfaces());
+        NavRegion.BakeNavigationMesh();
+        */
+        
+        //GD.Print("region nav map:, ", NavRegion.GetNavigationMap());
         CallDeferred(MethodName.UpdateRigidBodies);
+        CallDeferred(MethodName.SetNewMesh, meshdata.GetUnifiedSurfaces());
 	}
+
+    private void SetNewMesh(Mesh mesh)
+    {
+        MeshInstance.Mesh = mesh;
+    }
 
     public void UpdateRigidBodies() {
         foreach (Node3D child in _chunk_area.GetOverlappingBodies()) {
@@ -165,7 +208,7 @@ public partial class Chunk : StaticBody3D
     #endregion
 
     #region broken block particles
-    public void SpawnBlockParticles(Godot.Collections.Dictionary<Vector3I, int> positionsAndBlockInfo, Vector3I playerBlockPosition) {
+    public async void SpawnBlockParticles(Godot.Collections.Dictionary<Vector3I, int> positionsAndBlockInfo, Vector3I playerBlockPosition) {
         if (positionsAndBlockInfo.Count == 0) return;
 
         // the particles spawned first have more detail and more expensive collisions\
@@ -182,6 +225,7 @@ public partial class Chunk : StaticBody3D
             return distanceA.CompareTo(distanceB);
         });
 
+        var i=0;
         foreach (var pos in sortedList) {
             var block_info = positionsAndBlockInfo[pos];
             var is_block_above = ChunkManager.IsBlockAbove(ChunkPosition,pos);
@@ -235,10 +279,13 @@ public partial class Chunk : StaticBody3D
 
             particles.BlockInfo = block_info;
             
+            // every 10 spawned particles, wait for the physics frame to update
+            // this is to avoid framerate drop
+            i++;
+            if (i%10 == 0) await ToSignal(GetTree(), "physics_frame");
             AddChild(particles);
             blockCount++;
         }
     }
     #endregion
-
 }
