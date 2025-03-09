@@ -1,4 +1,4 @@
-[gd_scene load_steps=68 format=3 uid="uid://deyat72y3hmc1"]
+[gd_scene load_steps=69 format=3 uid="uid://deyat72y3hmc1"]
 
 [ext_resource type="Script" path="res://ChunkManager.cs" id="1_0ir14"]
 [ext_resource type="Script" path="res://Level.cs" id="1_51pul"]
@@ -40,6 +40,7 @@
 [ext_resource type="Texture2D" uid="uid://cvct6jfj3bjxj" path="res://BlockTextures/leaves_jungle_opaque (34).png" id="33_dkxyi"]
 [ext_resource type="Texture2D" uid="uid://dvysuo0i058n0" path="res://BlockTextures/leaves_WyvernLair_solid.png" id="34_enli4"]
 [ext_resource type="Texture2D" uid="uid://c2c2wedwuygsn" path="res://BlockTextures/leaves_spruce_opaque (14).png" id="35_glxn3"]
+[ext_resource type="Script" path="res://audio/AudioManager.cs" id="38_15ek2"]
 [ext_resource type="PackedScene" uid="uid://dpu141indhhox" path="res://enemies/enemy_spawner.tscn" id="39_ew0fo"]
 
 [sub_resource type="Resource" id="Resource_jx0ag"]
@@ -235,12 +236,15 @@ Blocks = Array[Object]([SubResource("Resource_jx0ag"), SubResource("Resource_acf
 script = ExtResource("1_0ir14")
 ChunkScene = ExtResource("1_peckr")
 
+[node name="AudioManager" type="Node" parent="."]
+script = ExtResource("38_15ek2")
+
 [node name="Player" parent="." instance=ExtResource("15_72lf1")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.37728, 18.5677, 2.932)
 
 [node name="EnemySpawner" parent="." instance=ExtResource("39_ew0fo")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 32.9901, 0)
-EnemyCount = 200
+EnemyCount = 0
 SpawnBoxDimensions = Vector3(60, 1, 60)
 
 [node name="SaveManager" type="Node" parent="."]

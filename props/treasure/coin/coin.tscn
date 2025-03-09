@@ -36,6 +36,9 @@ size = Vector3(2, 0.5, 2)
 
 [node name="coin" type="RigidBody3D"]
 physics_material_override = SubResource("PhysicsMaterial_as7ab")
+gravity_scale = 2.0
+contact_monitor = true
+max_contacts_reported = 1
 script = ExtResource("1_xg0dk")
 
 [node name="Coin_tris" type="MeshInstance3D" parent="."]

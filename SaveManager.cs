@@ -16,7 +16,10 @@ public partial class SaveManager : Node
 
     public static Vector3 GetCachedPlayerPosition() => Instance._state.GetCachedPlayerPosition();
     public static float GetCachedHeadYRotation() => Instance._state.GetCachedHeadYRotation();
+
     public static Dictionary<Vector3I, int[]> GetCachedBlocks() => Instance._state.GetCachedBlocks();
+
+    /*
     public static Dictionary<Vector3I, ChunkMeshData> GetCachedMeshes() {
         var ret = new Dictionary<Vector3I, ChunkMeshData>();
         var meshdata_dict = Instance._state.GetCachedMeshes();
@@ -25,6 +28,7 @@ public partial class SaveManager : Node
         }
         return ret;
     }
+    */
 
     public static HashSet<uint> GetCachedCantorPairings() => Instance._state.GetCachedCantorPairings();
     public static SaveData GetCachedData() => Instance._state.GetCachedData();

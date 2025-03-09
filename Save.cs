@@ -17,8 +17,8 @@ public class SaveData
     [Key(0)] public Vector3 PlayerPosition { get; set; }
     [Key(1)] public float HeadYRotation { get; set; }
     [Key(2)] public Dictionary<Vector3I, int[]> SavedBlocks { get; set; } = new();
-    [Key(3)] public Dictionary<Vector3I,Dictionary<int,Dictionary<int, List<float>>>> SavedMeshes { get; set; } = new();
-    [Key(4)] public HashSet<uint> GeneratedChunks { get; set; } = new();
+    //[Key(3)] public Dictionary<Vector3I,Dictionary<int,Dictionary<int, List<float>>>> SavedMeshes { get; set; } = new();
+    [Key(3)] public HashSet<uint> GeneratedChunks { get; set; } = new();
 }
 
 public class SaveState
@@ -112,14 +112,16 @@ public class SaveState
     public void CacheWorldData()
     {
         _data.SavedBlocks = ChunkManager.Instance.BLOCKCACHE.ToDictionary(pair => pair.Key, pair => pair.Value);
-        _data.SavedMeshes = ChunkManager.Instance.MESHCACHE.ToDictionary(pair => pair.Key, pair => pair.Value.SerializeSurfaceData());
+        //_data.SavedMeshes = ChunkManager.Instance.MESHCACHE.ToDictionary(pair => pair.Key, pair => pair.Value.SerializeSurfaceData());
         _data.GeneratedChunks = CantorPairing.GetSet();
     }
 
     public Vector3 GetCachedPlayerPosition() => _data.PlayerPosition;
+
+
     public float GetCachedHeadYRotation() => _data.HeadYRotation;
     public Dictionary<Vector3I, int[]> GetCachedBlocks() => _data.SavedBlocks;
-    public Dictionary<Vector3I,Dictionary<int,Dictionary<int, List<float>>>> GetCachedMeshes() => _data.SavedMeshes;
+    //public Dictionary<Vector3I,Dictionary<int,Dictionary<int, List<float>>>> GetCachedMeshes() => _data.SavedMeshes;
     public HashSet<uint> GetCachedCantorPairings() => _data.GeneratedChunks;
     public SaveData GetCachedData() => _data;
 }

@@ -1,14 +1,24 @@
-[gd_scene load_steps=3 format=3 uid="uid://bsjuauhgsut6i"]
+[gd_scene load_steps=4 format=3 uid="uid://bsjuauhgsut6i"]
 
 [ext_resource type="Script" path="res://effects/Explosion.cs" id="1_fe3c5"]
 [ext_resource type="PackedScene" uid="uid://frc7u3le3uo7" path="res://effects/explosion_vfx/vfx_explosion_mid.tscn" id="2_bn7fn"]
 
-[node name="RedBarrelExplosion" type="Node3D" node_paths=PackedStringArray("ExplosionVfxScene")]
+[sub_resource type="SphereShape3D" id="SphereShape3D_jed40"]
+radius = 5.0
+
+[node name="RedBarrelExplosion" type="Node3D" node_paths=PackedStringArray("ExplosionCollisionArea", "ExplosionVfxScene")]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
 script = ExtResource("1_fe3c5")
-ExplosionRadius = 5.0
+ExplosionCollisionArea = NodePath("Area3D")
 Damage = 100.0
-ExplosionForce = 200.0
+ExplosionForce = 100.0
 ExplosionVfxScene = NodePath("vfx_explosion_mid")
 
 [node name="vfx_explosion_mid" parent="." instance=ExtResource("2_bn7fn")]
+
+[node name="Area3D" type="Area3D" parent="."]
+collision_layer = 271
+collision_mask = 271
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+shape = SubResource("SphereShape3D_jed40")

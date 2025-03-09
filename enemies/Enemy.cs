@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-
 public enum EnemyTag
 {
     BasicMelee,
@@ -33,6 +32,10 @@ public partial class Enemy : RigidBody3D, IHurtable
 {
     [Export] public int MaxHealth { get; set; } = 30;
     [Export] public string TagsString { get; set; } = "";
+    [Export] public Godot.Collections.Array<AudioStream> PainSounds { get; set; } = new();
+    [Export] public Godot.Collections.Array<AudioStream> DeathSounds { get; set; } = new();
+    [Export] public Godot.Collections.Array<AudioStream> IdleSounds { get; set; } = new();
+    [Export] public Godot.Collections.Array<AudioStream> SeeSound { get; set; } = new();
     [Export] public AnimationTree AnimTree { get; set; }
     [Export] public AnimatedSprite3D Sprite { get; set; }
     [Export] public float Speed { get; set; } = 5.0f;
@@ -45,6 +48,18 @@ public partial class Enemy : RigidBody3D, IHurtable
     [Export] public float StunDuration {get;set;} = 1.0f;
     [Export] public DieFace CoinDropDice {get;set;} = DieFace.d6;
     [Export] public int CoinDropDiceAmount {get;set;} = 3;
+    [Export] public Godot.Collections.Array<string> AttacksList {get;set;} = new Godot.Collections.Array<string>();
+    private List<IAttack> _attackList = new();
+    private IAttack _currentAttack = null;
+
+    // can be used by Attack class objects to time various events during attacks
+    public Timer AttackTimer = new(){WaitTime = 1.0f, Autostart = false, OneShot = true};
+
+    private Timer _deathTimer = new(){WaitTime = 1.0f, Autostart = false, OneShot = true}; 
+    private Timer _footstep_timer = new(){WaitTime = 0.5f, Autostart = false, OneShot = true};
+
+    private Timer _idle_sound_timer = new(){WaitTime = Random.Shared.Next(_idle_sound_wait_range.X,_idle_sound_wait_range.Y), Autostart = false, OneShot = true};
+    private static readonly Vector2I _idle_sound_wait_range = new(30, 180);
 
     private float _death_shake_factor = 0.05f; 
     private Vector3 _base_sprite_position;
@@ -82,19 +97,45 @@ public partial class Enemy : RigidBody3D, IHurtable
     private double _phys_secs = 0;
     private Vector3 _prev_pos = Vector3.Zero;
 
+    // monster is inactive
+    public bool Deactivated {get;set;} = false;
+
+    // monster in ambush mode
+    public bool Ambush {get;set;} = false;
+
     public void TakeDamage(int damage, DamageType damageType)
     {
         Health -= damage;
 
+        var _stun = damage > Health/2 ? 1.0 : PainChance;
+
         if (Health > 0)
         {
-            if (_stun_timer.IsStopped() && Random.Shared.NextSingle() < PainChance)
+            if (_stun_timer.IsStopped() && Random.Shared.NextSingle() < _stun)
             {
-                _stun_timer.WaitTime = StunDuration;
-                _stun_timer.Start();
+                if (_currentAttack == null || (_currentAttack != null && _currentAttack.CanBeInterrupted))
+                {
+                    if (_currentAttack != null)
+                    {
+                        _currentAttack.Finish(this);
+                        _currentAttack.ResetParams();
+                        _currentAttack = null;
+                    }
+                    AnimStateMachine.Travel("base_idle");
+                    StopIdleSoundTimer();
+                    var stream = PainSounds[Random.Shared.Next(0,PainSounds.Count)];
+                    AudioManager.TryPlay(stream, AudioBus.Enemies, GlobalPosition);
+                    _stun_timer.WaitTime = StunDuration;
+                    _stun_timer.Start();
+                }
             }
         }
         else _stun_timer.Stop();
+    }
+
+    public void StopIdleSoundTimer()
+    {
+        _idle_sound_timer.Stop();
     }
 
     public override void _Ready()
@@ -105,6 +146,29 @@ public partial class Enemy : RigidBody3D, IHurtable
         if (Sprite == null) throw new Exception($"Enemy {this} must have a Sprite3D set in editor.");
         _base_sprite_position = Sprite.Position;
         _base_sprite_scale = Sprite.Scale;
+
+        AddChild(AttackTimer);
+        AddChild(_deathTimer);
+        AddChild(_idle_sound_timer);
+        AddChild(_footstep_timer);
+
+        _footstep_timer.Timeout += () =>
+        {
+            if (!Tags.Contains(EnemyTag.Flying) && LinearVelocity.LengthSquared() > 0.1f && IsOnFloor())
+            {
+                PlayFootstepSound();
+            }
+        };
+
+        _idle_sound_timer.Timeout += () => {
+            if (IdleSounds.Count > 0)
+            {
+                var sound = IdleSounds[Random.Shared.Next(0,IdleSounds.Count)];
+                AudioManager.TryPlay(sound, AudioBus.Enemies, GlobalPosition);
+            }
+            _idle_sound_timer.WaitTime = Random.Shared.Next(_idle_sound_wait_range.X,_idle_sound_wait_range.Y);
+            _idle_sound_timer.Start();
+        };
 
         if (EnemyHitFlash == null) throw new Exception($"Enemy {this} must have a EnemyHitFlash.tres in res://enemies/enemy_hit_flash.tres");
         _sprite_shader = EnemyHitFlash.Duplicate() as ShaderMaterial;
@@ -121,6 +185,7 @@ public partial class Enemy : RigidBody3D, IHurtable
         AddChild(_stun_timer);
         Health = MaxHealth;
         ProcessTagString(TagsString);
+        ProcessAttackList();
 
         if (AnimTree != null)
         {
@@ -133,7 +198,6 @@ public partial class Enemy : RigidBody3D, IHurtable
 
         AnimStateMachine = (AnimationNodeStateMachinePlayback)AnimTree.Get("parameters/playback");
     }
-
 
     public void DeathAnimation()
     {
@@ -151,7 +215,7 @@ public partial class Enemy : RigidBody3D, IHurtable
             if ((float)_sprite_shader.GetShaderParameter("intensity") != 0.5f) _sprite_shader.SetShaderParameter("intensity", 0.5f);
             if ((Color)_sprite_shader.GetShaderParameter("flash_color") != RED) _sprite_shader.SetShaderParameter("flash_color", RED);
             
-            if (AnimStateMachine.GetCurrentPlayPosition() > 0.99f)
+            if (_deathTimer.IsStopped())
             {
                 var blood_fountain = _death_blood_fountain.Instantiate() as GpuParticles3D;
                 blood_fountain.Emitting = true;
@@ -165,7 +229,7 @@ public partial class Enemy : RigidBody3D, IHurtable
                 deathsmoke.SetGlobalPosition(GlobalPosition+Vector3.Up*0.5f);
 
                 var coinAmount = 0;
-                GD.Print("die faces: ", (int)CoinDropDice);
+                //GD.Print("die faces: ", (int)CoinDropDice);
                 for (int i = 0; i < CoinDropDiceAmount; i++)
                 {
                     coinAmount += Mathf.FloorToInt(Random.Shared.NextSingle()* (int)CoinDropDice) + 1;
@@ -177,13 +241,31 @@ public partial class Enemy : RigidBody3D, IHurtable
             else
             {
                 Freeze = true;
-                Sprite.Scale = new Vector3(_base_sprite_scale.X,(1.0f-0.2f*AnimStateMachine.GetCurrentPlayPosition())*_base_sprite_scale.Y,_base_sprite_scale.Z);
+                //Sprite.Scale = new Vector3(_base_sprite_scale.X,(1.0f-0.2f*AnimStateMachine.GetCurrentPlayPosition())*_base_sprite_scale.Y,_base_sprite_scale.Z);
             }
+        }
+        else
+        {
+            _idle_sound_timer.Stop();
+            var stream = DeathSounds[Random.Shared.Next(0,DeathSounds.Count)];
+            AudioManager.TryPlay(stream, AudioBus.Enemies, GlobalPosition);
+            AnimStateMachine.Travel("base_die", true);
+            _deathTimer.WaitTime = AnimTree.GetAnimation("base_die").Length;
+            _deathTimer.Start();
         }
     }
 
     public override void _PhysicsProcess(double delta)
     {
+        if (Health <= 0) {
+            DeathAnimation();
+            return;
+        }
+
+        if (!IsInstanceValid(this)) return;
+        if (!IsInsideTree()) return;
+        if (Freeze) return;
+
         //EnemyComputeShaderManager.SetEnemyPosition(Index, GlobalTransform.Origin);
         if (IsOnFloor() || SlopeDetected() || Tags.Contains(EnemyTag.Flying)) GravityScale = 0.0f;
         else if (!Tags.Contains(EnemyTag.Flying)) GravityScale = 1.0f;
@@ -195,16 +277,12 @@ public partial class Enemy : RigidBody3D, IHurtable
             _sprite_shader.SetShaderParameter("tex", Sprite.SpriteFrames.GetFrameTexture(Sprite.Animation, Sprite.Frame));
         }
 
-        if (Health <= 0) {
-            DeathAnimation();
-            return;
-        }
-
         // damage flash
         if (!_stun_timer.IsStopped())
         {
             if ((bool)_sprite_shader.GetShaderParameter("flash_enabled") != true) _sprite_shader.SetShaderParameter("flash_enabled", true);
             if ((bool)_sprite_shader.GetShaderParameter("pulse_mode") != true) _sprite_shader.SetShaderParameter("pulse_mode", true);
+            return;
         }
         else
         {
@@ -212,60 +290,118 @@ public partial class Enemy : RigidBody3D, IHurtable
             if ((bool)_sprite_shader.GetShaderParameter("pulse_mode") != false) _sprite_shader.SetShaderParameter("pulse_mode", false);
         }
 
-        // skip move if stunned
-        if (!_stun_timer.IsStopped()) return;
-
-        // check for triggering random walk 
-        _phys_secs += delta;
-        if (_phys_secs > 1)
+        // timer to play idle sounds
+        if (_currentAttack == null && _idle_sound_timer.IsStopped())
         {
-            _phys_secs -= 1;
-            if (_prev_pos.DistanceSquaredTo(GlobalPosition) < 1.0f)
-            {
-                _random_walk_dir_timer.Stop();
-                _random_walk_dir = new Vector2(Random.Shared.NextSingle() * 2 - 1, Random.Shared.NextSingle() * 2 - 1).Normalized();
-                _random_walk_dir_timer.WaitTime = Random.Shared.NextDouble() + 0.001; // 1 seconds random walk
-                _random_walk_dir_timer.Start();
-            }
-            _prev_pos = GlobalPosition;
-            //GD.Print($"Enemy {this} is on floor: {IsOnFloor()}");
+            _idle_sound_timer.WaitTime = Random.Shared.Next(_idle_sound_wait_range.X,_idle_sound_wait_range.Y);
+            _idle_sound_timer.Start();
         }
-        /*
-        CallDeferred(MethodName.SetNavAgentTarget, new Vector3(60,60,5)); //Player.Instance.GlobalPosition);
-        
-        //var vel = GetHorzDir((float)delta);
-        GD.Print("targ postition: ", NavAgent.TargetPosition);
-        GD.Print("distance to target:, ", NavAgent.DistanceToTarget());
-        GD.Print("next path postition: ", NavAgent.GetNextPathPosition());
-        var vel = NavAgent.GetNextPathPosition() - GlobalPosition;
-        if (vel.LengthSquared() > 0.01f) {
-            RayGimbal.LookAt(RayGimbal.GlobalTransform.Origin + vel, Vector3.Up);
-        }*/
 
-        var vel = GetHorzDir((float)delta);
-        ApplyCentralForce(vel.Normalized()*Speed*Mass);       
-
-        // Check for collision
-        var col = WallCheckRay.GetCollider();
-        if (IsOnFloor() && col != null && (col is StaticBody3D || (col is RigidBody3D r && r.Freeze)))
-        {
-            // Apply a slight upward force to help climb slopes
-            //ApplyCentralImpulse(Vector3.Up * 5.0f);
-            Vector3 normal = WallCheckRay.GetCollisionNormal();
-            
-            // Only jump or change dir if the collision is with a wall (not a floor/slope)
-            if (normal.Dot(Vector3.Up) < 0.001f) // Mostly vertical surface
+        // do attack logic and move if player is not dead
+        if (!Player.Instance.IsDead && !Deactivated && !Ambush) {
+            if (_currentAttack == null)
             {
-                if (!Tags.Contains(EnemyTag.Flying))// && IsOnFloor())
+                foreach (var attack in _attackList)
                 {
-                    //GD.Print("Collided! Jumping...");
-                    ApplyCentralImpulse(Vector3.Up * _jump_velocity * Mass);
-                    //LinearVelocity = new Vector3(LinearVelocity.X,_jump_velocity,LinearVelocity.Z); // Apply jump force
+                    if (attack.CanTrigger(this))
+                    {
+                        _currentAttack = attack;
+                        _currentAttack.Execute(this);
+                        //GD.Print("Enemy is attacking ", _currentAttack);
+                        break;
+                    }
                 }
             }
+            else 
+            {
+                if (_currentAttack.IsFinished)
+                {
+                    _currentAttack.ResetParams(); //reset attack
+                    _currentAttack = null;
+                    //GD.Print("Enemy finished attack ", _currentAttack);
+                }
+                else
+                {
+                    _currentAttack.Execute(this);
+                    //GD.Print("Enemy is executing attack ", _currentAttack);
+                }
+            }
+        
+
+            // skip movement if attacking and can't move during attack
+            if (_currentAttack != null && !_currentAttack.CanMoveDuring && !_currentAttack.IsFinished) return;
+
+            // check for triggering random walk 
+            _phys_secs += delta;
+            if (_phys_secs > 1)
+            {
+                _phys_secs -= 1;
+                if (_prev_pos.DistanceSquaredTo(GlobalPosition) < 1.0f)
+                {
+                    _random_walk_dir_timer.Stop();
+                    _random_walk_dir = new Vector2(Random.Shared.NextSingle() * 2 - 1, Random.Shared.NextSingle() * 2 - 1).Normalized();
+                    _random_walk_dir_timer.WaitTime = Random.Shared.NextDouble() + 0.001; // 1 seconds random walk
+                    _random_walk_dir_timer.Start();
+                }
+                _prev_pos = GlobalPosition;
+                //GD.Print($"Enemy {this} is on floor: {IsOnFloor()}");
+            }
+            /*
+            CallDeferred(MethodName.SetNavAgentTarget, new Vector3(60,60,5)); //Player.Instance.GlobalPosition);
+            
+            //var vel = GetHorzDir((float)delta);
+            GD.Print("targ postition: ", NavAgent.TargetPosition);
+            GD.Print("distance to target:, ", NavAgent.DistanceToTarget());
+            GD.Print("next path postition: ", NavAgent.GetNextPathPosition());
+            var vel = NavAgent.GetNextPathPosition() - GlobalPosition;
+            }*/
+
+            var vel = GetHorzDir((float)delta);
+            if (vel.LengthSquared() > 0.01f) RayGimbal.LookAt(RayGimbal.GlobalTransform.Origin + vel, Vector3.Up);
+            if ((this != null)  && IsInstanceValid(this) && IsInsideTree()) ApplyCentralForce(vel.Normalized()*Speed*Mass);
+
+            // Check for collision
+            var col = WallCheckRay.GetCollider();
+            if (IsOnFloor() && col != null && (col is StaticBody3D || (col is RigidBody3D r && r.Freeze)))
+            {
+                // Apply a slight upward force to help climb slopes
+                //ApplyCentralImpulse(Vector3.Up * 5.0f);
+                Vector3 normal = WallCheckRay.GetCollisionNormal();
+                
+                // Only jump or change dir if the collision is with a wall (not a floor/slope)
+                if (normal.Dot(Vector3.Up) < 0.001f) // Mostly vertical surface
+                {
+                    if (!Tags.Contains(EnemyTag.Flying))// && IsOnFloor())
+                    {
+                        //GD.Print("Collided! Jumping...");
+                        if ((this != null) && IsInstanceValid(this) && IsInsideTree()) ApplyCentralImpulse(Vector3.Up * _jump_velocity * Mass);
+                        //LinearVelocity = new Vector3(LinearVelocity.X,_jump_velocity,LinearVelocity.Z); // Apply jump force
+                    }
+                }
+            }
+            //PushAwayRigidBodies();
+            //MoveAndSlide();
+
+            // play foostep sounds
+            // reset footstep timer, which plays footstep sound when it times out
+			if (!Tags.Contains(EnemyTag.Flying) && _footstep_timer.IsStopped())
+			{
+				if (LinearVelocity.LengthSquared() < 16)
+				{
+					_footstep_timer.WaitTime = AudioManager.FootstepWaitTimes.Z;
+				}
+				else if (LinearVelocity.LengthSquared() >= 64)
+				{
+					_footstep_timer.WaitTime = AudioManager.FootstepWaitTimes.Y;
+				}
+				else
+				{
+					_footstep_timer.WaitTime = AudioManager.FootstepWaitTimes.X;
+				}
+				
+				_footstep_timer.Start();
+			}
         }
-        //PushAwayRigidBodies();
-        //MoveAndSlide();
     }
 
     /*
@@ -348,4 +484,65 @@ public partial class Enemy : RigidBody3D, IHurtable
         }
     }
 
+    private void ProcessAttackList()
+    {
+        foreach (var str in AttacksList)
+        {
+            if (str == "Scratch")
+            {
+                //GD.Print("added scratch attack to attack list");
+                _attackList.Add(new ScratchAttack());
+            }
+        }
+    }
+
+    public bool IsPlayerInRange(float range)
+    {
+        return Player.Instance.GlobalPosition.DistanceSquaredTo(GlobalPosition) <= range*range;
+    }
+
+    public Vector3 GetYDirectionToPlayer()
+    {
+        return new Vector3(GlobalPosition.X, 0.0f, GlobalPosition.Z).DirectionTo(new Vector3(Player.Instance.GlobalPosition.X, 0.0f, Player.Instance.GlobalPosition.Z));
+    }
+
+    public void ResetAttackTimer()
+    {
+        AttackTimer.Stop();
+        AttackTimer.WaitTime = 1.0f;
+        AttackTimer.OneShot = true;
+        AttackTimer.Autostart = false;
+    }
+
+    public void PlayFootstepSound()
+    {
+        GroundRay.ForceRaycastUpdate();
+        var floorBelow = GroundRay.IsColliding();
+        var volume_db = 0.0f;
+        if (floorBelow && LinearVelocity.LengthSquared() > 0.2f)
+        {
+            var collider = GroundRay.GetCollider();
+
+            var _footstep_sound = AudioManager.FootstepSounds["default"][Random.Shared.Next(0, AudioManager.FootstepSounds["default"].Count)];
+
+            // change footstep depending on chunk block surface
+            if (collider is Chunk)
+            {
+                var global_pos = GroundRay.GetCollisionPoint()-GroundRay.GetCollisionNormal()*ChunkManager.VOXEL_SCALE*0.5f;
+
+                var res = AudioManager.GetFootstepSoundAndVolFromBlockPosition(global_pos);
+
+                if (res.Item1 == null)
+                {
+                    GD.Print("Didn't play footstep, Chunk not found in cache");
+                    return;
+                }
+
+                _footstep_sound = res.Item1;
+                volume_db = res.Item2;
+            }
+            //GD.Print("played footstep sound for enemy ", e, " at ", e.GlobalPosition);
+            AudioManager.TryPlay(_footstep_sound, AudioBus.Footsteps, GlobalPosition, volume_db);
+        }
+    }
 }

@@ -1,12 +1,14 @@
 using Godot;
 using System;
 
+[GlobalClass]
 public partial class MeleeWeaponResource : WeaponResource
 {
     [Export] public float MaxHitDist = 2.5f;
     [Export] public AudioStream MissSound;
 
     new private void FireShot() {
+        if (Player.Instance.IsDead) return;
         WeaponManager.Instance.PlayAnim(ViewShootAnim);
         WeaponManager.Instance.PlayAnim(ViewShootAnim);
         WeaponManager.Instance.QueueAnim(ViewIdleAnim);
@@ -21,7 +23,7 @@ public partial class MeleeWeaponResource : WeaponResource
 
         if (raycast.IsColliding())
         {
-            GD.Print("melee hit collided with " + raycast.GetCollider().GetType().Name);
+            //GD.Print("melee hit collided with " + raycast.GetCollider().GetType().Name);
             WeaponManager.Instance.PlaySound(ShootSound);
             var obj = raycast.GetCollider();
             var nrml = raycast.GetCollisionNormal();
@@ -32,7 +34,7 @@ public partial class MeleeWeaponResource : WeaponResource
             // inflict damage
             if (obj is IHurtable hurtable_obj) 
             {
-                GD.Print("dealing damage melee to " + hurtable_obj.GetType().Name);
+                //GD.Print("dealing damage melee to " + hurtable_obj.GetType().Name);
                 hurtable_obj.TakeDamage(Damage,DamageType.Physical);
             }
 

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="WeaponResource" load_steps=3 format=3 uid="uid://dc10yfrl3ufe6"]
+
+[ext_resource type="PackedScene" uid="uid://naybqpcwlaat" path="res://fpscontroller/weaponmanager/weapons/null_weapon/transparent_quad.tscn" id="1_sdaaf"]
+[ext_resource type="Script" path="res://fpscontroller/weaponmanager/WeaponResource.cs" id="1_sgece"]
+
+[resource]
+script = ExtResource("1_sgece")
+Damage = 0
+CurrentAmmo = 0
+MagazineSize = 0
+ReserveAmmo = 0
+MaxReserveAmmo = 0
+AutoFire = false
+MaxFireRateMs = 0.0
+ViewModel = ExtResource("1_sdaaf")
+WorldModel = ExtResource("1_sdaaf")
+ViewModelPos = Vector3(0, 0, 0)
+ViewModelRot = Vector3(0, 0, 0)
+ViewModelScale = Vector3(1, 1, 1)
+WorldModelPos = Vector3(0, 0, 0)
+WorldModelRot = Vector3(0, 0, 0)
+WorldModelScale = Vector3(1, 1, 1)
+ViewIdleAnim = ""
+ViewEquipAnim = ""
+ViewShootAnim = ""
+ViewReloadAnim = ""

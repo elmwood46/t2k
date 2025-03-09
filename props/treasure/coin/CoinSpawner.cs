@@ -55,25 +55,16 @@ public partial class CoinSpawner : Node3D
 
     public void SpawnCoin()
     {
-        var ret = (RigidBody3D)CoinScene.Instantiate();
-        ret.SetCollisionLayerValue(1,false);
-        ret.SetCollisionLayerValue(2,false);
-        ret.SetCollisionLayerValue(3,true);
-        ret.SetCollisionMaskValue(1,true);
-        ret.SetCollisionMaskValue(2,false);
-        ret.SetCollisionMaskValue(3,true);
-        ret.SetCollisionMaskValue(9,true);
-
-        AddSibling(ret);
+        var ret = CoinPool.SpawnCoin((Node3D)GetTree().GetCurrentScene());
         CallDeferred(MethodName.SetupCoin,ret);
     }
 
-    public void SetupCoin(RigidBody3D coin)
+    public void SetupCoin(Coin coin)
     {
-        coin.GlobalPosition = GlobalPosition;
-        coin.GravityScale = 2.0f;
-        coin.LinearVelocity = new Vector3(RNG.RandfRange(-2.0f,2.0f),RNG.RandfRange(10.0f,12.0f),RNG.RandfRange(-2.0f,2.0f));
-        coin.AngularVelocity = new Vector3(RNG.Randf()*2.0f*(float)Math.PI, RNG.Randf()*2.0f*(float)Math.PI, RNG.Randf()*2.0f*(float)Math.PI);
+        var _linvel = new Vector3(RNG.RandfRange(-2.0f,2.0f),RNG.RandfRange(10.0f,12.0f),RNG.RandfRange(-2.0f,2.0f));
+        var _angvel = new Vector3(RNG.Randf()*2.0f*(float)Math.PI, RNG.Randf()*2.0f*(float)Math.PI, RNG.Randf()*2.0f*(float)Math.PI);
+        coin.ForcePhysicsStateUpdate(GlobalPosition, _linvel, _angvel);
+        coin.CallDeferred(nameof(coin.Activate));
     }
 
     public override void _PhysicsProcess(double delta)

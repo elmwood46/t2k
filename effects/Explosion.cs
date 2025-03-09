@@ -4,23 +4,31 @@ using Godot;
 public partial class Explosion : Node3D
 {
 	public const float DEFAULT_CHAR_BODY_MASS = 10.0f;
-	[Export] public float ExplosionRadius {get;set;} = 3.0f;
+	[Export] public Area3D ExplosionCollisionArea {get;set;}
 	[Export] public float Damage {get;set;} = 10.0f;
-	[Export] public float ExplosionForce {get;set;} = 100.0f;
+	[Export] public float ExplosionForce {get;set;} = 500.0f;
 	[Export] public Node3D ExplosionVfxScene;
 	private AnimationPlayer _explosionAnimation;
-	private Area3D _explosionCollisionArea;
+	private float _explosion_radius = 1.0f;
+	private bool _do_explosion = false;
 
 	// Called when the node enters the scene tree for the first time.
 	public override async void _Ready()
 	{
-		_explosionCollisionArea = new Area3D();
-		AddChild(_explosionCollisionArea);
-        CollisionShape3D collisionShape = new()
-        {
-            Shape = new SphereShape3D { Radius = ExplosionRadius }
-        };
-        _explosionCollisionArea.AddChild(collisionShape);
+		if (ExplosionCollisionArea.GetChild(0) is CollisionShape3D shape && shape.Shape is SphereShape3D sphere)
+		{
+			_explosion_radius = sphere.Radius;
+		}
+		ExplosionCollisionArea.SetCollisionLayerValue(1,true);
+		ExplosionCollisionArea.SetCollisionLayerValue(2,true);
+		ExplosionCollisionArea.SetCollisionLayerValue(3,true);
+		ExplosionCollisionArea.SetCollisionLayerValue(4,true);
+		ExplosionCollisionArea.SetCollisionLayerValue(9,true);
+		ExplosionCollisionArea.SetCollisionMaskValue(1,true);
+		ExplosionCollisionArea.SetCollisionMaskValue(2,true);
+		ExplosionCollisionArea.SetCollisionMaskValue(3,true);
+		ExplosionCollisionArea.SetCollisionMaskValue(4,true);
+		ExplosionCollisionArea.SetCollisionMaskValue(9,true);
 		ExplosionVfxScene.Visible = false;
 		foreach (var child in ExplosionVfxScene.GetChildren())
 		{
@@ -31,21 +39,18 @@ public partial class Explosion : Node3D
 			}
 		}
 
-		// wait for 2 physics frames to finish
-		// so overlapping bodies are calculated
-		
-        await ToSignal(GetTree(), "physics_frame");
+		await ToSignal(GetTree(), "physics_frame");
 		await ToSignal(GetTree(), "physics_frame");
 
-		ChunkManager.DamageSphere(GlobalPosition, ExplosionRadius, (int)Damage, true);
-		PushAwayObjects();
-		PlayExplosionAnimation();
+		ChunkManager.DamageSphere(GlobalPosition, _explosion_radius, (int)Damage, true);
+		_do_explosion = true;
 	}
 
 	private void PushAwayObjects() {
-		Godot.Collections.Array<Node3D> _colliding_nodes = _explosionCollisionArea.GetOverlappingBodies();
+		Godot.Collections.Array<Node3D> _colliding_nodes = ExplosionCollisionArea.GetOverlappingBodies();
 
 		foreach (Node3D node in _colliding_nodes) {
+			if (!IsInstanceValid(node)) continue;
 			GD.Print("body found: " + node.Name);
 			var body_position = node.GlobalPosition;
 			
@@ -62,7 +67,7 @@ public partial class Explosion : Node3D
 			var force_dir = GlobalPosition.DirectionTo(body_position);
 			var bodyDist = body_position.DistanceTo(GlobalPosition);
 			var knockbackFromRadius = ExplosionForce
-				* (1f - Mathf.Min(bodyDist/ExplosionRadius,1f))
+				* (1f - Mathf.Min(bodyDist/_explosion_radius,1f))
 				/ mass
 				* force_dir;
 
@@ -73,19 +78,36 @@ public partial class Explosion : Node3D
 				rb.ApplyImpulse(knockbackFromRadius);
 			}
 
-			if (node is PhysicsBody3D pb && pb.GetParent().GetParent() is DestructibleMesh mesh) {
-				mesh.TakeDamage(ChunkManager.SphereDamageDropoff(GlobalPosition,((Node3D) mesh.IntactScene.GetChild(0)).GlobalPosition, Damage, ExplosionRadius), DamageType.Fire);
+			if (node is PhysicsBody3D pb && IsInstanceValid(pb.GetParent().GetParent()) && pb.GetParent().GetParent() is DestructibleMesh mesh) {
+				if (!mesh.IsBroken() && IsInstanceValid((Node3D)mesh.IntactScene.GetChild(0)) && ((Node3D)mesh.IntactScene.GetChild(0)).IsInsideTree())
+				{
+					var damage = ChunkManager.SphereDamageDropoff(GlobalPosition,((Node3D) mesh.IntactScene.GetChild(0)).GlobalPosition, Damage, _explosion_radius);
+					GD.Print("damaging destructo mesh ", mesh, " with ", damage, " damage");
+					mesh.TakeDamage(damage, DamageType.Fire);
+				}
 			}
 
 			if (node is IHurtable hurtable) {
-				hurtable.TakeDamage(ChunkManager.SphereDamageDropoff(GlobalPosition, body_position, Damage, ExplosionRadius), DamageType.Fire);
+				var damage = ChunkManager.SphereDamageDropoff(GlobalPosition, body_position, Damage, _explosion_radius);
+				GD.Print("damaging hurtable ", hurtable, " with ", damage, " damage");
+				hurtable.TakeDamage(damage, DamageType.Physical);
 			}
 		}
 	}
 
-	private void PlayExplosionAnimation() {
+    public override void _PhysicsProcess(double delta)
+    {
+        if (_do_explosion) {
+			PushAwayObjects();
+			PlayExplosionAnimation();
+			_do_explosion = false;
+		}
+    }
+
+    private void PlayExplosionAnimation() {
 		ExplosionVfxScene.Visible = true;
 		_explosionAnimation.Play("init");
+		GD.Print("exploded with radius ", _explosion_radius);
 
 		// timer to destroy explosion after animation
         var _animation_timer = new Timer()

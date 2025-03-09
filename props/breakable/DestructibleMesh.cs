@@ -159,6 +159,8 @@ public partial class DestructibleMesh : Node3D, IHurtable
 		ProcessMode = ProcessModeEnum.Pausable;
 	}
 
+	public bool IsBroken() => _is_broken;
+
 	public void Break(Vector3 collisionPoint, float force) {
         _is_broken = true;
         if (((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Scale != _base_scale) ((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Scale = _base_scale;

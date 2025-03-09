@@ -1,9 +1,81 @@
-[gd_scene load_steps=112 format=4 uid="uid://dvt10rp16ksw8"]
+[gd_scene load_steps=186 format=4 uid="uid://dvt10rp16ksw8"]
 
 [ext_resource type="Script" path="res://Player.cs" id="1_ppsmb"]
-[ext_resource type="Shader" path="res://pix_shader_imports/pixel_postprocess.gdshader" id="2_ws1qy"]
+[ext_resource type="AudioStream" uid="uid://c0iovhla268px" path="res://audio/footsteps/default/Audio 1.ogg" id="2_0qgqd"]
+[ext_resource type="Material" uid="uid://dm5h8sv5b2ina" path="res://shaders/damage/sh_player_damage_vignette.tres" id="2_qk6vn"]
 [ext_resource type="PackedScene" uid="uid://dvpv1rc1oo10c" path="res://fpscontroller/weaponmanager/weapon_manager.tscn" id="2_y8l63"]
+[ext_resource type="Shader" path="res://shaders/damage/melt_screen.gdshader" id="3_67kc1"]
+[ext_resource type="AudioStream" uid="uid://24k88p3udobh" path="res://audio/footsteps/default/Audio 2.ogg" id="3_km7xf"]
+[ext_resource type="Script" path="res://shaders/damage/MeltingEffect.cs" id="3_us5k5"]
 [ext_resource type="Resource" uid="uid://dbqqt7myed2m0" path="res://fpscontroller/weaponmanager/weapons/p90/p90.tres" id="4_47xcd"]
+[ext_resource type="AudioStream" uid="uid://c2i62boocjyvy" path="res://audio/footsteps/default/Audio 3.ogg" id="4_m8iie"]
+[ext_resource type="AudioStream" uid="uid://cxk6pwnkb5hkb" path="res://audio/footsteps/default/Audio 4.ogg" id="5_lt7ay"]
+[ext_resource type="AudioStream" uid="uid://djh6dy5o7lw7w" path="res://audio/footsteps/default/Audio 5.ogg" id="6_sipnh"]
+[ext_resource type="AudioStream" uid="uid://b3yiiuchxdsgq" path="res://audio/footsteps/default/Audio 6.ogg" id="7_afysr"]
+[ext_resource type="AudioStream" uid="uid://nwoxw2uwjijy" path="res://audio/footsteps/default/Audio 7.ogg" id="8_g8a32"]
+[ext_resource type="AudioStream" uid="uid://bydonvpfm7xh6" path="res://audio/footsteps/default/Audio 8.ogg" id="9_gw4b1"]
+[ext_resource type="AudioStream" uid="uid://c6uom5fe3rkej" path="res://audio/footsteps/default/Audio 9.ogg" id="10_2ty1r"]
+[ext_resource type="AudioStream" uid="uid://c1wpxv5mxsk66" path="res://audio/footsteps/default/Audio 10.ogg" id="11_tagpj"]
+[ext_resource type="AudioStream" uid="uid://bi3xo6ls814mv" path="res://audio/footsteps/default/Audio 11.ogg" id="12_f1267"]
+[ext_resource type="AudioStream" uid="uid://bi6acgneomcqj" path="res://audio/footsteps/default/Audio 12.ogg" id="13_ohinw"]
+[ext_resource type="AudioStream" uid="uid://dnnynimgs23ik" path="res://audio/footsteps/default/Audio 13.ogg" id="14_p3weo"]
+[ext_resource type="AudioStream" uid="uid://06r61agk76mr" path="res://audio/footsteps/default/Audio 14.ogg" id="15_lkkmb"]
+[ext_resource type="AudioStream" uid="uid://dmnm5bxf1ct1k" path="res://audio/footsteps/default/Audio 15.ogg" id="16_7cdtf"]
+[ext_resource type="AudioStream" uid="uid://cfyxe75m3rmec" path="res://audio/footsteps/default/Audio 16.ogg" id="17_0igc7"]
+[ext_resource type="AudioStream" uid="uid://tc711mif4xtl" path="res://audio/footsteps/default/Audio 17.ogg" id="18_f4pbl"]
+[ext_resource type="AudioStream" uid="uid://dw3rnu024pd42" path="res://audio/footsteps/default/Audio 18.ogg" id="19_e51wx"]
+[ext_resource type="AudioStream" uid="uid://byuej786ryyvv" path="res://audio/footsteps/default/Audio 19.ogg" id="20_ov5ne"]
+[ext_resource type="AudioStream" uid="uid://cuueq8uxq5adh" path="res://audio/footsteps/default/Audio 20.ogg" id="21_bor82"]
+[ext_resource type="AudioStream" uid="uid://clagkugdsk4vc" path="res://audio/footsteps/default/Audio 21.ogg" id="22_t5ryv"]
+[ext_resource type="AudioStream" uid="uid://de5jtyu1yiydy" path="res://audio/footsteps/default/Audio 22.ogg" id="23_x3wmo"]
+[ext_resource type="AudioStream" uid="uid://cyjf41mmm2ooa" path="res://audio/footsteps/default/Audio 23.ogg" id="24_5md35"]
+[ext_resource type="AudioStream" uid="uid://0khh26yex2rv" path="res://audio/footsteps/grass/Audio 1.ogg" id="25_jxjmc"]
+[ext_resource type="AudioStream" uid="uid://bshowio13t4ea" path="res://audio/footsteps/grass/Audio 2.ogg" id="26_po2m0"]
+[ext_resource type="AudioStream" uid="uid://b0phsh04qnn5f" path="res://audio/footsteps/grass/Audio 3.ogg" id="27_0ad75"]
+[ext_resource type="AudioStream" uid="uid://ferwuf7i382j" path="res://audio/footsteps/grass/Audio 4.ogg" id="28_m4vys"]
+[ext_resource type="AudioStream" uid="uid://clh1ebqhl1u8g" path="res://audio/footsteps/grass/Audio 5.ogg" id="29_37k3i"]
+[ext_resource type="AudioStream" uid="uid://ddpaiyqekgha" path="res://audio/footsteps/grass/Audio 6.ogg" id="30_cpje1"]
+[ext_resource type="AudioStream" uid="uid://be2xbmn8ipl08" path="res://audio/footsteps/grass/Audio 7.ogg" id="31_oy45w"]
+[ext_resource type="AudioStream" uid="uid://ck8vellw0f4mx" path="res://audio/footsteps/grass/Audio 8.ogg" id="32_ax0su"]
+[ext_resource type="AudioStream" uid="uid://dhl5on7hmncn4" path="res://audio/footsteps/grass/Audio 9.ogg" id="33_itp04"]
+[ext_resource type="AudioStream" uid="uid://ba41wvwypnh3m" path="res://audio/footsteps/stone/Audio 1.ogg" id="34_ag24p"]
+[ext_resource type="AudioStream" uid="uid://cc4sgmrptqt51" path="res://audio/footsteps/stone/Audio 2.ogg" id="35_0sky3"]
+[ext_resource type="AudioStream" uid="uid://bn4gjaate3q41" path="res://audio/footsteps/stone/Audio 3.ogg" id="36_hrg4q"]
+[ext_resource type="AudioStream" uid="uid://4v5neb7bsnax" path="res://audio/footsteps/stone/Audio 4.ogg" id="37_dbrs3"]
+[ext_resource type="AudioStream" uid="uid://g14hnj0mtbne" path="res://audio/footsteps/stone/Audio 5.ogg" id="38_5jpfn"]
+[ext_resource type="AudioStream" uid="uid://couytqmqutune" path="res://audio/footsteps/stone/Audio 6.ogg" id="39_mrrod"]
+[ext_resource type="AudioStream" uid="uid://bx4r4rms3yaux" path="res://audio/footsteps/stone/Audio 7.ogg" id="40_6v14w"]
+[ext_resource type="AudioStream" uid="uid://cq6sf0pkqn7ei" path="res://audio/footsteps/stone/Audio 8.ogg" id="41_x6ds6"]
+[ext_resource type="AudioStream" uid="uid://behepvdyppv16" path="res://audio/footsteps/stone/Audio 9.ogg" id="42_ugeiw"]
+[ext_resource type="AudioStream" uid="uid://5ni3pps1ma0t" path="res://audio/footsteps/stone/Audio 10.ogg" id="43_b4aos"]
+[ext_resource type="AudioStream" uid="uid://gekugtpkvat8" path="res://audio/footsteps/stone/Audio 11.ogg" id="44_awhmh"]
+[ext_resource type="AudioStream" uid="uid://cgrmppf3pqis0" path="res://audio/footsteps/stone/Audio 12.ogg" id="45_s6w6l"]
+[ext_resource type="AudioStream" uid="uid://chdbopjqx07ff" path="res://audio/footsteps/stone/Audio 13.ogg" id="46_61fa3"]
+[ext_resource type="AudioStream" uid="uid://dimlrkuffr6ta" path="res://audio/footsteps/stone/Audio 14.ogg" id="47_nsnlw"]
+[ext_resource type="AudioStream" uid="uid://ivkxss0bkjx1" path="res://audio/footsteps/stone/Audio 15.ogg" id="48_kvpfb"]
+[ext_resource type="AudioStream" uid="uid://b2dmkr4ehxpuc" path="res://audio/footsteps/grass/grass_step_2-01.ogg" id="49_jvtmw"]
+[ext_resource type="AudioStream" uid="uid://g86mw4cdb1cq" path="res://audio/footsteps/grass/grass_step_2-02.ogg" id="50_n58vb"]
+[ext_resource type="AudioStream" uid="uid://csf838a514if5" path="res://audio/footsteps/grass/grass_step_2-03.ogg" id="51_in731"]
+[ext_resource type="AudioStream" uid="uid://c1vmt21ac1hth" path="res://audio/footsteps/grass/grass_step_2-04.ogg" id="52_bas6j"]
+[ext_resource type="AudioStream" uid="uid://u5k3tly5krs2" path="res://audio/footsteps/grass/grass_step_2-05.ogg" id="53_m5a08"]
+[ext_resource type="AudioStream" uid="uid://c0u0p6gdgl8e7" path="res://audio/footsteps/grass/grass_step_2-06.ogg" id="54_wqjvt"]
+[ext_resource type="AudioStream" uid="uid://d3bnk7ccujv2n" path="res://audio/footsteps/grass/grass_step_2-07.ogg" id="55_espm1"]
+[ext_resource type="AudioStream" uid="uid://bed7dy6a20h3m" path="res://audio/footsteps/grass/grass_step_2-08.ogg" id="56_3pi7q"]
+[ext_resource type="AudioStream" uid="uid://ba46v2sphwhid" path="res://audio/footsteps/grass/grass_step_2-09.ogg" id="57_em7w8"]
+[ext_resource type="AudioStream" uid="uid://ctbvj2t0udjg1" path="res://audio/footsteps/grass/grass_step_2-10.ogg" id="58_s7iuy"]
+[ext_resource type="AudioStream" uid="uid://b7s7gpnlq3itg" path="res://audio/footsteps/grass/grass_step_2-11.ogg" id="59_r5ufp"]
+[ext_resource type="AudioStream" uid="uid://dvdue60ts187d" path="res://audio/footsteps/grass/grass_step_2-12.ogg" id="60_cou1j"]
+[ext_resource type="AudioStream" uid="uid://dlm20ooukodkh" path="res://audio/footsteps/grass/grass_step_2-13.ogg" id="61_sjnbe"]
+[ext_resource type="AudioStream" uid="uid://d3db322anca11" path="res://audio/footsteps/wood/Audio 1.ogg" id="62_jjw7y"]
+[ext_resource type="AudioStream" uid="uid://bu0buimuq0ngf" path="res://audio/footsteps/wood/Audio 2.ogg" id="63_e3gb5"]
+[ext_resource type="AudioStream" uid="uid://b08ofnrd6i53f" path="res://audio/footsteps/wood/Audio 3.ogg" id="64_jaea5"]
+[ext_resource type="AudioStream" uid="uid://bu5lejtgm1q3r" path="res://audio/footsteps/wood/Audio 4.ogg" id="65_iy76p"]
+[ext_resource type="AudioStream" uid="uid://d01ndterq3dk3" path="res://audio/footsteps/ice/Audio 1.ogg" id="66_ce83x"]
+[ext_resource type="AudioStream" uid="uid://bwjfpdugmd0sq" path="res://audio/footsteps/ice/Audio 2.ogg" id="67_fmsmy"]
+[ext_resource type="AudioStream" uid="uid://b83h0b16u3m6n" path="res://audio/footsteps/ice/Audio 3.ogg" id="68_jubob"]
+[ext_resource type="AudioStream" uid="uid://cuut7raktdflg" path="res://audio/footsteps/ice/Audio 4.ogg" id="69_w78tr"]
+[ext_resource type="AudioStream" uid="uid://bb7ld5lwscd3u" path="res://audio/footsteps/ice/Audio 5.ogg" id="70_3v5ef"]
+[ext_resource type="AudioStream" uid="uid://d1vsqtfxlutdh" path="res://audio/footsteps/ice/Audio 6.ogg" id="71_p51oo"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_k2qdg"]
 radius = 0.3
@@ -51328,21 +51400,21 @@ graph_offset = Vector2(-128.495, -5.091)
 [sub_resource type="SphereShape3D" id="SphereShape3D_4wd8q"]
 radius = 0.25
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_hy57e"]
-render_priority = 0
-shader = ExtResource("2_ws1qy")
-shader_parameter/depth_threshold = 0.05
-shader_parameter/reverse_depth_threshold = 0.25
-shader_parameter/normal_threshold = 0.6
-shader_parameter/darken_amount = 0.3
-shader_parameter/lighten_amount = 1.5
-shader_parameter/normal_edge_bias = Vector3(1, 1, 1)
-shader_parameter/light_direction = Vector3(-0.96, -0.18, 0.2)
-
 [sub_resource type="QuadMesh" id="QuadMesh_0ul4v"]
-material = SubResource("ShaderMaterial_hy57e")
+material = ExtResource("2_qk6vn")
 flip_faces = true
 size = Vector2(2, 2)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_i02fx"]
+shader = ExtResource("3_67kc1")
+shader_parameter/t = null
+shader_parameter/y_offsets = null
+shader_parameter/melting = false
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_1mkwt"]
+friction = 0.17
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ti0qh"]
 
 [sub_resource type="SeparationRayShape3D" id="SeparationRayShape3D_hvg2x"]
 
@@ -51367,7 +51439,7 @@ size = Vector3(1.05, 1.05, 1.05)
 [sub_resource type="SphereShape3D" id="SphereShape3D_idwu1"]
 radius = 2.0
 
-[node name="Player" type="CharacterBody3D" node_paths=PackedStringArray("Head", "HeadCrouched", "CollisionShape", "Camera", "CameraSmooth", "CameraShake", "CoinPickupArea", "RayCast", "BlockHighlight", "ShapeCast", "StairsAheadRay", "StairsBelowRay")]
+[node name="Player" type="CharacterBody3D" node_paths=PackedStringArray("Head", "HeadCrouched", "CollisionShape", "Camera", "CameraSmooth", "CameraShake", "ScreenMeltEffect", "DamageVignette", "CameraDeathRB", "CoinPickupArea", "RayCast", "BlockHighlight", "ShapeCast", "StairsAheadRay", "StairsBelowRay", "GroundCheckRay")]
 collision_layer = 265
 collision_mask = 9
 floor_max_angle = 1.0472
@@ -51378,6 +51450,9 @@ CollisionShape = NodePath("CollisionShape3D")
 Camera = NodePath("Head/HeadCrouch/CameraShake/CameraSmooth/Camera3D")
 CameraSmooth = NodePath("Head/HeadCrouch/CameraShake/CameraSmooth")
 CameraShake = NodePath("Head/HeadCrouch/CameraShake")
+ScreenMeltEffect = NodePath("Head/HeadCrouch/CameraShake/CameraSmooth/Camera3D/ColorRect")
+DamageVignette = NodePath("Head/HeadCrouch/CameraShake/CameraSmooth/Camera3D/DamageVignette")
+CameraDeathRB = NodePath("Head/HeadCrouch/CameraShake/CameraSmooth/CameraDeath")
 MaxCameraShake = 1.0
 CameraShakeDecay = 0.01
 CoinPickupArea = NodePath("Area3D")
@@ -51386,6 +51461,15 @@ BlockHighlight = NodePath("BlockHighlight")
 ShapeCast = NodePath("Head/HeadCrouch/CameraShake/CameraSmooth/Camera3D/ShapeCast3D")
 StairsAheadRay = NodePath("Head/StairsAheadRay")
 StairsBelowRay = NodePath("Head/StairsBelowRay")
+GroundCheckRay = NodePath("Head/GroundCheckRay")
+metadata/footstep_dict_backup = {
+"default": [ExtResource("2_0qgqd"), ExtResource("3_km7xf"), ExtResource("4_m8iie"), ExtResource("5_lt7ay"), ExtResource("6_sipnh"), ExtResource("7_afysr"), ExtResource("8_g8a32"), ExtResource("9_gw4b1"), ExtResource("10_2ty1r"), ExtResource("11_tagpj"), ExtResource("12_f1267"), ExtResource("13_ohinw"), ExtResource("14_p3weo"), ExtResource("15_lkkmb"), ExtResource("16_7cdtf"), ExtResource("17_0igc7"), ExtResource("18_f4pbl"), ExtResource("19_e51wx"), ExtResource("20_ov5ne"), ExtResource("21_bor82"), ExtResource("22_t5ryv"), ExtResource("23_x3wmo"), ExtResource("24_5md35")],
+"grass": [ExtResource("25_jxjmc"), ExtResource("26_po2m0"), ExtResource("27_0ad75"), ExtResource("28_m4vys"), ExtResource("29_37k3i"), ExtResource("30_cpje1"), ExtResource("31_oy45w"), ExtResource("32_ax0su"), ExtResource("33_itp04")],
+"grass_2": [ExtResource("49_jvtmw"), ExtResource("50_n58vb"), ExtResource("51_in731"), ExtResource("52_bas6j"), ExtResource("53_m5a08"), ExtResource("54_wqjvt"), ExtResource("55_espm1"), ExtResource("56_3pi7q"), ExtResource("57_em7w8"), ExtResource("58_s7iuy"), ExtResource("59_r5ufp"), ExtResource("60_cou1j"), ExtResource("61_sjnbe")],
+"ice": [ExtResource("66_ce83x"), ExtResource("67_fmsmy"), ExtResource("68_jubob"), ExtResource("69_w78tr"), ExtResource("70_3v5ef"), ExtResource("71_p51oo")],
+"stone": [ExtResource("34_ag24p"), ExtResource("35_0sky3"), ExtResource("36_hrg4q"), ExtResource("37_dbrs3"), ExtResource("38_5jpfn"), ExtResource("39_mrrod"), ExtResource("40_6v14w"), ExtResource("41_x6ds6"), ExtResource("42_ugeiw"), ExtResource("43_b4aos"), ExtResource("44_awhmh"), ExtResource("45_s6w6l"), ExtResource("46_61fa3"), ExtResource("47_nsnlw"), ExtResource("48_kvpfb")],
+"wood": [ExtResource("62_jjw7y"), ExtResource("63_e3gb5"), ExtResource("64_jaea5"), ExtResource("65_iy76p")]
+}
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.007, 0.975, 0.018)
@@ -52371,6 +52455,36 @@ extra_cull_margin = 16384.0
 mesh = SubResource("QuadMesh_0ul4v")
 skeleton = NodePath("../..")
 
+[node name="ColorRect" type="ColorRect" parent="Head/HeadCrouch/CameraShake/CameraSmooth/Camera3D"]
+material = SubResource("ShaderMaterial_i02fx")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_us5k5")
+XResolution = 576.0
+Duration = 1.0
+
+[node name="DamageVignette" type="MeshInstance3D" parent="Head/HeadCrouch/CameraShake/CameraSmooth/Camera3D"]
+transform = Transform3D(0.707107, 0, -0.707107, -0.353553, 0.866025, -0.353553, 0.612372, 0.5, 0.612372, -0.960723, -2.02482, -8.65184)
+layers = 2
+cast_shadow = 0
+extra_cull_margin = 16384.0
+mesh = SubResource("QuadMesh_0ul4v")
+skeleton = NodePath("../..")
+
+[node name="CameraDeath" type="RigidBody3D" parent="Head/HeadCrouch/CameraShake/CameraSmooth"]
+collision_layer = 0
+collision_mask = 0
+physics_material_override = SubResource("PhysicsMaterial_1mkwt")
+gravity_scale = 0.25
+freeze = true
+angular_damp = 0.599
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Head/HeadCrouch/CameraShake/CameraSmooth/CameraDeath"]
+shape = SubResource("SphereShape3D_ti0qh")
+
 [node name="StairsAheadRay" type="RayCast3D" parent="Head"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.022, -1.55275, -0.628)
 target_position = Vector3(0, -0.7, 0)
@@ -52380,6 +52494,10 @@ debug_shape_thickness = 4
 [node name="StairsBelowRay" type="RayCast3D" parent="Head"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, 0)
 target_position = Vector3(0, -0.75, 0)
+
+[node name="GroundCheckRay" type="RayCast3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.71, 0)
+target_position = Vector3(0, -0.5, 0)
 
 [node name="SpringArm3D" type="SpringArm3D" parent="Head"]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0.0387528, 0)

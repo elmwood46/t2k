@@ -1,6 +1,7 @@
 using Godot;
 using System;
 
+[GlobalClass]
 public partial class WeaponResource : Resource
 {
     [Export] public int Damage = 10;
@@ -80,6 +81,7 @@ public partial class WeaponResource : Resource
 
     public void OnProcess(float delta)
     {
+        if (Player.Instance.IsDead) return;
         if (AutoFire && _triggerDown && Time.GetTicksMsec() - _last_fire_time > MaxFireRateMs)
         {
             if (CurrentAmmo > 0)
@@ -89,6 +91,7 @@ public partial class WeaponResource : Resource
 
 
     protected void OnTriggerDown() {
+        if (Player.Instance.IsDead) return;
         bool canFireTime = _last_fire_time == 0ul || Time.GetTicksMsec() - _last_fire_time > MaxFireRateMs;
         if (canFireTime && CurrentAmmo > 0)
             Call(nameof(FireShot));
@@ -100,6 +103,7 @@ public partial class WeaponResource : Resource
     }
 
     public void ReloadPressed() {
+        if (Player.Instance.IsDead) return;
         if (ViewReloadAnim != null && WeaponManager.Instance.GetAnim() == ViewReloadAnim) return; // dont play animation if already reloading
         if (GetReloadAmount() <= 0) return;
 
@@ -112,6 +116,7 @@ public partial class WeaponResource : Resource
     }
 
     public void Reload() {
+        if (Player.Instance.IsDead) return;
         var amount = GetReloadAmount();
         if (amount <= 0) return;
         else if (MagazineSize == int.MaxValue || CurrentAmmo == int.MaxValue) CurrentAmmo = MagazineSize;
@@ -129,16 +134,19 @@ public partial class WeaponResource : Resource
 
     protected void OnUnequip()
     {
-        throw new NotImplementedException();
+        //throw new NotImplementedException();
+        GD.Print("unequipping weapon", this);
     }
 
     protected void OnEquip()
     {
-        WeaponManager.Instance.PlayAnim(ViewEquipAnim);
-        WeaponManager.Instance.PlayAnim(ViewIdleAnim);
+        if (Player.Instance != null && Player.Instance.IsDead) return;
+        if (ViewEquipAnim != null && ViewEquipAnim != "") WeaponManager.Instance.PlayAnim(ViewEquipAnim);
+        if (ViewIdleAnim != null && ViewIdleAnim != "")  WeaponManager.Instance.PlayAnim(ViewIdleAnim);
     }
 
     protected void FireShot() {
+        if (Player.Instance.IsDead) return;
         WeaponManager.Instance.PlayAnim(ViewShootAnim);
         WeaponManager.Instance.PlaySound(ShootSound);
         WeaponManager.Instance.QueueAnim(ViewIdleAnim);
@@ -167,7 +175,7 @@ public partial class WeaponResource : Resource
             // inflict damage
             if (obj is IHurtable hurtable_obj) 
             {
-                GD.Print("dealing damage melee to " + hurtable_obj.GetType().Name);
+                //GD.Print("dealing damage melee to " + hurtable_obj.GetType().Name);
                 hurtable_obj.TakeDamage(Damage,DamageType.Physical);
             }
 

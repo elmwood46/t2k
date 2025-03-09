@@ -28,12 +28,10 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 	// this allows for more efficient processing of sloped blocks when we mesh the chunk
 	public ConcurrentDictionary<Vector3I, List<Vector3I>> DeferredMeshUpdates = new();
 
-
 	// deferred object loading
 	// stops game lagging when spawning many objects by spacing out their spawn times
 	public ConcurrentDictionary<Vector3I,ConcurrentQueue<DestructibleMeshData>> DeferredDestructibleMeshesSpawn = new();
 	public static readonly SemaphoreSlim _spawn_obj_semaphore = new(1, 1);
-
 	const int NUM_MESH_SPAWNS = 7;
 	private int DESTRUCTO_CHEST_IDX;
     public static readonly DestructibleMesh[] DestructibleMeshScenes = new DestructibleMesh[NUM_MESH_SPAWNS];
@@ -188,8 +186,10 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 		}
 		await Task.WhenAll(tasks);
 
-		tasks.Clear();
 		
+		
+		/*
+		tasks.Clear();
 		for (int x = -_width_sq; x<_width_sq; x++)
 		{
 			for (int z = -_width_sq; z<_width_sq; z++)
@@ -207,7 +207,7 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 				}
 			}
 		}
-		await Task.WhenAll(tasks);
+		await Task.WhenAll(tasks);*/
 
 		tasks.Clear();
 		foreach (var chunk_mesh_id in Instance.DeferredMeshUpdates.Keys) {
@@ -243,6 +243,8 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 			new Thread(new ThreadStart(ThreadProcess)){IsBackground = true}.Start();
 			new Thread(new ThreadStart(ThreadObjectSpawning)){IsBackground = true}.Start();
 		}
+
+		SaveManager.SaveToFile();
 	}
 	#endregion
 
@@ -268,11 +270,11 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 			Instance.BLOCKCACHE.Clear();
 			Instance.MESHCACHE.Clear();
 			var blocks = SaveManager.GetCachedBlocks();
-			var meshes = SaveManager.GetCachedMeshes();
+			//var meshes = SaveManager.GetCachedMeshes();
 			var pairings = SaveManager.GetCachedCantorPairings();
 			foreach (var cantor in pairings) CantorPairing.Add(cantor);
 			foreach (var (pos, blockData) in blocks) Instance.BLOCKCACHE[pos] = blockData;
-			foreach (var (pos, meshData) in meshes) Instance.MESHCACHE[pos] = meshData;
+			//foreach (var (pos, meshData) in meshes) Instance.MESHCACHE[pos] = meshData;
 
 			// update all chunks
 			int playerChunkX, playerChunkZ;
@@ -421,7 +423,7 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 	}
 
 	public static int SphereDamageDropoff(Godot.Vector3 sphereCentre, Godot.Vector3 bodyGlobalPosition, float base_damage, float explosion_radius) {
-		return Mathf.RoundToInt(base_damage * (1f - Mathf.Min(sphereCentre.DistanceSquaredTo(bodyGlobalPosition)/(explosion_radius*explosion_radius),1f)));
+		return Mathf.RoundToInt(base_damage * (1.0f - Mathf.Min(sphereCentre.DistanceSquaredTo(bodyGlobalPosition)/(explosion_radius*explosion_radius),1f)));
 	}
 	#endregion
 
@@ -1014,7 +1016,7 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 
 				// update grass LODS to be inside the rendered distance
 				// HACK removed this check because we're not using grass LODS for now
-				if (!DISABLE_GRASS_LODS)
+				/*if (!DISABLE_GRASS_LODS)
 				{
 					foreach (var pos in Instance.GRASS_MULTIMESHES.Keys)
 						if (!Instance.MESHCACHE.ContainsKey(pos))
@@ -1030,7 +1032,7 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 							Thread.Sleep(10);
 						}
 					}
-				}
+				}*/
 
 				await Task.WhenAll(tasks);
 

@@ -38,12 +38,16 @@ public partial class WeaponManager : Node3D
 
 	public static WeaponManager Instance { get; private set; }
 
+	public static readonly WeaponResource NullWeapon = ResourceLoader.Load("res://fpscontroller/weaponmanager/weapons/null_weapon/null_weapon.tres") as WeaponResource; 
+
 	private void UpdateWeaponModel() {
+		//GD.Print("null weapon: " + NullWeapon);
 		GD.Print("Updating weapon model");
 		if (CurrentWeapon == null) return;
 		GD.Print("Current weapon: " + CurrentWeapon);
 		if (ViewModelContainer != null && CurrentWeapon.ViewModel != null) {
 			GD.Print("View model container: " + ViewModelContainer.Name);
+			_current_weapon_view_model?.Free();
 			_current_weapon_view_model = (Node3D)CurrentWeapon.ViewModel.Instantiate();
 			_current_weapon_muzzle = FindNode3DRecursive(_current_weapon_view_model, "Muzzle");
 			ViewModelContainer.AddChild(_current_weapon_view_model);
@@ -53,19 +57,20 @@ public partial class WeaponManager : Node3D
 			var animPlayer = _current_weapon_view_model.GetNodeOrNull<AnimationPlayer>("AnimationPlayer");
 			animPlayer?.Connect("current_animation_changed", new Callable(this,nameof(CurrentAnimChanged)));
 			ShaderUtils.ApplyClipAndFovShaderToViewModel(_current_weapon_view_model);
-			_current_weapon_world_model.Position = CurrentWeapon.WorldModelPos;
-			_current_weapon_world_model.Rotation = CurrentWeapon.WorldModelRot;
-			_current_weapon_world_model.Scale = CurrentWeapon.WorldModelScale;
 		}
 		if (WorldModelContainer != null && CurrentWeapon.WorldModel != null) {
 			GD.Print("World model container: " + WorldModelContainer.Name);
+			_current_weapon_world_model?.Free();
 			_current_weapon_world_model = (Node3D)CurrentWeapon.WorldModel.Instantiate();
+			_current_weapon_world_model.Position = CurrentWeapon.WorldModelPos;
+			_current_weapon_world_model.Rotation = CurrentWeapon.WorldModelRot;
+			_current_weapon_world_model.Scale = CurrentWeapon.WorldModelScale;
 			WorldModelContainer.AddChild(_current_weapon_world_model);
 		}
 		GD.Print("Weapon model updated");
 		CurrentWeapon.IsEquipped = true;
 		GD.Print("Weapon equipped");
-		if (Player.Instance.HasMethod("UpdateViewAndWorldModelMasks")) {
+		if (Player.Instance != null && Player.Instance.HasMethod("UpdateViewAndWorldModelMasks")) {
 			Player.Instance.UpdateViewAndWorldModelMasks();
 		}
 		GD.Print("View and world model masks updated");

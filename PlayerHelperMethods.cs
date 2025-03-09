@@ -345,6 +345,39 @@ public partial class Player : CharacterBody3D
 		_snappedToStairsLastFrame = didSnap;
 	}
 
+    private void PlayFootstepSound(bool force_play = false)
+    {
+        GroundCheckRay.ForceRaycastUpdate();
+        var floorBelow = GroundCheckRay.IsColliding() && !IsSurfaceTooSteep(GroundCheckRay.GetCollisionNormal());
+        if ((floorBelow && Velocity.LengthSquared() > 0.2f) || force_play)
+        {
+            var collider = GroundCheckRay.GetCollider();
+
+            var _footstep_sound = AudioManager.FootstepSounds["default"][Random.Shared.Next(0, AudioManager.FootstepSounds["default"].Count)];
+            _footstep_sound_player.VolumeDb = 0.0f; // set to different values for different sounds (grass sounds are too loud)
+
+            // change footstep depending on chunk block surface
+            if (collider is Chunk)
+            {
+                var global_pos = GroundCheckRay.GetCollisionPoint()-GroundCheckRay.GetCollisionNormal()*ChunkManager.VOXEL_SCALE*0.5f;
+
+                var res = AudioManager.GetFootstepSoundAndVolFromBlockPosition(global_pos);
+
+                if (res.Item1 == null)
+                {
+                    GD.Print("Didn't play footstep, Chunk not found in cache");
+                    return;
+                }
+
+                _footstep_sound = res.Item1;
+                _footstep_sound_player.VolumeDb = res.Item2;
+            }
+
+            _footstep_sound_player.Stream = _footstep_sound;
+            _footstep_sound_player.Play();
+        }
+    }
+
 	private bool IsSurfaceTooSteep(Vector3 normal)
 	{
 		return normal.AngleTo(Vector3.Up) > FloorMaxAngle;
@@ -462,12 +495,31 @@ public partial class Player : CharacterBody3D
     }
 
     public void TakeDamage(int damage, DamageType damageType) {
-        //if (IsDead) return;
-        CurrentHealth -= damage;
-        if (CurrentHealth <= 0) {
-            CurrentHealth = 0;
-            // TODO implement player death
-            GD.Print("Player died");
+        if (IsDead) return;
+        if (_iFramesTimer.IsStopped()) {
+            _iFramesTimer.WaitTime = _iFramesWaitTime;
+            _iFramesTimer.Start();
+            CurrentHealth -= damage;
+            _damage_vignette_ratio = 1.0f;//Mathf.Clamp(5.0f*damage/MaxHealth,0.0f,1.0f);
+            if (CurrentHealth <= 0) {
+                CurrentHealth = 0;
+                SetCollisionMaskValue(1,false);
+                SetCollisionLayerValue(1,false);
+                CameraDeathRB.SetCollisionLayerValue(1,true);
+                CameraDeathRB.SetCollisionMaskValue(1,true);                
+                Camera.Reparent(CameraDeathRB);
+                WeaponManager.Instance.CurrentWeapon = WeaponManager.NullWeapon.Duplicate() as WeaponResource;
+                GD.Print("Player died");
+            }
         }
+    }
+
+    public bool IsDead => CurrentHealth == 0;
+
+    public void UpdateDamageVignette() {
+        _min_damage_vignette_ratio = CurrentHealth < MaxHealth * 0.25f  ? 0.5f * (1.0f - CurrentHealth/MaxHealth) : 0.0f;
+        if (CurrentHealth == 0) _min_damage_vignette_ratio = 1.0f;
+        _damage_vignette_ratio = Mathf.Lerp(_damage_vignette_ratio, _min_damage_vignette_ratio, 0.1f);
+        ((ShaderMaterial)DamageVignette.GetActiveMaterial(0)).Set("shader_parameter/damage_ratio", _damage_vignette_ratio);
     }
 }

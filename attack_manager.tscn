@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://b8qq61e3slwq8"]
+
+[ext_resource type="Script" path="res://AttackManager.cs" id="1_u3cqs"]
+[ext_resource type="PackedScene" uid="uid://iqbljanuovni" path="res://enemies/attack_hitboxes/scratch_hitbox.tscn" id="2_j1w1a"]
+
+[node name="AttackManager" type="Node3D"]
+script = ExtResource("1_u3cqs")
+
+[node name="ScratchHitbox" parent="." instance=ExtResource("2_j1w1a")]
