@@ -89,7 +89,10 @@ public partial class Player : CharacterBody3D
         }
 
 		for (int i = 0; i < ShapeCast.GetCollisionCount(); i++) {
-            if (ShapeCast.GetCollider(i) is RigidBody3D r && r.Freeze == false && r.Mass <= MAX_PICKUP_MASS && !r.IsQueuedForDeletion()) {
+            if (ShapeCast.GetCollider(i) is RigidBody3D r)
+            {
+                if (!IsInstanceValid(r) || r.Freeze || r.Mass > MAX_PICKUP_MASS || r.IsQueuedForDeletion()) continue;
+                if (r.GetParent().GetParent() is DestructibleMesh d && d.IsBroken()) continue;
                 if (_hold_counter < _pickup_time) _hold_counter ++;
                 else 
                 {
@@ -182,9 +185,12 @@ public partial class Player : CharacterBody3D
 			return null;
 
 		for (int i = 0; i < ShapeCast.GetCollisionCount(); i++) {
-			var collider = ShapeCast.GetCollider(i) as Node;
-			if (collider?.GetNodeOrNull("InteractableComponent") is InteractableComponent interactable)
-				return interactable;
+            if (ShapeCast.GetCollider(i) is not Node collider) continue;
+            foreach (var child in collider.GetChildren(true)) {
+                if (child is InteractableComponent interactable) {
+                    return interactable;
+                }
+            }
 		}
 		return null;
 	}
@@ -230,9 +236,9 @@ public partial class Player : CharacterBody3D
         var overlap = CoinPickupArea.GetOverlappingBodies();
         foreach (var obj in overlap)
         {
-            if (obj is Coin coin && !coin.MoveTowardPlayer)
+            if (obj is Coin coin && !coin.ActivatePickup)
             {
-                coin.MoveTowardPlayer = true;
+                coin.ActivatePickup = true;
             }
         }
     }

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" load_steps=6 format=3 uid="uid://dbqqt7myed2m0"]
+[gd_resource type="Resource" script_class="WeaponResource" load_steps=6 format=3 uid="uid://dbqqt7myed2m0"]
 
 [ext_resource type="Script" path="res://fpscontroller/weaponmanager/WeaponResource.cs" id="1_3onbh"]
 [ext_resource type="AudioStream" uid="uid://bkdnd7l3whrp" path="res://fpscontroller/weaponmanager/sounds/cc0-415912__okieactor__heathers-gunshot-effect2.wav" id="2_rqbut"]

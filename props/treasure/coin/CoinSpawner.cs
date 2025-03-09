@@ -3,10 +3,12 @@ using System;
 
 public partial class CoinSpawner : Node3D
 {
-    public static readonly PackedScene CoinScene = ResourceLoader.Load<PackedScene>("res://props/treasure/coin/coin.tscn");
+    public static readonly PackedScene HamScene = ResourceLoader.Load<PackedScene>("res://props/food/Ham/ham.tscn");
     public static readonly RandomNumberGenerator RNG = new();
 
     public double SpawnTime = 1.0;
+
+    public bool SpawnTreasure = false;
 
     public int NumCoins = 10;
 
@@ -53,33 +55,43 @@ public partial class CoinSpawner : Node3D
         return spawner;
     }
 
-    public void SpawnCoin()
+    public void SpawnPickup()
     {
-        var ret = CoinPool.SpawnCoin((Node3D)GetTree().GetCurrentScene());
-        CallDeferred(MethodName.SetupCoin,ret);
+        Pickup pickup;
+        if (SpawnTreasure && Random.Shared.NextSingle() < 1.0)
+        {
+            pickup = HamScene.Instantiate() as Pickup;
+            ((Node3D)GetTree().GetCurrentScene()).AddChild(pickup);
+        }
+        else
+        {
+            pickup = CoinPool.SpawnCoin((Node3D)GetTree().GetCurrentScene());
+        }
+
+        CallDeferred(MethodName.ApplyInitialConditions,pickup);
     }
 
-    public void SetupCoin(Coin coin)
+    public void ApplyInitialConditions(Pickup pickup)
     {
-        coin.SetCollisionLayerValue(1,false);
-        coin.SetCollisionLayerValue(2,false);
-        coin.SetCollisionLayerValue(3,true);
-        coin.SetCollisionMaskValue(1,true);
-        coin.SetCollisionMaskValue(2,false);
-        coin.SetCollisionMaskValue(3,true);
-        coin.SetCollisionMaskValue(9,true);
+        pickup.SetCollisionLayerValue(1,false);
+        pickup.SetCollisionLayerValue(2,false);
+        pickup.SetCollisionLayerValue(3,true);
+        pickup.SetCollisionMaskValue(1,true);
+        pickup.SetCollisionMaskValue(2,false);
+        pickup.SetCollisionMaskValue(3,true);
+        pickup.SetCollisionMaskValue(9,true);
         var _linvel = new Vector3(RNG.RandfRange(-2.0f,2.0f),RNG.RandfRange(10.0f,12.0f),RNG.RandfRange(-2.0f,2.0f));
         var _angvel = new Vector3(RNG.Randf()*2.0f*(float)Math.PI, RNG.Randf()*2.0f*(float)Math.PI, RNG.Randf()*2.0f*(float)Math.PI);
-        coin.Freeze = false;
-        coin.ForcePhysicsStateUpdate(GlobalPosition, _linvel, _angvel);
-        coin.CallDeferred(nameof(coin.Activate));
+        pickup.Freeze = false;
+        pickup.ForcePhysicsStateUpdate(GlobalPosition, _linvel, _angvel);
+        if (pickup is Coin coin) coin.CallDeferred(nameof(coin.Activate));
     }
 
     public override void _PhysicsProcess(double delta)
     {
         if (_t.TimeLeft < _spawned_coins_time)
         {
-            SpawnCoin();
+            SpawnPickup();
             _spawned_coins_time -= _secs_per_coin;
         }
     }

@@ -4,12 +4,9 @@ using System;
 public partial class DestructibleChest : DestructibleMesh
 {
     public InteractableComponent InteractableNode { get; set; }
-
     private bool _spawned_treasure = false;
     private bool _opened_chest = false;
-
     public const float MASS_WHEN_OPENED = 60.0f;
-
     public override void _Ready()
     {
         base._Ready();
@@ -40,7 +37,9 @@ public partial class DestructibleChest : DestructibleMesh
             _spawned_treasure = true;
             ((RigidBody3D)IntactScene.GetChild(0)).Mass = MASS_WHEN_OPENED;
             // create coins from opening the chest
-            AddSibling(CoinSpawner.Create(((Node3D)IntactScene.GetChild(0)).GlobalTransform*(Vector3.Up*0.5f),Random.Shared.Next(3,11),2.0));
+            var spawner = CoinSpawner.Create(((Node3D)IntactScene.GetChild(0)).GlobalTransform*(Vector3.Up*0.5f),Random.Shared.Next(3,11),2.0);
+            spawner.SpawnTreasure = true;
+            AddSibling(spawner);
             GD.Print("Interacted with chest, spawning treasure");
             SpawnTreasure();
             // spawn treasure here

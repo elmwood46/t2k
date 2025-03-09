@@ -85,7 +85,6 @@ public partial  class AudioManager : Node
                 ResourceLoader.Load<AudioStream>("res://audio/footsteps/grass/grass_step_2-07.ogg"),
                 ResourceLoader.Load<AudioStream>("res://audio/footsteps/grass/grass_step_2-08.ogg"),
                 ResourceLoader.Load<AudioStream>("res://audio/footsteps/grass/grass_step_2-09.ogg"),
-                ResourceLoader.Load<AudioStream>("res://audio/footsteps/grass/grass_step_2-10.ogg"),
                 ResourceLoader.Load<AudioStream>("res://audio/footsteps/grass/grass_step_2-11.ogg"),
                 ResourceLoader.Load<AudioStream>("res://audio/footsteps/grass/grass_step_2-12.ogg"),
                 ResourceLoader.Load<AudioStream>("res://audio/footsteps/grass/grass_step_2-13.ogg"),

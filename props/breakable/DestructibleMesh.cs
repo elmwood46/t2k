@@ -163,6 +163,12 @@ public partial class DestructibleMesh : Node3D, IHurtable
 
 	public void Break(Vector3 collisionPoint, float force) {
         _is_broken = true;
+		
+		if (Player.ObjectIsHeldRigidBody((RigidBody3D)IntactScene.GetChild(0)))
+        {
+            Player.SetHeldObjectToNull();
+        }
+
         if (((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Scale != _base_scale) ((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Scale = _base_scale;
         if (((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Position != _base_position) ((MeshInstance3D)IntactScene.GetChild(0).GetChild(0)).Position = _base_position;
         // spawn coins

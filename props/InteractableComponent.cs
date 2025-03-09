@@ -5,7 +5,6 @@ using System.Collections.Generic;
 public partial class InteractableComponent : Node
 {
 	[Signal] public delegate void InteractedEventHandler();
-
 	private Dictionary<CharacterBody3D, ulong> _charactersHovering = new();
 
 	public void Interact()
@@ -17,7 +16,7 @@ public partial class InteractableComponent : Node
 		_charactersHovering[c] = Engine.GetProcessFrames();
 	}
 
-	private CharacterBody3D GetCharacterHoveredByCurCamera() {
+	public CharacterBody3D GetCharacterHoveredByCurCamera() {
 		foreach (CharacterBody3D c in _charactersHovering.Keys) {
 			var cur_cam = GetViewport()?.GetCamera3D();
 			if (c.FindChildren("*","Camera3D").Contains(cur_cam)) {

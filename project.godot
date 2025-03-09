@@ -19,6 +19,10 @@ config/icon="res://icon.svg"
 
 project/assembly_name="t2k"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/csgtomeshinstance/plugin.cfg")
+
 [input]
 
 Place={
