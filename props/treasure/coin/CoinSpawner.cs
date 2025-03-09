@@ -61,8 +61,16 @@ public partial class CoinSpawner : Node3D
 
     public void SetupCoin(Coin coin)
     {
+        coin.SetCollisionLayerValue(1,false);
+        coin.SetCollisionLayerValue(2,false);
+        coin.SetCollisionLayerValue(3,true);
+        coin.SetCollisionMaskValue(1,true);
+        coin.SetCollisionMaskValue(2,false);
+        coin.SetCollisionMaskValue(3,true);
+        coin.SetCollisionMaskValue(9,true);
         var _linvel = new Vector3(RNG.RandfRange(-2.0f,2.0f),RNG.RandfRange(10.0f,12.0f),RNG.RandfRange(-2.0f,2.0f));
         var _angvel = new Vector3(RNG.Randf()*2.0f*(float)Math.PI, RNG.Randf()*2.0f*(float)Math.PI, RNG.Randf()*2.0f*(float)Math.PI);
+        coin.Freeze = false;
         coin.ForcePhysicsStateUpdate(GlobalPosition, _linvel, _angvel);
         coin.CallDeferred(nameof(coin.Activate));
     }

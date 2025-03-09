@@ -80,6 +80,7 @@ public partial class Coin : RigidBody3D
             PhysicsServer3D.BodyState.AngularVelocity,
             angular_velocity
         );
+        GlobalPosition = translate;
     }
 
     public override void _PhysicsProcess(double delta)
@@ -134,7 +135,6 @@ public partial class Coin : RigidBody3D
         MoveTowardPlayer = false;
         Visible = false;
         Freeze = true;
-        Basis = Basis.Identity;
         CoinPool.AddToAvailableQueue(this);
     }
 }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public partial class CoinPool : Node
 {
-    private const int MAX_COINS = 5;
+    private const int MAX_COINS = 300;
     private static Queue<Coin> available = new();
     private static List<Coin> active = new();
     private static readonly PackedScene coinScene = GD.Load<PackedScene>("res://props/treasure/coin/coin.tscn");

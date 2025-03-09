@@ -81,9 +81,9 @@ public partial class Chunk : StaticBody3D
                 else GD.Print("duplicate mesh data found");
                 to_remove.Add(d);
             }
-            if (child is RigidBody3D coin)
+            else if (child is Coin coin)
             {
-                coin.QueueFree();
+                coin.Deactivate();
             }
         }
         foreach (var d in to_remove)

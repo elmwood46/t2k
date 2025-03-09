@@ -40,7 +40,7 @@ public partial class DestructibleChest : DestructibleMesh
             _spawned_treasure = true;
             ((RigidBody3D)IntactScene.GetChild(0)).Mass = MASS_WHEN_OPENED;
             // create coins from opening the chest
-            AddSibling(CoinSpawner.Create(((Node3D)IntactScene.GetChild(0)).GlobalPosition,3,2.0));
+            AddSibling(CoinSpawner.Create(((Node3D)IntactScene.GetChild(0)).GlobalTransform*(Vector3.Up*0.5f),Random.Shared.Next(3,11),2.0));
             GD.Print("Interacted with chest, spawning treasure");
             SpawnTreasure();
             // spawn treasure here
@@ -83,7 +83,7 @@ public partial class DestructibleChest : DestructibleMesh
         if (base._is_broken && !_spawned_treasure)
         {
             // create coins from breaking the chest
-            AddSibling(CoinSpawner.Create(BrokenScene.GlobalPosition,100,2.0));
+            AddSibling(CoinSpawner.Create(BrokenScene.GlobalPosition+Vector3.Up*0.5f,100,2.0));
             _spawned_treasure = true;
             GD.Print("Chest is broken, spawning treasure.");
             SpawnTreasure();
