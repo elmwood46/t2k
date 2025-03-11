@@ -71,11 +71,6 @@ public partial class BlockManager : Node
 	private static readonly Color burned_colour = new(0.2f, 0.09f, 0.03f,1.0f);
 	private static readonly Color acid_colour = new(0, 0.9490196078f, 0);
 	private static readonly Color acid_edge = new(0.0509803922f, 0.6980392157f, 0.0470588235f);
-
-	public static BlockSpecies BlockSpecies(int blockID) {
-		return Instance.Blocks[blockID].Species;
-	}
-
 	public static BlockSpecies BlockSpecies(string blockName) {
 		return Instance.Blocks[BlockID(blockName)].Species;
 	}
@@ -153,6 +148,10 @@ public partial class BlockManager : Node
 		ChunkMaterial.SetShaderParameter("_acidcol", acid_colour);
 		ChunkMaterial.SetShaderParameter("_acidedge", acid_edge);
 		ChunkMaterial.SetShaderParameter("_pulse_when_damaged", false);
+		ChunkMaterial.SetShaderParameter("_grass_lod_tex_array_pos", GetBlockTextureArrayPositions(BlockID("LODGrass"))[0]);
+		ChunkMaterial.SetShaderParameter("_stone_lod_tex_array_pos", GetBlockTextureArrayPositions(BlockID("LODStone"))[0]);
+		ChunkMaterial.SetShaderParameter("_leaves_lod_tex_array_pos", GetBlockTextureArrayPositions(BlockID("LODLeaves"))[0]);
+		ChunkMaterial.SetShaderParameter("_dirt_lod_tex_array_pos", GetBlockTextureArrayPositions(BlockID("LODDirt"))[0]);
 
 		ChunkMaterialDamagePulse = ChunkMaterial.Duplicate() as ShaderMaterial;
 		ChunkMaterialDamagePulse.SetShaderParameter("_pulse_when_damaged", true);

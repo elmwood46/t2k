@@ -30,6 +30,11 @@ uniform bool debug_physical;
 uniform bool debug_acid;
 uniform bool debug_fire;
 
+uniform int _grass_lod_tex_array_pos;
+uniform int _stone_lod_tex_array_pos;
+uniform int _leaves_lod_tex_array_pos;
+uniform int _dirt_lod_tex_array_pos;
+
 // include has to come after uniforms are established
 #include "res://shaders/chunk_block_damage_func.gdshaderinc"
 
@@ -41,8 +46,37 @@ void fragment() {
 	vec4 metadata = round(COLOR*255.0);
 	vec2 uv = fract(UV*metadata.gb);
 	vec3 coords = vec3(uv, metadata.r);
-	vec4 basecol = texture(_albedo,coords);
-
+	vec4 basecol;
+	
+	// only sample texture if not using LOD
+	if (int(metadata.r) == _grass_lod_tex_array_pos
+	|| int(metadata.r) == _stone_lod_tex_array_pos
+	|| int(metadata.r) == _leaves_lod_tex_array_pos
+	|| int(metadata.r) == _dirt_lod_tex_array_pos)
+	{
+		if (int(metadata.r) == _stone_lod_tex_array_pos)
+		{
+			basecol = vec4(0.34, 0.34, 0.34, 1.0);
+		}
+		else if (int(metadata.r) == _leaves_lod_tex_array_pos)
+		{
+			basecol = vec4(0.34, 0.47, 0.30, 1.0);
+		}
+		else if (int(metadata.r) == _dirt_lod_tex_array_pos)
+		{
+			basecol = vec4(0.42, 0.35, 0.28, 1.0);
+		}
+		else // grass texture LOD is default
+		{
+			basecol = vec4(0.21, 0.38, 0.21, 1.0);
+		}
+	}
+	else
+	{
+		// sample from texture array
+		basecol = texture(_albedo,coords);
+	}
+	
 	// calculate damages
 	int damagedata = int(metadata.a);
 	float damageratio = float(damagedata&0x1f)/31.0;

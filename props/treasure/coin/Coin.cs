@@ -48,6 +48,13 @@ public partial class Coin : Pickup
 
     override public void Deactivate()
     {
+        SetCollisionLayerValue(1,false);
+        SetCollisionLayerValue(2,false);
+        SetCollisionLayerValue(3,false);
+        SetCollisionMaskValue(1,false);
+        SetCollisionMaskValue(2,false);
+        SetCollisionMaskValue(3,false);
+        SetCollisionMaskValue(9,false);
         _lifetime.Stop();
         _deathtimer.Stop();
         ((MeshInstance3D)GetChild(0)).Scale = _base_scale;

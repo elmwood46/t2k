@@ -113,6 +113,8 @@ public partial class Pickup : RigidBody3D, IPickup
         {
             if (ItemLabel is not null)
             {
+                ItemLabel.Basis = Basis.Identity;
+                ItemLabel.GlobalPosition = GlobalPosition + Vector3.Up * 0.5f;
                 ItemLabel.Visible = _interactable.GetCharacterHoveredByCurCamera() != null;
             }
         }

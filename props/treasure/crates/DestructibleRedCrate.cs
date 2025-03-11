@@ -66,10 +66,6 @@ public partial class DestructibleRedCrate : DestructibleMesh
     private void FuseTimeout()
     {
         _flash_timer.Stop();
-        if (Player.ObjectIsHeldRigidBody((RigidBody3D)IntactScene.GetChild(0)))
-        {
-            Player.SetHeldObjectToNull();
-        }
         var expl = _explosion_scene.Instantiate() as Explosion;
         var pos = ((Node3D)IntactScene.GetChild(0)).GlobalPosition;
         AddSibling(expl);

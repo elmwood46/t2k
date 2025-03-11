@@ -176,7 +176,7 @@ public partial  class AudioManager : Node
         var block_id = ChunkManager.GetBlockID(chunk[idx]);
         var volume_db = 0.0f;
 
-        if (BlockManager.BlockSpecies(block_id) == BlockSpecies.Grass || BlockManager.BlockSpecies(block_id) == BlockSpecies.Leaves)
+        if (ChunkManager.GetBlockSpecies(block_id) == BlockSpecies.Grass || ChunkManager.GetBlockSpecies(block_id) == BlockSpecies.Leaves)
         {
             volume_db = -10.0f;
             if (Random.Shared.NextSingle() < 0.5f)

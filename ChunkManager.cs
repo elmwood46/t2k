@@ -14,6 +14,9 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 	public ConcurrentDictionary<Vector3I, int[]> BLOCKCACHE = new();
 	public ConcurrentDictionary<Vector3I, ChunkMeshData> MESHCACHE = new();
 	public ConcurrentDictionary<Vector3I, List<DestructibleMeshData>> BREAKABLE_MESH_CACHE = new ();
+	// lod meshes
+	public ConcurrentDictionary<Vector3I, (Rid, Mesh)> LODMeshes = new();
+	private Vector3I _last_chunk_player_in = Vector3I.Zero;
 
 	// TODO grass LODS only work for a VOXEL_SCALE of 1.0
 	const bool DISABLE_GRASS_LODS = true;
@@ -142,7 +145,7 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 
 		Instance = this;
 
-		_chunks = new List<Chunk>(_width * _width * _y_width);
+		_chunks = new();
 		//_chunks =  GetParent().GetChildren().Where(child => child is Chunk).Select(child => child as Chunk).ToList()
 		
 		for (int i = 0; i < _width * _width * _y_width; i++)
@@ -151,6 +154,37 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 			GetParent().CallDeferred(Node.MethodName.AddChild, chunk);
 			_chunks.Add(chunk);
 		}
+		
+
+		// setup LOD meshes
+		var row_len = _width+11;
+		var halfWidth = Mathf.FloorToInt(_width / 2f);
+		var placeholder_node = new Node3D();
+		AddChild(placeholder_node);
+		for (int x=-row_len/2; x <= row_len/2; x++)
+		{
+			for (int z=-row_len/2; z <= row_len/2; z++)
+			{
+				for (int y=0; y<_y_width; y++)
+				{
+					if (x >= -halfWidth && x < _width-halfWidth
+					&& z >= -halfWidth && z < _width-halfWidth
+					&& y >= 0 && y < _y_width) {
+						continue;
+					}
+					// Create a visual instance (for 3D).
+					Rid instance = RenderingServer.InstanceCreate();
+					// Set the scenario from the world, this ensures it
+					// appears with the same objects as the scene.
+					Rid scenario = placeholder_node.GetWorld3D().Scenario;
+					RenderingServer.InstanceSetScenario(instance, scenario);
+
+					var pos = new Vector3I(x,y,z);
+					LODMeshes.TryAdd(pos, new (instance, new Mesh()));
+				}
+			}
+		}
+		RemoveChild(placeholder_node);
 
 		GD.Print("chunks: ", _chunks.Count);
 
@@ -242,6 +276,7 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 		{
 			new Thread(new ThreadStart(ThreadProcess)){IsBackground = true}.Start();
 			new Thread(new ThreadStart(ThreadObjectSpawning)){IsBackground = true}.Start();
+			new Thread(new ThreadStart(ThreadUpdateLODMeshes)){IsBackground = true}.Start();
 		}
 
 		SaveManager.SaveToFile();
@@ -1065,7 +1100,7 @@ public partial class ChunkManager : Node, ISaveStateLoadable
 
 	#region threaded spawns
     async private static void ThreadObjectSpawning() {
-        while (true) {
+        while (IsInstanceValid(Instance)) {
             /*if (Instance.DeferredDestructibleMeshesSpawn.IsEmpty) {
                 Thread.Sleep(100);
                 continue;
