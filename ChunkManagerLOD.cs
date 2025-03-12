@@ -20,87 +20,99 @@ public partial class ChunkManager : Node
     {
         while (IsInstanceValid(this))
         {
-            //GD.Print("trying to update LOD meshes");
-            //GD.Print("LOD meshes count: ", LODMeshes.Count);
-
-            var newplayerchunkpos = new Vector3I();
-
-			lock (_playerPositionLock)
+            await _updateChunkSemaphore.WaitAsync();
+			try 
 			{
-				newplayerchunkpos = GlobalPositionToChunkPosition(_playerPosition);
-			}
+                //GD.Print("trying to update LOD meshes");
+                //GD.Print("LOD meshes count: ", LODMeshes.Count);
 
-            newplayerchunkpos.Y = Mathf.Clamp(newplayerchunkpos.Y, 0, _y_width-1);
+                var newplayerchunkpos = new Vector3I();
 
-            var update_lod_meshes = new ConcurrentBag<(Vector3I, (Rid, Mesh))>();
-            var tasks = new List<Task>();
-
-			if (newplayerchunkpos != _last_chunk_player_in)
-			{
-                _last_chunk_player_in = newplayerchunkpos;
-
-                foreach (var (meshpos, (instance, arraymesh)) in LODMeshes)
+                lock (_playerPositionLock)
                 {
-                    var pos = meshpos + newplayerchunkpos;
-                    TryUpdateOrGenerateChunkBlockData(pos);
-
-                    // do multithreaded greedy meshing of LOD meshes
-                    tasks.Add(Task.Run(() => {
-                        var dist_sq = pos.DistanceSquaredTo(newplayerchunkpos);
-                        var lod = ChunkLOD.Sixteenth;
-                        var use_block_lod = true;// (dist_sq > 40000); // 40000 = 200 blocks
-                        /*
-                        if (dist_sq <= 22500) // 150 squared
-                        {
-                            lod = ChunkLOD.NoLOD;
-                        }
-                        else if (dist_sq <= 40000) // 200
-                        {
-                            lod = ChunkLOD.NoLOD;
-                        }
-                        else if (dist_sq <= 90000) // 300
-                        {
-                            lod = ChunkLOD.Half;
-                        }
-                        else if (dist_sq <= 160000) //400
-                        {
-                            lod = ChunkLOD.Quarter;
-                        }
-                        else if (dist_sq <= 250000) //500
-                        {
-                            lod = ChunkLOD.Eighth;
-                        }
-                        else
-                        {
-                            lod = ChunkLOD.Sixteenth;
-                        }*/
-                        
-                        var new_arraymesh = LODBuildChunkMesh(pos,lod,use_block_lod);
-                        update_lod_meshes.Add((meshpos, (instance, new_arraymesh)));
-
-                        var xform = new Transform3D(Basis.Identity, (Godot.Vector3)pos*CHUNK_SIZE);
-                        RenderingServer.InstanceSetBase(instance, new_arraymesh.GetRid());
-                        RenderingServer.InstanceSetTransform(instance, xform);
-
-                        return Task.CompletedTask;
-                    }));
-                }
-                await Task.WhenAll(tasks);
-    
-                foreach (var (meshpos, (rid, mesh)) in update_lod_meshes)
-                {
-                    LODMeshes[meshpos] = (rid,mesh);
+                    newplayerchunkpos = GlobalPositionToChunkPosition(_playerPosition);
                 }
 
-                Thread.Sleep(100);
-			}
-            Thread.Sleep(1);
+                newplayerchunkpos.Y = Mathf.Clamp(newplayerchunkpos.Y, 0, _y_width-1);
+
+                var update_lod_meshes = new ConcurrentBag<(Vector3I, (Rid, Mesh))>();
+                var tasks = new List<Task>();
+
+                if (newplayerchunkpos != _last_chunk_player_in)
+                {
+                    _last_chunk_player_in = newplayerchunkpos;
+
+                    foreach (var (meshpos, (instance, arraymesh)) in LODMeshes)
+                    {
+                        var pos = meshpos + newplayerchunkpos;
+                        TryUpdateOrGenerateChunkBlockData(pos);
+
+                        // do multithreaded greedy meshing of LOD meshes
+                        tasks.Add(Task.Run(() => {
+                            var dist_sq = pos.DistanceSquaredTo(newplayerchunkpos);
+                            var lod = ChunkLOD.Sixteenth;
+                            var use_block_lod = true;// (dist_sq > 40000); // 40000 = 200 blocks
+                            /*
+                            if (dist_sq <= 22500) // 150 squared
+                            {
+                                lod = ChunkLOD.NoLOD;
+                            }
+                            else if (dist_sq <= 40000) // 200
+                            {
+                                lod = ChunkLOD.NoLOD;
+                            }
+                            else if (dist_sq <= 90000) // 300
+                            {
+                                lod = ChunkLOD.Half;
+                            }
+                            else if (dist_sq <= 160000) //400
+                            {
+                                lod = ChunkLOD.Quarter;
+                            }
+                            else if (dist_sq <= 250000) //500
+                            {
+                                lod = ChunkLOD.Eighth;
+                            }
+                            else
+                            {
+                                lod = ChunkLOD.Sixteenth;
+                            }*/
+                            
+                            var new_arraymesh = LODBuildChunkMesh(pos,lod,use_block_lod);
+                            update_lod_meshes.Add((meshpos, (instance, new_arraymesh)));
+                            var xform = new Transform3D(Basis.Identity, (Godot.Vector3)pos*CHUNK_SIZE);
+
+                            RenderingServer.CallOnRenderThread(Callable.From(()=>UpdateInstanceData(instance, new_arraymesh.GetRid(), xform)));
+                            return Task.CompletedTask;
+                        }));
+                    }
+                    await Task.WhenAll(tasks);
+        
+                    foreach (var (meshpos, (rid, mesh)) in update_lod_meshes)
+                    {
+                        LODMeshes[meshpos] = (rid,mesh);
+                    }
+
+                    Thread.Sleep(100);
+                }
+                Thread.Sleep(1);
+            }
+            finally
+            {
+                _updateChunkSemaphore.Release();
+            }
         }
 
         foreach (var (pos, (rid, mesh)) in LODMeshes)
         {
             RenderingServer.FreeRid(rid);
         }
+    }
+
+    public static void UpdateInstanceData(Rid instance, Rid new_mesh_rid, Transform3D new_transform)
+    {
+        RenderingServer.InstanceSetBase(instance, new_mesh_rid);
+        RenderingServer.InstanceSetTransform(instance, new_transform);
     }
 
     #region greedy mesh
